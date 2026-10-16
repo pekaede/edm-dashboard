@@ -6,7 +6,6 @@ import { CampaignOverview } from "./components/CampaignOverview";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
-import { ExtendedKeywordView } from "./components/ExtendedKeywordView";
 import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
 import { MarkdownReport } from "./components/MarkdownReport";
@@ -134,7 +133,6 @@ export default function App() {
             </div>
 
             <CalendarView />
-            <ExtendedKeywordView />
             <DashboardFooter />
           </>
         ) : view === "report" ? (
