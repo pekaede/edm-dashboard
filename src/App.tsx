@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { BrandDetailDialog } from "./components/BrandDetailDialog";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CampaignOverview } from "./components/CampaignOverview";
 import { DashboardFooter } from "./components/DashboardFooter";
@@ -6,8 +8,11 @@ import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
+import type { Brand } from "./data";
 
 export default function App() {
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+
   return (
     <div className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased">
       <DashboardHeader />
@@ -17,13 +22,13 @@ export default function App() {
 
         <div className="grid items-stretch gap-4 xl:grid-cols-[1.13fr_0.7fr_1.13fr]">
           <div className="min-w-0">
-            <CampaignOverview />
+            <CampaignOverview onSelectBrand={setSelectedBrand} />
           </div>
           <div className="min-w-0">
             <ThemeDistribution />
           </div>
           <div className="min-w-0">
-            <BrandThemeBreakdown />
+            <BrandThemeBreakdown onSelectBrand={setSelectedBrand} />
           </div>
         </div>
 
@@ -38,6 +43,10 @@ export default function App() {
 
         <DashboardFooter />
       </main>
+
+      {selectedBrand ? (
+        <BrandDetailDialog brand={selectedBrand} onClose={() => setSelectedBrand(null)} />
+      ) : null}
     </div>
   );
 }

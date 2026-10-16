@@ -1,3 +1,4 @@
+import type { Brand } from "../data";
 import { DATA } from "../data";
 import { Card } from "./Card";
 import { TOTAL } from "./dashboard";
@@ -17,7 +18,11 @@ function getHeatmapStyle(count: number) {
   };
 }
 
-export function CampaignOverview() {
+interface CampaignOverviewProps {
+  onSelectBrand: (brand: Brand) => void;
+}
+
+export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
   const weekTotals = DATA.weeks.map((_, i) =>
     DATA.brands.reduce((s, b) => s + b.weekly[i], 0),
   );
@@ -44,7 +49,13 @@ export function CampaignOverview() {
             {DATA.brands.map((b) => (
               <tr key={b.name} className="border-b border-slate-100 transition-colors">
                 <td className="py-2 pl-3 pr-2 font-medium text-slate-800">
-                  {b.name}
+                  <button
+                    type="button"
+                    className="rounded-sm text-left font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 transition hover:text-blue-600 hover:decoration-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                    onClick={() => onSelectBrand(b)}
+                  >
+                    {b.name}
+                  </button>
                 </td>
                 {b.weekly.map((n, i) => {
                   const style = getHeatmapStyle(n);
@@ -106,34 +117,6 @@ export function CampaignOverview() {
         </table>
       </div>
 
-      <details className="group mt-4 rounded-xl border border-slate-200/80 bg-slate-50/50 text-xs sm:text-sm">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-2.5 font-semibold text-slate-700 transition-colors hover:text-blue-600 [&::-webkit-details-marker]:hidden">
-          <span>各品牌每周主要 Campaign 主题</span>
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-normal text-slate-500 transition-transform group-open:rotate-45">
-            +
-          </span>
-        </summary>
-        <div className="space-y-4 border-t border-slate-200/80 px-4 py-3.5">
-          {DATA.brands.map((b) => (
-            <div key={b.name} className="grid gap-1 sm:grid-cols-[6rem_1fr]">
-              <span className="font-semibold text-slate-900">{b.name}</span>
-              <div className="space-y-1">
-                <div className="leading-5 text-slate-600">
-                  主要策略：{b.strategy} · 日均：{b.perDay.toFixed(1)} 封
-                </div>
-                {b.campaigns.map((c, i) => (
-                  <div key={i} className="leading-5 text-slate-600">
-                    <span className="font-medium text-slate-800">
-                      {DATA.weeks[i].label}：
-                    </span>
-                    {c}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </details>
     </Card>
   );
 }

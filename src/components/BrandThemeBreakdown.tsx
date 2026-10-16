@@ -1,8 +1,13 @@
+import type { Brand } from "../data";
 import { DATA } from "../data";
 import { Card } from "./Card";
 import { THEME_COLORS } from "./dashboard";
 
-export function BrandThemeBreakdown() {
+interface BrandThemeBreakdownProps {
+  onSelectBrand: (brand: Brand) => void;
+}
+
+export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
   return (
     <Card
       title="各品牌内容结构"
@@ -37,9 +42,13 @@ export function BrandThemeBreakdown() {
 
           return (
             <div key={b.name} className="flex items-center gap-3">
-              <span className="w-20 shrink-0 text-sm font-medium text-slate-800">
+              <button
+                type="button"
+                className="w-20 shrink-0 rounded-sm text-left text-sm font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 transition hover:text-blue-600 hover:decoration-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                onClick={() => onSelectBrand(b)}
+              >
                 {b.name}
-              </span>
+              </button>
 
               <div className="relative flex h-7 flex-1 overflow-visible rounded-md bg-slate-100">
                 {segs.map((t) => (
