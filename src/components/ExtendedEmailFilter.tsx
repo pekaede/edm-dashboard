@@ -12,7 +12,17 @@ const FILTER_THEMES = [
   { key: "category", label: "品类聚焦" },
 ] as const;
 
+const FILTER_BRANDS = [
+  "Zara",
+  "lululemon",
+  "ALO Yoga",
+  "Halara",
+  "Temu",
+  "SHEIN",
+] as const;
+
 type FilterTheme = (typeof FILTER_THEMES)[number]["key"];
+type FilterBrand = (typeof FILTER_BRANDS)[number];
 
 const THEME_LABELS: Record<string, string> = {
   price: "价格促销",
@@ -45,7 +55,6 @@ const ALL_EMAILS = EXTENDED_3MONTH.brands
     brand.emails.map((email, index) => ({
       ...email,
       brand: brand.name,
-      brandPage: brand.brandPage,
       id: `${brand.name}-${email.date}-${index}`,
     })),
   )
@@ -61,20 +70,32 @@ export function ExtendedEmailFilter({
       ? (initialTheme as FilterTheme)
       : null,
   );
+  const [selectedBrand, setSelectedBrand] = useState<FilterBrand | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const listId = useId();
 
   const filteredEmails = useMemo(
     () =>
-      selectedTheme
-        ? ALL_EMAILS.filter((email) => email.theme === selectedTheme)
-        : ALL_EMAILS,
-    [selectedTheme],
+      ALL_EMAILS.filter(
+        (email) =>
+          (!selectedBrand || email.brand === selectedBrand) &&
+          (!selectedTheme || email.theme === selectedTheme),
+      ),
+    [selectedBrand, selectedTheme],
   );
 
   const visibleEmails = filteredEmails.slice(0, visibleCount);
-  const selectedLabel = selectedTheme ? THEME_LABELS[selectedTheme] : "全部";
+  const selectedThemeLabel = selectedTheme ? THEME_LABELS[selectedTheme] : "全部";
+  const selectedBrandLabel = selectedBrand ?? "全部";
+  const filterSummary = `品牌：${selectedBrandLabel}，主题：${selectedThemeLabel}`;
   const hasMore = visibleEmails.length < filteredEmails.length;
+
+  const selectBrand = (brand: FilterBrand | null) => {
+    setSelectedBrand((currentBrand) =>
+      brand !== null && currentBrand === brand ? null : brand,
+    );
+    setVisibleCount(PAGE_SIZE);
+  };
 
   const selectTheme = (theme: FilterTheme | null) => {
     setSelectedTheme((currentTheme) =>
@@ -96,7 +117,7 @@ export function ExtendedEmailFilter({
                 Editorial email index
               </p>
               <p className="mt-2 text-base leading-7 text-[#302c28] sm:text-lg">
-                从主题切入三个月营销触达，快速定位品牌的沟通重心与发送节奏。
+                从品牌与主题切入三个月营销触达，快速定位品牌的沟通重心与发送节奏。
               </p>
             </div>
             <div className="flex items-baseline gap-2 text-[#1f1c19]">
@@ -107,58 +128,111 @@ export function ExtendedEmailFilter({
             </div>
           </div>
 
-          <div>
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
-                按主题筛选
-              </p>
-              <p className="text-xs text-[#7b7166]" aria-live="polite" aria-atomic="true">
-                当前：{selectedLabel}
-              </p>
+          <div className="space-y-5">
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
+                  按品牌筛选
+                </p>
+                <p className="text-xs text-[#7b7166]">
+                  当前：{selectedBrandLabel}
+                </p>
+              </div>
+
+              <div
+                className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7"
+                role="group"
+                aria-label="按邮件品牌筛选"
+              >
+                <button
+                  type="button"
+                  onClick={() => selectBrand(null)}
+                  aria-pressed={selectedBrand === null}
+                  className={`min-h-12 rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
+                    selectedBrand === null
+                      ? "border-[#1f1c19] bg-[#1f1c19] text-white shadow-[0_8px_20px_-14px_rgba(31,28,25,0.9)]"
+                      : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
+                  }`}
+                >
+                  全部
+                </button>
+
+                {FILTER_BRANDS.map((brand) => {
+                  const isSelected = selectedBrand === brand;
+
+                  return (
+                    <button
+                      type="button"
+                      key={brand}
+                      onClick={() => selectBrand(brand)}
+                      aria-pressed={isSelected}
+                      aria-label={`${brand}品牌${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
+                      className={`flex min-h-12 items-center justify-center rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
+                        isSelected
+                          ? "border-[#e55f47] bg-[#e55f47] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
+                          : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
+                      }`}
+                    >
+                      {brand}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div
-              className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6"
-              role="group"
-              aria-label="按邮件主题筛选"
-            >
-              <button
-                type="button"
-                onClick={() => selectTheme(null)}
-                aria-pressed={selectedTheme === null}
-                className={`min-h-12 rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
-                  selectedTheme === null
-                    ? "border-[#1f1c19] bg-[#1f1c19] text-white shadow-[0_8px_20px_-14px_rgba(31,28,25,0.9)]"
-                    : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
-                }`}
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
+                  按主题筛选
+                </p>
+                <p className="text-xs text-[#7b7166]" aria-live="polite" aria-atomic="true">
+                  当前：{selectedThemeLabel}
+                </p>
+              </div>
+
+              <div
+                className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6"
+                role="group"
+                aria-label="按邮件主题筛选"
               >
-                全部
-              </button>
+                <button
+                  type="button"
+                  onClick={() => selectTheme(null)}
+                  aria-pressed={selectedTheme === null}
+                  className={`min-h-12 rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
+                    selectedTheme === null
+                      ? "border-[#1f1c19] bg-[#1f1c19] text-white shadow-[0_8px_20px_-14px_rgba(31,28,25,0.9)]"
+                      : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
+                  }`}
+                >
+                  全部
+                </button>
 
-              {FILTER_THEMES.map((theme) => {
-                const isSelected = selectedTheme === theme.key;
+                {FILTER_THEMES.map((theme) => {
+                  const isSelected = selectedTheme === theme.key;
 
-                return (
-                  <button
-                    type="button"
-                    key={theme.key}
-                    onClick={() => selectTheme(theme.key)}
-                    aria-pressed={isSelected}
-                    aria-label={`${theme.label}主题${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
-                    className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
-                      isSelected
-                        ? "border-[#e55f47] bg-[#e55f47] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
-                        : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
-                    }`}
-                  >
-                    <span
-                      className={`size-2 rounded-full ${isSelected ? "bg-white/80" : FILTER_DOT_STYLES[theme.key]}`}
-                      aria-hidden="true"
-                    />
-                    {theme.label}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      type="button"
+                      key={theme.key}
+                      onClick={() => selectTheme(theme.key)}
+                      aria-pressed={isSelected}
+                      aria-label={`${theme.label}主题${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
+                      className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
+                        isSelected
+                          ? "border-[#e55f47] bg-[#e55f47] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
+                          : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
+                      }`}
+                    >
+                      <span
+                        className={`size-2 rounded-full ${isSelected ? "bg-white/80" : FILTER_DOT_STYLES[theme.key]}`}
+                        aria-hidden="true"
+                      />
+                      {theme.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -167,11 +241,11 @@ export function ExtendedEmailFilter({
           id={listId}
           className="max-h-[42rem] overflow-auto border-y border-[#d9d0c3] bg-[#fffdf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e55f47]"
           tabIndex={0}
-          aria-label={`${selectedLabel}邮件列表，可横向滚动`}
+          aria-label={`${filterSummary}的邮件列表，可横向滚动`}
         >
-          <table className="w-full min-w-[52rem] border-separate border-spacing-0 text-left text-sm text-[#312d29]">
+          <table className="w-full min-w-[44rem] border-separate border-spacing-0 text-left text-sm text-[#312d29]">
             <caption className="sr-only">
-              {selectedLabel}主题的 3 个月邮件记录，按日期从新到旧排列
+              {filterSummary}的 3 个月邮件记录，按日期从新到旧排列
             </caption>
             <thead className="sticky top-0 z-10 bg-[#28231f] text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#f8f2e9] shadow-[0_1px_0_rgba(255,255,255,0.12)]">
               <tr>
@@ -179,7 +253,6 @@ export function ExtendedEmailFilter({
                 <th scope="col" className="w-44 px-5 py-4">品牌</th>
                 <th scope="col" className="w-40 px-5 py-4">主题</th>
                 <th scope="col" className="px-5 py-4">关键词</th>
-                <th scope="col" className="w-32 px-5 py-4 text-right">品牌页</th>
               </tr>
             </thead>
             <tbody>
@@ -205,23 +278,6 @@ export function ExtendedEmailFilter({
                     <span className="line-clamp-2">
                       {email.keywords.length > 0 ? email.keywords.join(" · ") : "—"}
                     </span>
-                  </td>
-                  <td className="border-b border-[#e5ddd2] px-5 py-4 text-right align-middle">
-                    {email.brandPage ? (
-                      <a
-                        href={email.brandPage}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`在新窗口打开 ${email.brand} 的 Milled 品牌页`}
-                        className="inline-flex min-h-9 items-center rounded-full border border-[#d9a194] bg-[#fff7f2] px-3 py-1.5 text-xs font-bold text-[#a23e2c] transition hover:border-[#e55f47] hover:bg-[#e55f47] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2"
-                      >
-                        品牌页 ↗
-                      </a>
-                    ) : (
-                      <span className="inline-block min-w-16 text-center text-sm text-[#9b9186]" aria-label={`${email.brand} 没有品牌页链接`}>
-                        —
-                      </span>
-                    )}
                   </td>
                 </tr>
               ))}
