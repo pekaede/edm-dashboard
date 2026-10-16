@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://edm-dashboard.pages.dev/sitemap.xml
