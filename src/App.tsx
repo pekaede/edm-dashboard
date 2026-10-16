@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrandDetailDialog } from "./components/BrandDetailDialog";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
+import { CalendarView } from "./components/CalendarView";
 import { CampaignOverview } from "./components/CampaignOverview";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -93,6 +94,8 @@ export default function App() {
                 <Insights />
               </div>
             </div>
+
+            <CalendarView />
 
             <ExtendedEmailFilter />
 
