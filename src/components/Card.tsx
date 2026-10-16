@@ -17,7 +17,7 @@ export function Card({ title, hint, children }: CardProps) {
         </h2>
         {hint ? <p className="mt-1.5 text-sm leading-5 text-slate-600">{hint}</p> : null}
       </div>
-      <div className="mt-5 min-w-0">{children}</div>
+      <div className="mt-4 min-w-0 flex-1 sm:mt-5">{children}</div>
     </section>
   );
 }

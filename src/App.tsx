@@ -111,7 +111,7 @@ export default function App() {
           <>
             <KpiGrid />
 
-            <div className="grid items-stretch gap-4 xl:grid-cols-[1.13fr_0.7fr_1.13fr] xl:gap-5">
+            <div className="dashboard-overview-grid grid items-stretch gap-4 xl:grid-cols-[1.1fr_0.85fr_1.1fr] xl:gap-5">
               <div className="min-w-0">
                 <CampaignOverview onSelectBrand={setSelectedBrand} />
               </div>
@@ -146,7 +146,7 @@ export default function App() {
             <div>
               <a
                 href="#dashboard"
-                className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2"
                 aria-label="返回数据看板"
               >
                 ← 回到看板

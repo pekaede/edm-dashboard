@@ -16,18 +16,25 @@ export const PALETTE = [
   "#368ac8",
 ];
 export const THEME_COLORS: Record<string, string> = {
-  price: "#e85d75",
-  behavior: "#f2a93b",
-  new: "#39a96b",
-  lifestyle: "#8b6bd6",
-  category: "#55a6e8",
+  price: "#e55f47",
+  behavior: "#c38a24",
+  new: "#568d72",
+  lifestyle: "#8069a3",
+  category: "#558b97",
 };
 export const THEME_TINTS: Record<string, string> = {
-  price: "#fdecef",
-  behavior: "#fff4d9",
-  new: "#e8f7ee",
-  lifestyle: "#f0eafb",
-  category: "#e8f4fc",
+  price: "#fff0eb",
+  behavior: "#fff7e2",
+  new: "#edf7f1",
+  lifestyle: "#f4f0f9",
+  category: "#edf6f7",
+};
+export const THEME_LABEL_COLORS: Record<string, string> = {
+  price: "#171411",
+  behavior: "#171411",
+  new: "#171411",
+  lifestyle: "#ffffff",
+  category: "#171411",
 };
 
 export const DASHBOARD_THEME_STYLE = {

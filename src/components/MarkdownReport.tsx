@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import reportMarkdown from "../../reports/onepage-edm-2026-10-16.md?raw";
-import { THEME_COLORS } from "./dashboard";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
@@ -136,13 +135,8 @@ const blocks = parseMarkdown(reportMarkdown);
 
 export function MarkdownReport() {
   return (
-    <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
-      <div
-        className="h-1.5"
-        style={{
-          background: `linear-gradient(90deg, ${THEME_COLORS.category}, ${THEME_COLORS.lifestyle}, ${THEME_COLORS.price})`,
-        }}
-      />
+    <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
+      <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         {blocks.map((block, blockIndex) => {
           if (block.type === "heading") {
@@ -152,7 +146,7 @@ export function MarkdownReport() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
                     完整报告
                   </p>
-                  <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                  <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-slate-950 sm:text-3xl">
                     {renderInline(block.content)}
                   </h2>
                 </header>
@@ -173,7 +167,7 @@ export function MarkdownReport() {
             return (
               <h3
                 key={blockIndex}
-                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--theme-category)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-slate-950 sm:mt-12 sm:text-2xl"
+                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--accent)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-slate-950 sm:mt-12 sm:text-2xl"
               >
                 {renderInline(block.content)}
               </h3>

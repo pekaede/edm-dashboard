@@ -47,11 +47,11 @@ export function KpiGrid() {
       <h2 id="kpi-title" className="sr-only">
         关键指标
       </h2>
-      <dl className="grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.label} className="kpi-card group">
             <div
-              className="flex size-14 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 sm:size-16 [&_svg]:size-7 [&_svg]:fill-none [&_svg]:stroke-[1.9] [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round sm:[&_svg]:size-8"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 sm:size-14 [&_svg]:size-5 [&_svg]:fill-none [&_svg]:stroke-[1.9] [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round sm:[&_svg]:size-7"
               style={{
                 color: THEME_COLORS[k.theme],
                 background: THEME_TINTS[k.theme],
@@ -60,8 +60,8 @@ export function KpiGrid() {
               {k.icon}
             </div>
             <div className="flex min-w-0 flex-col">
-              <dt className="order-2 mt-1 text-sm font-semibold text-slate-600 sm:text-base">{k.label}</dt>
-              <dd className="order-1 text-3xl font-extrabold tracking-tight text-slate-950 tabular-nums sm:text-4xl">
+              <dt className="order-2 mt-1 text-xs font-semibold text-slate-600 sm:text-sm">{k.label}</dt>
+              <dd className="order-1 text-2xl font-extrabold tracking-tight text-slate-950 tabular-nums sm:text-4xl">
                 {k.num}
               </dd>
             </div>

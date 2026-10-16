@@ -6,28 +6,21 @@ import { TOTAL } from "./dashboard";
 const maxWeekly = Math.max(...DATA.brands.flatMap((b) => b.weekly));
 const minWeekly = Math.min(...DATA.brands.flatMap((b) => b.weekly));
 
-/**
- * Sequential blue scale with guaranteed WCAG AA contrast (>= 4.5:1).
- * For lighter fills (count < 15), text is deep slate (#0f172a, contrast >= 4.8:1).
- * For darker fills (count >= 15), text is pure white (#ffffff, contrast >= 4.7:1).
- */
 function getHeatmapStyle(count: number) {
   if (count >= 15) {
-    // High volume: lightness 44% down to 32% (dark blue, white text)
     const ratio = (count - 15) / Math.max(1, maxWeekly - 15);
     const lightness = 44 - ratio * 12;
     return {
-      background: `hsl(218 82% ${lightness.toFixed(1)}%)`,
+      background: `hsl(14 65% ${lightness.toFixed(1)}%)`,
       color: "#ffffff",
     };
   }
 
-  // Low/moderate volume: lightness 96% down to 68% (light/mid blue, dark text)
   const ratio = (count - minWeekly) / Math.max(1, 14 - minWeekly);
-  const lightness = 96 - ratio * 28;
+  const lightness = 96 - ratio * 26;
   return {
-    background: `hsl(218 84% ${lightness.toFixed(1)}%)`,
-    color: "#0f172a",
+    background: `hsl(${(32 - ratio * 18).toFixed(1)} 80% ${lightness.toFixed(1)}%)`,
+    color: "#29231f",
   };
 }
 
@@ -46,8 +39,13 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
       hint="单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。"
     >
       {/* Responsive table wrapper with smooth horizontal scroll on mobile */}
-      <div className="-mx-1 overflow-x-auto px-1 pb-1 scrollbar-thin">
-        <table className="w-full min-w-[450px] border-collapse text-xs sm:min-w-0 sm:text-sm">
+      <div
+        className="-mx-1 overflow-x-auto px-1 pb-1 scrollbar-thin"
+        role="region"
+        aria-label="品牌每周发送频次，可横向滚动"
+        tabIndex={0}
+      >
+        <table className="w-full min-w-[23rem] border-collapse text-xs sm:text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-700">
               <th className="py-2.5 pl-3 pr-2 text-left font-semibold">品牌</th>
@@ -71,7 +69,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                 <td className="py-2 pl-3 pr-2 font-medium">
                   <button
                     type="button"
-                    className="inline-flex items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-slate-800 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    className="inline-flex min-h-9 items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
                     onClick={() => onSelectBrand(b)}
                   >
                     {b.name}
@@ -90,8 +88,8 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                     ? "top-full mt-2"
                     : "bottom-full mb-2";
                   const arrowPos = isTopRow
-                    ? "-top-1 border-t border-l border-slate-800 bg-[#0f172a]"
-                    : "-bottom-1 border-b border-r border-slate-800 bg-[#0f172a]";
+                    ? "-top-1 border-t border-l border-slate-800 bg-slate-950"
+                    : "-bottom-1 border-b border-r border-slate-800 bg-slate-950";
 
                   // Horizontal alignment: col 0 left-anchored, col 2 right-anchored, col 1 centered
                   const horizPos =
@@ -111,7 +109,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   return (
                     <td key={colIndex} className="p-1 text-center">
                       <div
-                        className="group/cell relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:z-20 hover:ring-2 hover:ring-blue-500 focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                        className="group/cell relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:z-20 hover:ring-2 hover:ring-[var(--accent-ink)] focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
                         tabIndex={0}
                         role="cell"
                         aria-label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
@@ -131,14 +129,14 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                           role="tooltip"
                           className={`pointer-events-none absolute z-30 hidden flex-col ${verticalPos} ${horizPos} group-hover/cell:flex group-focus-within/cell:flex`}
                         >
-                          <div className="whitespace-nowrap rounded-lg bg-[#0f172a] px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
+                          <div className="whitespace-nowrap rounded-lg bg-slate-950 px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
                             <div className="font-semibold text-white">
                               {b.name} · {week.label} ({week.range})
                             </div>
-                            <div className="mt-1 font-mono font-medium text-blue-200">
+                            <div className="mt-1 font-mono font-medium text-[#f8ddb2]">
                               {n} 封邮件
                             </div>
-                            <div className="mt-0.5 text-[11px] text-slate-400">
+                            <div className="mt-0.5 text-[11px] text-slate-300">
                               占全期总量 {pct}% ({n}/{TOTAL})
                             </div>
                           </div>
@@ -170,7 +168,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   {n}
                 </td>
               ))}
-              <td className="border-l border-slate-200/80 px-2 py-2.5 text-center font-mono font-bold text-blue-600 tabular-nums">
+              <td className="border-l border-slate-200/80 px-2 py-2.5 text-center font-mono font-bold text-[var(--accent-ink)] tabular-nums">
                 {TOTAL}
               </td>
             </tr>
@@ -181,13 +179,16 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
       {/* Heatmap Legend */}
       <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-600">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded bg-slate-200" />
+          <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: getHeatmapStyle(minWeekly).background }} />
           <span>低 ({minWeekly} 封)</span>
         </span>
-        <div className="mx-2 h-2 flex-1 max-w-[140px] rounded-full bg-gradient-to-r from-[hsl(218,84%,92%)] via-[hsl(218,84%,70%)] to-[hsl(218,82%,34%)]" />
+        <div
+          className="mx-2 h-2 max-w-[140px] flex-1 rounded-full"
+          style={{ background: `linear-gradient(to right, ${getHeatmapStyle(minWeekly).background}, ${getHeatmapStyle(14).background}, ${getHeatmapStyle(maxWeekly).background})` }}
+        />
         <span className="flex items-center gap-1.5">
           <span>高 ({maxWeekly} 封)</span>
-          <span className="inline-block h-2.5 w-2.5 rounded bg-[#1d4ed8]" />
+          <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: getHeatmapStyle(maxWeekly).background }} />
         </span>
       </div>
     </Card>

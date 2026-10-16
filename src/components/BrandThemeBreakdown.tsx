@@ -2,20 +2,10 @@ import { useState } from "react";
 import type { Brand } from "../data";
 import { DATA } from "../data";
 import { Card } from "./Card";
-import { THEME_COLORS } from "./dashboard";
+import { THEME_COLORS, THEME_LABEL_COLORS } from "./dashboard";
 
 interface BrandThemeBreakdownProps {
   onSelectBrand: (brand: Brand) => void;
-}
-
-/**
- * Text contrast helper adhering to WCAG AA (>= 4.5:1).
- */
-function getSegmentTextColor(themeKey: string): string {
-  if (themeKey === "behavior" || themeKey === "category") {
-    return "#0f172a";
-  }
-  return "#ffffff";
 }
 
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
@@ -42,7 +32,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               onMouseLeave={() => setHighlightedTheme(null)}
               onFocus={() => setHighlightedTheme(t.key)}
               onBlur={() => setHighlightedTheme(null)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+              className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-2 py-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${
                 isHighlighted
                   ? "bg-slate-200/90 font-semibold text-slate-900 ring-1 ring-slate-300"
                   : "hover:bg-slate-100 text-slate-700"
@@ -76,18 +66,18 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
           let cumPct = 0;
 
           return (
-            <div key={b.name} className="flex items-center gap-2.5 sm:gap-3">
+            <div key={b.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 sm:flex sm:gap-3">
               {/* Brand button with keyboard navigation */}
               <button
                 type="button"
-                className="w-20 shrink-0 truncate rounded-md px-1 py-0.5 text-left text-xs font-semibold text-slate-800 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 sm:w-22 sm:text-sm"
+                className="min-h-8 w-fit shrink-0 rounded-md px-1 py-0.5 text-left text-xs font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] sm:w-22 sm:text-sm"
                 onClick={() => onSelectBrand(b)}
               >
                 {b.name}
               </button>
 
               {/* Segmented Bar */}
-              <div className="relative flex h-7 flex-1 rounded-lg bg-slate-100 sm:h-8">
+              <div className="relative order-3 col-span-2 flex h-8 min-w-0 flex-1 rounded-lg bg-slate-100 sm:order-none">
                 {segs.map((t, index) => {
                   const startPct = cumPct;
                   cumPct += t.widthPct;
@@ -124,25 +114,25 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
                   const isThemeDimmed =
                     highlightedTheme !== null && highlightedTheme !== t.key;
-                  const textColor = getSegmentTextColor(t.key);
+                  const textColor = isThemeDimmed ? "#171411" : THEME_LABEL_COLORS[t.key];
 
                   return (
                     <div
                       key={t.key}
-                      className={`group/seg relative h-full transition-opacity duration-200 focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
-                        roundingClass
-                      } ${isThemeDimmed ? "opacity-30" : "opacity-100"}`}
+                      className={`group/seg relative h-full focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${roundingClass}`}
                       style={{ width: `${t.widthPct}%` }}
                       tabIndex={0}
                       role="img"
                       aria-label={`${b.name} · ${t.labelZh}: ${t.themeCount} 封 (${t.pct}%)`}
                     >
                       <div
-                        className={`flex h-full w-full items-center justify-center border-r border-white/60 transition-all hover:brightness-105 ${roundingClass} ${
+                        className={`flex h-full w-full items-center justify-center border-r border-white/60 transition-shadow hover:ring-1 hover:ring-inset hover:ring-slate-950/30 ${roundingClass} ${
                           isLast ? "border-r-0" : ""
                         }`}
                         style={{
-                          backgroundColor: THEME_COLORS[t.key],
+                          backgroundColor: isThemeDimmed
+                            ? `color-mix(in srgb, ${THEME_COLORS[t.key]} 30%, var(--surface-card))`
+                            : THEME_COLORS[t.key],
                         }}
                       >
                         {/* Only show percentage when wide enough to prevent overlap/clipping */}
@@ -161,7 +151,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                         role="tooltip"
                         className={`pointer-events-none absolute bottom-full z-30 mb-2 hidden flex-col ${tooltipHorizClass} group-hover/seg:flex group-focus-within/seg:flex`}
                       >
-                        <div className="whitespace-nowrap rounded-lg bg-[#0f172a] px-3 py-1.5 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
+                        <div className="whitespace-nowrap rounded-lg bg-slate-950 px-3 py-1.5 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
                           <div className="flex items-center gap-1.5 font-semibold text-white">
                             <span
                               className="h-2 w-2 rounded-full"
@@ -176,7 +166,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                           </div>
                         </div>
                         <div
-                          className={`absolute -bottom-1 h-2 w-2 rotate-45 border-b border-r border-slate-800 bg-[#0f172a] ${arrowHorizClass}`}
+                          className={`absolute -bottom-1 h-2 w-2 rotate-45 border-b border-r border-slate-800 bg-slate-950 ${arrowHorizClass}`}
                         />
                       </div>
                     </div>

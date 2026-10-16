@@ -32,7 +32,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
       ref={dialogRef}
       aria-labelledby="brand-detail-title"
       aria-describedby="brand-detail-description"
-      className="brand-dialog m-auto overflow-y-auto rounded-2xl border border-slate-200 bg-white p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/55 backdrop:backdrop-blur-sm"
+      className="brand-dialog m-auto overflow-y-auto rounded-2xl border border-slate-200 bg-[var(--surface-card)] p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/55 backdrop:backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           closeDialog();
@@ -40,7 +40,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
       }}
       onClose={onClose}
     >
-      <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-6 sm:py-5">
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-[var(--surface-card)] px-5 py-4 sm:px-6 sm:py-5">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
             品牌明细
@@ -55,7 +55,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
         <button
           type="button"
           aria-label="关闭品牌明细"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-category)]"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[var(--surface-card)] text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-ink)]"
           onClick={closeDialog}
           autoFocus
         >
@@ -183,7 +183,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold"
                   style={{
-                    color: THEME_COLORS.category,
+                    color: "#315f69",
                     backgroundColor: THEME_TINTS.category,
                   }}
                 >

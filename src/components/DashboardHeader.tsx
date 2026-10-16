@@ -17,7 +17,7 @@ export function DashboardHeader() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">Email Marketing Intelligence</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-1 text-2xl font-extrabold leading-snug tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
             {DATA.meta.title}
           </h1>
           <ul className="mt-4 flex flex-wrap gap-2" aria-label="数据范围摘要">
@@ -26,7 +26,7 @@ export function DashboardHeader() {
                 key={label}
                 className="rounded-full border px-3 py-1.5 text-sm font-semibold text-slate-800"
                 style={{
-                  borderColor: THEME_COLORS[theme],
+                  borderColor: `color-mix(in srgb, ${THEME_COLORS[theme]} 35%, var(--color-slate-200))`,
                   background: THEME_TINTS[theme],
                 }}
               >
@@ -35,7 +35,7 @@ export function DashboardHeader() {
             ))}
           </ul>
         </div>
-        <div className="shrink-0 border-l-2 border-[var(--theme-category)] pl-3 lg:text-right">
+        <div className="shrink-0 border-l-2 border-[var(--accent)] pl-3 lg:text-right">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">研究周期</p>
           <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800">{DATA.meta.range}</p>
         </div>

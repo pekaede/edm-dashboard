@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DATA } from "../data";
 import { Card } from "./Card";
-import { THEME_COLORS, TOTAL } from "./dashboard";
+import { THEME_COLORS, THEME_LABEL_COLORS, TOTAL } from "./dashboard";
 
 // SVG arc generator helper
 function describeArc(
@@ -35,18 +35,6 @@ function describeArc(
     `A ${rIn} ${rIn} 0 ${largeArcFlag} 0 ${x1_in.toFixed(2)} ${y1_in.toFixed(2)}`,
     "Z",
   ].join(" ");
-}
-
-/**
- * Text contrast helper adhering to WCAG AA (>= 4.5:1).
- * Light theme colors (yellow behavior, light blue category) use dark text (#0f172a).
- * Dark theme colors (price, new, lifestyle) use white text (#ffffff).
- */
-function getSliceTextColor(themeKey: string): string {
-  if (themeKey === "behavior" || themeKey === "category") {
-    return "#0f172a";
-  }
-  return "#ffffff";
 }
 
 export function ThemeDistribution() {
@@ -87,10 +75,10 @@ export function ThemeDistribution() {
     >
       <div className="flex flex-col items-center">
         {/* Donut Chart SVG */}
-        <div className="relative my-1">
+        <div className="relative my-1 w-full max-w-60">
           <svg
             viewBox="0 0 240 240"
-            className="h-56 w-56 drop-shadow-sm sm:h-60 sm:w-60"
+            className="h-auto w-full drop-shadow-sm"
             role="img"
             aria-label="内容结构分布环形图"
           >
@@ -99,7 +87,7 @@ export function ThemeDistribution() {
               const rIn = isHovered ? 58 : 62;
               const rOut = isHovered ? 110 : 104;
               const d = describeArc(120, 120, rIn, rOut, startDeg, endDeg);
-              const textColor = getSliceTextColor(theme.key);
+              const textColor = THEME_LABEL_COLORS[theme.key];
 
               return (
                 <a
@@ -115,7 +103,7 @@ export function ThemeDistribution() {
                   <path
                     d={d}
                     fill={THEME_COLORS[theme.key]}
-                    stroke="#ffffff"
+                    stroke="var(--surface-card)"
                     strokeWidth={isHovered ? "3" : "2"}
                     className="transition-all duration-200 group-focus-visible:stroke-slate-900"
                     style={{
@@ -149,7 +137,7 @@ export function ThemeDistribution() {
                   textAnchor="middle"
                   dominantBaseline="central"
                   className="font-mono text-3xl font-bold tracking-tight select-none transition-all duration-200"
-                  style={{ fill: THEME_COLORS[activeSlice.theme.key] }}
+                  style={{ fill: "var(--color-slate-900)" }}
                 >
                   {activeSlice.theme.count}
                 </text>
@@ -190,7 +178,7 @@ export function ThemeDistribution() {
 
         {/* Legend with interactive alignment and keyboard accessibility */}
         <div
-          className="mt-3 grid w-full grid-cols-2 gap-2 text-xs sm:text-[13px]"
+          className="chart-legend mt-3 grid w-full gap-2 text-xs sm:text-[13px]"
           role="group"
           aria-label="主题图例"
         >
@@ -204,7 +192,7 @@ export function ThemeDistribution() {
                 onMouseLeave={() => setHoveredKey(null)}
                 onFocus={() => setHoveredKey(theme.key)}
                 onBlur={() => setHoveredKey(null)}
-                className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-1.5 text-left no-underline transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left no-underline transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${
                   isHovered
                     ? "border-slate-300 bg-slate-50 shadow-sm ring-1 ring-slate-200"
                     : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/60"
