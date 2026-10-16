@@ -9,14 +9,14 @@ import { WordCloud } from "./components/WordCloud";
 
 export default function App() {
   return (
-    <div className="min-h-screen font-sans text-slate-800 antialiased">
+    <div className="min-h-screen overflow-hidden font-sans text-slate-800 antialiased">
       <DashboardHeader />
 
-      <main className="mx-auto max-w-6xl space-y-5 px-5 py-6">
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
         <KpiGrid />
         <CampaignOverview />
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid items-stretch gap-8 lg:grid-cols-2">
           <ThemeDistribution />
           <BrandThemeBreakdown />
         </div>

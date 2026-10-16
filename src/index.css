@@ -5,6 +5,31 @@
     "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #f5f7fb;
+}
+
 body {
-  background: #f3f4f6;
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 12% 18%, rgb(99 102 241 / 0.055), transparent 28rem),
+    radial-gradient(circle at 88% 36%, rgb(14 165 233 / 0.04), transparent 24rem),
+    #f5f7fb;
+  color: #1e293b;
+}
+
+button,
+summary,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(99 102 241 / 0.18);
+  color: #312e81;
 }
