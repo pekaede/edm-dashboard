@@ -1,4 +1,6 @@
 import { useId, useMemo, useState } from "react";
+import lululemonCollection from "../../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
+import zaraCollection from "../../data-collection/zara-2026-07-16-to-2026-10-15.json";
 import { EXTENDED_3MONTH } from "../data";
 import { Card } from "./Card";
 
@@ -50,14 +52,33 @@ const FILTER_DOT_STYLES: Record<FilterTheme, string> = {
   category: "bg-[#558b97]",
 };
 
+const EMAIL_URLS_BY_BRAND_AND_DATE = new Map<string, (string | undefined)[]>();
+
+for (const collection of [zaraCollection, lululemonCollection]) {
+  for (const email of collection.emails) {
+    const key = `${collection.brand}-${email.date}`;
+    const urls = EMAIL_URLS_BY_BRAND_AND_DATE.get(key) ?? [];
+    urls.push(email.url);
+    EMAIL_URLS_BY_BRAND_AND_DATE.set(key, urls);
+  }
+}
+
 const ALL_EMAILS = EXTENDED_3MONTH.brands
-  .flatMap((brand) =>
-    brand.emails.map((email, index) => ({
-      ...email,
-      brand: brand.name,
-      id: `${brand.name}-${email.date}-${index}`,
-    })),
-  )
+  .flatMap((brand) => {
+    const dailyCounts = new Map<string, number>();
+
+    return brand.emails.map((email, index) => {
+      const dailyIndex = dailyCounts.get(email.date) ?? 0;
+      dailyCounts.set(email.date, dailyIndex + 1);
+
+      return {
+        ...email,
+        brand: brand.name,
+        id: `${brand.name}-${email.date}-${index}`,
+        url: EMAIL_URLS_BY_BRAND_AND_DATE.get(`${brand.name}-${email.date}`)?.[dailyIndex],
+      };
+    });
+  })
   .sort((a, b) => b.date.localeCompare(a.date));
 
 export function ExtendedEmailFilter({
@@ -109,19 +130,19 @@ export function ExtendedEmailFilter({
       title="3 个月邮件筛选"
       hint={`${EXTENDED_3MONTH.meta.range} · ${EXTENDED_3MONTH.meta.market} · 逐封记录按日期倒序`}
     >
-      <div className="overflow-hidden rounded-[1.75rem] border border-[#d9d0c3] bg-[#f7f1e8] shadow-[0_18px_50px_-38px_rgba(35,29,24,0.65)]">
+      <div className="overflow-hidden rounded-xl border border-[#d9d0c3] bg-[#f7f1e8]">
         <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
           <div className="flex flex-col gap-4 border-b border-[#d9d0c3] pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.24em] text-[#d9573f]">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-ink)]">
                 Editorial email index
               </p>
-              <p className="mt-2 text-base leading-7 text-[#302c28] sm:text-lg">
+              <p className="mt-2 text-sm leading-7 text-[#302c28] sm:text-base">
                 从品牌与主题切入三个月营销触达，快速定位品牌的沟通重心与发送节奏。
               </p>
             </div>
-            <div className="flex items-baseline gap-2 text-[#1f1c19]">
-              <strong className="font-serif text-4xl font-semibold leading-none tabular-nums sm:text-5xl">
+            <div className="flex shrink-0 items-baseline gap-2 text-[#1f1c19]">
+              <strong className="text-3xl font-extrabold leading-none tracking-tight tabular-nums sm:text-4xl">
                 {filteredEmails.length}
               </strong>
               <span className="pb-1 text-sm font-semibold">封邮件</span>
@@ -134,7 +155,7 @@ export function ExtendedEmailFilter({
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
                   按品牌筛选
                 </p>
-                <p className="text-xs text-[#7b7166]">
+                <p className="text-xs text-[#6f655b]">
                   当前：{selectedBrandLabel}
                 </p>
               </div>
@@ -169,7 +190,7 @@ export function ExtendedEmailFilter({
                       aria-label={`${brand}品牌${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
                       className={`flex min-h-12 items-center justify-center rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
                         isSelected
-                          ? "border-[#e55f47] bg-[#e55f47] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
+                          ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
                           : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
                       }`}
                     >
@@ -185,7 +206,7 @@ export function ExtendedEmailFilter({
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
                   按主题筛选
                 </p>
-                <p className="text-xs text-[#7b7166]" aria-live="polite" aria-atomic="true">
+                <p className="text-xs text-[#6f655b]" aria-live="polite" aria-atomic="true">
                   当前：{selectedThemeLabel}
                 </p>
               </div>
@@ -220,7 +241,7 @@ export function ExtendedEmailFilter({
                       aria-label={`${theme.label}主题${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
                       className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
                         isSelected
-                          ? "border-[#e55f47] bg-[#e55f47] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
+                          ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[0_8px_20px_-14px_rgba(180,55,35,0.9)]"
                           : "border-[#d4cabd] bg-[#fffaf3] text-[#292521] hover:-translate-y-0.5 hover:border-[#9f9487] hover:bg-white"
                       }`}
                     >
@@ -239,7 +260,7 @@ export function ExtendedEmailFilter({
 
         <div
           id={listId}
-          className="max-h-[42rem] overflow-auto border-y border-[#d9d0c3] bg-[#fffdf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e55f47]"
+          className="max-h-[min(42rem,65dvh)] overflow-auto border-y border-[#d9d0c3] bg-[#fffdf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent-ink)]"
           tabIndex={0}
           aria-label={`${filterSummary}的邮件列表，可横向滚动`}
         >
@@ -247,12 +268,13 @@ export function ExtendedEmailFilter({
             <caption className="sr-only">
               {filterSummary}的 3 个月邮件记录，按日期从新到旧排列
             </caption>
-            <thead className="sticky top-0 z-10 bg-[#28231f] text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#f8f2e9] shadow-[0_1px_0_rgba(255,255,255,0.12)]">
+            <thead className="sticky top-0 z-10 bg-[#28231f] text-xs font-bold uppercase tracking-[0.08em] text-[#f8f2e9] shadow-[0_1px_0_rgba(255,255,255,0.12)]">
               <tr>
                 <th scope="col" className="w-32 px-5 py-4">日期</th>
                 <th scope="col" className="w-44 px-5 py-4">品牌</th>
                 <th scope="col" className="w-40 px-5 py-4">主题</th>
                 <th scope="col" className="px-5 py-4">关键词</th>
+                <th scope="col" className="w-24 whitespace-nowrap px-5 py-4">原文</th>
               </tr>
             </thead>
             <tbody>
@@ -279,6 +301,19 @@ export function ExtendedEmailFilter({
                       {email.keywords.length > 0 ? email.keywords.join(" · ") : "—"}
                     </span>
                   </td>
+                  <td className="whitespace-nowrap border-b border-[#e5ddd2] px-5 py-4 align-middle">
+                    {email.url ? (
+                      <a
+                        href={email.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`查看 ${email.brand} ${email.date} 的邮件原文（新窗口打开）`}
+                        className="rounded-sm font-semibold text-[var(--accent-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2"
+                      >
+                        原文
+                      </a>
+                    ) : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -297,7 +332,7 @@ export function ExtendedEmailFilter({
               type="button"
               onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
               aria-controls={listId}
-              className="min-h-11 rounded-full border border-[#292521] bg-[#292521] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#e55f47] hover:border-[#e55f47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e55f47] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8]"
+              className="min-h-11 rounded-full border border-[#292521] bg-[#292521] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8]"
             >
               加载更多（剩余 {filteredEmails.length - visibleEmails.length} 封）
             </button>
