@@ -5,6 +5,10 @@
  * 更新数据时只改这个文件即可。
  */
 
+import aloYogaCollection from "../data-collection/aloyoga-2026-07-16-to-2026-10-15.json";
+import lululemonCollection from "../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
+import zaraCollection from "../data-collection/zara-2026-07-16-to-2026-10-15.json";
+
 export interface Week {
   id: string;
   label: string;
@@ -32,6 +36,19 @@ export interface Brand {
 export interface Word {
   text: string;
   count: number;
+}
+
+export interface ExtendedEmailRecord {
+  date: string;
+  theme: string;
+  keywords: string[];
+  url?: string;
+}
+
+export interface ExtendedBrandCollection {
+  name: string;
+  brandPage?: string;
+  emails: ExtendedEmailRecord[];
 }
 
 export const DATA = {
@@ -177,5 +194,37 @@ export const DATA = {
     "ALO Yoga、lululemon、Zara 完全避开价格战，用上新 + 生活方式 / 品类内容维持品牌调性。",
     "Temu 几乎不推商品本身，而是用返现 / Credits、清单与行动提醒等行为触发机制驱动复购与回访。",
     "各品牌每周均无断档；Halara、SHEIN、Temu 每日约 2–3 封，ALO 约 1–2 封，lululemon、Zara 低频。",
+  ],
+};
+
+// 独立追加的 3 个月逐封衍生数据；现有 DATA 的 3 周口径、总数及主题数保持不变。
+// 重叠窗口 2026-09-24 至 2026-10-15：Zara 8 vs DATA 7，ALO Yoga 28 vs DATA 27，lululemon 13 vs DATA 13。
+export const EXTENDED_3MONTH = {
+  meta: {
+    range: "2026-07-16 – 2026-10-15",
+    market: "美国市场",
+    source: "Milled",
+    brandCount: 3,
+    total: 215,
+  },
+  brands: [
+    {
+      name: zaraCollection.brand,
+      emails: zaraCollection.emails,
+    },
+    {
+      name: lululemonCollection.brand,
+      emails: lululemonCollection.emails,
+    },
+    {
+      name: aloYogaCollection.brand,
+      brandPage: aloYogaCollection.brandPage,
+      emails: aloYogaCollection.emails,
+    },
+  ] as ExtendedBrandCollection[],
+  reconciliation: [
+    { brand: "Zara", collected: 8, existing: 7, status: "difference-recorded" },
+    { brand: "ALO Yoga", collected: 28, existing: 27, status: "difference-recorded" },
+    { brand: "lululemon", collected: 13, existing: 13, status: "matched" },
   ],
 };
