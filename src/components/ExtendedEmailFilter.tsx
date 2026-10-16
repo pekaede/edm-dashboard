@@ -51,8 +51,16 @@ const ALL_EMAILS = EXTENDED_3MONTH.brands
   )
   .sort((a, b) => b.date.localeCompare(a.date));
 
-export function ExtendedEmailFilter() {
-  const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(null);
+export function ExtendedEmailFilter({
+  initialTheme,
+}: {
+  initialTheme?: string | null;
+}) {
+  const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(() =>
+    FILTER_THEMES.some((theme) => theme.key === initialTheme)
+      ? (initialTheme as FilterTheme)
+      : null,
+  );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const listId = useId();
 

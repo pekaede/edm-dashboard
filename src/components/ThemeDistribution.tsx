@@ -102,12 +102,11 @@ export function ThemeDistribution() {
               const textColor = getSliceTextColor(theme.key);
 
               return (
-                <g
+                <a
                   key={theme.key}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${theme.labelZh}: ${theme.count} 封 (${pct}%)`}
-                  className="cursor-pointer transition-all duration-200 focus-visible:outline-none"
+                  href={`#emails/${encodeURIComponent(theme.key)}`}
+                  aria-label={`查看${theme.labelZh}主题邮件：${theme.count} 封，占 ${pct}%`}
+                  className="group cursor-pointer focus:outline-none"
                   onMouseEnter={() => setHoveredKey(theme.key)}
                   onMouseLeave={() => setHoveredKey(null)}
                   onFocus={() => setHoveredKey(theme.key)}
@@ -118,7 +117,7 @@ export function ThemeDistribution() {
                     fill={THEME_COLORS[theme.key]}
                     stroke="#ffffff"
                     strokeWidth={isHovered ? "3" : "2"}
-                    className="transition-all duration-200"
+                    className="transition-all duration-200 group-focus-visible:stroke-slate-900"
                     style={{
                       filter: isHovered
                         ? "drop-shadow(0 4px 8px rgb(0 0 0 / 0.15))"
@@ -137,7 +136,7 @@ export function ThemeDistribution() {
                   >
                     {pct}%
                   </text>
-                </g>
+                </a>
               );
             })}
 
@@ -198,19 +197,19 @@ export function ThemeDistribution() {
           {sliceData.map(({ theme, pct }) => {
             const isHovered = hoveredKey === theme.key;
             return (
-              <button
-                type="button"
+              <a
                 key={theme.key}
+                href={`#emails/${encodeURIComponent(theme.key)}`}
                 onMouseEnter={() => setHoveredKey(theme.key)}
                 onMouseLeave={() => setHoveredKey(null)}
                 onFocus={() => setHoveredKey(theme.key)}
                 onBlur={() => setHoveredKey(null)}
-                className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-1.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-1.5 text-left no-underline transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                   isHovered
                     ? "border-slate-300 bg-slate-50 shadow-sm ring-1 ring-slate-200"
                     : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/60"
                 }`}
-                aria-pressed={isHovered}
+                aria-label={`查看${theme.labelZh}主题邮件：${theme.count} 封，占 ${pct}%`}
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
@@ -231,7 +230,7 @@ export function ThemeDistribution() {
                   <span className="font-semibold">{theme.count}</span>
                   <span className="ml-1 text-slate-600 text-[11px]">({pct}%)</span>
                 </span>
-              </button>
+              </a>
             );
           })}
         </div>

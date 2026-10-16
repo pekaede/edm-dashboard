@@ -6,6 +6,7 @@ import { CampaignOverview } from "./components/CampaignOverview";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
+import { ExtendedKeywordView } from "./components/ExtendedKeywordView";
 import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
 import { MarkdownReport } from "./components/MarkdownReport";
@@ -14,15 +15,41 @@ import { WordCloud } from "./components/WordCloud";
 import { DASHBOARD_THEME_STYLE } from "./components/dashboard";
 import type { Brand } from "./data";
 
-type View = "dashboard" | "report";
+type View = "dashboard" | "report" | "emails";
 
 function getViewFromHash(): View {
-  return window.location.hash === "#report" ? "report" : "dashboard";
+  if (window.location.hash === "#report") {
+    return "report";
+  }
+
+  if (
+    window.location.hash === "#emails" ||
+    window.location.hash.startsWith("#emails/")
+  ) {
+    return "emails";
+  }
+
+  return "dashboard";
+}
+
+function getEmailThemeFromHash(): string | null {
+  const themePath = window.location.hash.slice("#emails/".length);
+
+  if (!window.location.hash.startsWith("#emails/") || !themePath) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(themePath);
+  } catch {
+    return themePath;
+  }
 }
 
 export default function App() {
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [view, setView] = useState<View>(getViewFromHash);
+  const emailTheme = view === "emails" ? getEmailThemeFromHash() : null;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -67,6 +94,17 @@ export default function App() {
             >
               OnePage 报告
             </a>
+            <a
+              href="#emails"
+              aria-current={view === "emails" ? "page" : undefined}
+              className={`view-switcher-link ${
+                view === "emails"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`}
+            >
+              邮件视图
+            </a>
           </div>
         </nav>
 
@@ -96,13 +134,32 @@ export default function App() {
             </div>
 
             <CalendarView />
-
-            <ExtendedEmailFilter />
-
+            <ExtendedKeywordView />
             <DashboardFooter />
           </>
-        ) : (
+        ) : view === "report" ? (
           <MarkdownReport />
+        ) : (
+          <section
+            className="space-y-4 sm:space-y-5"
+            data-email-theme={emailTheme ?? undefined}
+            aria-label="邮件视图"
+          >
+            <div>
+              <a
+                href="#dashboard"
+                className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                aria-label="返回数据看板"
+              >
+                ← 回到看板
+              </a>
+            </div>
+
+            <ExtendedEmailFilter
+              key={emailTheme ?? "all"}
+              initialTheme={emailTheme}
+            />
+          </section>
         )}
       </main>
 
