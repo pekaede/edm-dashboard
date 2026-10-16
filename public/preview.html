@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>品牌营销触达趋势看板 · 设计预览</title>
+    <style>
+      :root {
+        --paper: #f3eee4;
+        --paper-deep: #e8dfd1;
+        --ink: #151412;
+        --muted: #706b62;
+        --line: rgba(21, 20, 18, 0.17);
+        --coral: #ef6a4b;
+        --coral-soft: #f7a08c;
+        --teal: #187f79;
+        --teal-soft: #77aaa1;
+        --amber: #d79a21;
+        --cream: #fffaf0;
+        --white: #fffdf7;
+        --shadow: 0 18px 50px rgba(38, 29, 17, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 2%, rgba(239, 106, 75, 0.13), transparent 24rem),
+          linear-gradient(rgba(21, 20, 18, 0.035) 1px, transparent 1px),
+          var(--paper);
+        background-size: auto, 100% 32px, auto;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button, input { font: inherit; }
+      button { color: inherit; }
+      a { color: inherit; }
+
+      .shell {
+        width: min(1440px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 32px 0 72px;
+      }
+
+      .masthead {
+        border-top: 5px solid var(--ink);
+        padding-top: 18px;
+      }
+
+      .masthead-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .edition { display: flex; align-items: center; gap: 12px; }
+      .edition-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+        gap: 64px;
+        align-items: end;
+        padding: 64px 0 46px;
+      }
+
+      .kicker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        color: var(--coral);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.22em;
+      }
+
+      .kicker::before { content: ""; width: 32px; height: 2px; background: currentColor; }
+
+      h1 {
+        max-width: 950px;
+        margin: 0;
+        font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+        font-size: clamp(52px, 7.6vw, 116px);
+        font-weight: 500;
+        letter-spacing: -0.065em;
+        line-height: 0.94;
+      }
+
+      .hero-aside {
+        padding-left: 24px;
+        border-left: 1px solid var(--line);
+      }
+
+      .hero-aside p {
+        margin: 0 0 22px;
+        color: #4e4a43;
+        font-family: Georgia, "Noto Serif SC", serif;
+        font-size: 19px;
+        line-height: 1.65;
+      }
+
+      .meta-row { display: grid; gap: 10px; }
+      .meta-item { display: flex; justify-content: space-between; gap: 16px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; }
+      .meta-item span:first-child { color: var(--muted); }
+      .meta-item span:last-child { font-weight: 750; text-align: right; }
+
+      .pulse-rule {
+        position: relative;
+        height: 54px;
+        margin-bottom: 42px;
+        overflow: hidden;
+      }
+      .pulse-rule::before { content: ""; position: absolute; inset: 26px 0 auto; height: 1px; background: var(--ink); opacity: 0.65; }
+      .pulse-rule svg { position: relative; display: block; width: 100%; height: 54px; color: var(--coral); }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 88px;
+      }
+
+      .kpi {
+        min-height: 210px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        background: rgba(255, 250, 240, 0.62);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+      .kpi:hover { transform: translateY(-4px); background: var(--cream); box-shadow: var(--shadow); }
+      .kpi:nth-child(2) { background: var(--ink); color: var(--cream); }
+      .kpi:nth-child(2) .kpi-label, .kpi:nth-child(2) .kpi-foot { color: rgba(255, 250, 240, 0.62); }
+      .kpi:nth-child(4) { background: var(--coral); border-color: var(--coral); }
+      .kpi:nth-child(4) .kpi-label, .kpi:nth-child(4) .kpi-foot { color: rgba(21, 20, 18, 0.65); }
+      .kpi-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+      .kpi-index { font-family: Georgia, serif; font-size: 13px; font-style: italic; opacity: 0.65; }
+      .mini-wave { width: 54px; height: 18px; }
+      .kpi-label { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: 0.14em; }
+      .kpi-value { margin: 15px 0 8px; font-family: Georgia, serif; font-size: clamp(46px, 5vw, 72px); line-height: 0.95; }
+      .kpi-unit { margin-left: 6px; font-family: inherit; font-size: 15px; font-weight: 700; }
+      .kpi-foot { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+      .section { margin-top: 104px; }
+      .section-head {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr) minmax(220px, 0.38fr);
+        gap: 24px;
+        align-items: start;
+        margin-bottom: 34px;
+      }
+      .section-no { color: var(--coral); font: italic 18px Georgia, serif; }
+      .section-title { margin: 0; font: 500 clamp(32px, 4vw, 56px)/1.04 Georgia, "Noto Serif SC", serif; letter-spacing: -0.035em; }
+      .section-note { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+
+      .paper-card { border: 1px solid var(--line); background: rgba(255, 253, 247, 0.72); box-shadow: var(--shadow); }
+      .weekly-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; }
+      .weekly-chart { padding: 42px 42px 36px; }
+      .weekly-side { padding: 38px 30px; border-left: 1px solid var(--line); background: rgba(232, 223, 209, 0.46); }
+
+      .chart-axis { display: grid; grid-template-columns: 86px minmax(0, 1fr) 54px; gap: 18px; margin-bottom: 12px; color: var(--muted); font-size: 10px; letter-spacing: 0.08em; }
+      .axis-ticks { display: flex; justify-content: space-between; }
+      .week-row { display: grid; grid-template-columns: 86px minmax(0, 1fr) 54px; gap: 18px; align-items: center; padding: 20px 0; border-top: 1px solid var(--line); }
+      .week-name strong { display: block; font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
+      .week-name small { color: var(--muted); font-size: 11px; }
+      .stack-track { position: relative; height: 38px; background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(21, 20, 18, 0.09) calc(25% - 1px) 25%); }
+      .stack-bar { display: flex; height: 100%; width: var(--width); overflow: hidden; animation: grow 850ms cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+      @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      .stack-seg { min-width: 2px; height: 100%; transition: filter 160ms ease, opacity 160ms ease; cursor: help; }
+      .stack-bar:hover .stack-seg { opacity: 0.45; }
+      .stack-bar .stack-seg:hover { opacity: 1; filter: brightness(1.05); }
+      .week-total { font: 500 28px Georgia, serif; text-align: right; }
+      .legend { display: grid; gap: 14px; }
+      .legend-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 12px; }
+      .legend-name { display: flex; align-items: center; gap: 9px; }
+      .swatch { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+      .legend-value { font-variant-numeric: tabular-nums; font-weight: 800; }
+      .side-label { margin: 0 0 22px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 0.16em; }
+      .side-total { margin: 32px 0 0; padding-top: 22px; border-top: 1px solid var(--line); }
+      .side-total strong { display: block; font: 500 48px Georgia, serif; }
+      .side-total span { color: var(--muted); font-size: 11px; }
+
+      .split-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); gap: 22px; }
+      .calendar-card { padding: 34px; }
+      .card-eyebrow { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 28px; font-size: 11px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
+      .card-eyebrow span:last-child { color: var(--muted); font-weight: 600; letter-spacing: 0.03em; text-transform: none; }
+      .calendar-grid { display: grid; grid-template-columns: repeat(8, minmax(38px, 1fr)); gap: 9px; }
+      .day-head { padding-bottom: 6px; color: var(--muted); font-size: 10px; text-align: center; }
+      .day {
+        aspect-ratio: 1;
+        min-height: 54px;
+        padding: 8px;
+        border: 1px solid rgba(21, 20, 18, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: color-mix(in srgb, var(--teal) var(--heat), var(--cream));
+        transition: transform 150ms ease, border-color 150ms ease;
+        cursor: default;
+      }
+      .day:hover { transform: scale(1.06); border-color: var(--ink); z-index: 2; }
+      .day-date { font-size: 10px; font-weight: 750; }
+      .day-week { font: italic 10px Georgia, serif; opacity: 0.66; }
+      .calendar-caption { display: flex; justify-content: space-between; gap: 18px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
+      .heat-key { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+      .heat-key i { display: block; width: 14px; height: 14px; border: 1px solid rgba(21,20,18,.08); }
+
+      .donut-card { padding: 34px; background: var(--ink); color: var(--cream); }
+      .donut-card .card-eyebrow span:last-child { color: rgba(255,250,240,.5); }
+      .donut-wrap { position: relative; width: min(100%, 360px); margin: 8px auto 24px; }
+      .donut-wrap svg { display: block; width: 100%; transform: rotate(-90deg); overflow: visible; }
+      .donut-wrap circle { fill: none; stroke-width: 18; transition: opacity 160ms ease, stroke-width 160ms ease; }
+      .donut-wrap svg:hover circle { opacity: 0.38; }
+      .donut-wrap svg circle:hover { opacity: 1; stroke-width: 22; }
+      .donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+      .donut-center strong { font: 500 58px Georgia, serif; line-height: 0.9; }
+      .donut-center span { margin-top: 8px; color: rgba(255,250,240,.55); font-size: 11px; letter-spacing: .12em; }
+      .theme-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+      .theme-item { display: grid; grid-template-columns: 9px 1fr auto; gap: 9px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,250,240,.18); font-size: 11px; }
+      .theme-item b { font: 500 18px Georgia, serif; }
+
+      .heat-table-card { padding: 16px 30px 28px; overflow-x: auto; }
+      .heat-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+      .heat-table th, .heat-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); text-align: center; }
+      .heat-table thead th { color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+      .heat-table th:first-child, .heat-table td:first-child { width: 180px; text-align: left; }
+      .heat-table th:last-child, .heat-table td:last-child { text-align: right; }
+      .brand-cell { font: 500 19px Georgia, serif; }
+      .heat-number { display: grid; place-items: center; width: 100%; min-height: 42px; background: color-mix(in srgb, var(--cell-color) var(--alpha), var(--cream)); font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .row-total { font: 500 24px Georgia, serif; }
+
+      .cloud-insight-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 22px; }
+      .word-card { min-height: 570px; padding: 36px; position: relative; overflow: hidden; }
+      .word-card::after { content: ""; position: absolute; width: 220px; height: 220px; right: -90px; bottom: -90px; border: 1px solid var(--coral); border-radius: 50%; box-shadow: 0 0 0 28px rgba(239,106,75,.08), 0 0 0 56px rgba(239,106,75,.04); }
+      .word-cloud { min-height: 450px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 8px 14px; padding: 26px 12px; }
+      .word { display: inline-block; color: var(--ink); font-family: Georgia, serif; font-size: var(--size); line-height: 1; transform: rotate(var(--rotate)); opacity: var(--opacity); transition: color 150ms ease, transform 150ms ease; cursor: default; }
+      .word:nth-child(4n+1) { color: var(--coral); }
+      .word:nth-child(5n+2) { color: var(--teal); }
+      .word:nth-child(7n) { color: #9c6b0d; }
+      .word:hover { transform: rotate(0) scale(1.12); opacity: 1; }
+      .insights { display: grid; gap: 12px; }
+      .insight {
+        min-height: 130px;
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr);
+        border: 1px solid var(--line);
+        background: rgba(255, 253, 247, 0.74);
+        transition: transform 160ms ease, background 160ms ease;
+      }
+      .insight:hover { transform: translateX(-5px); background: var(--cream); }
+      .insight-no { display: grid; place-items: center; border-right: 1px solid var(--line); color: var(--coral); font: italic 24px Georgia, serif; }
+      .insight-text { margin: 0; padding: 24px 26px; font-family: Georgia, "Noto Serif SC", serif; font-size: 17px; line-height: 1.7; }
+
+      footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 96px; padding-top: 22px; border-top: 3px solid var(--ink); color: var(--muted); font-size: 11px; line-height: 1.6; }
+      footer strong { color: var(--ink); }
+
+      .tooltip {
+        position: fixed;
+        z-index: 20;
+        pointer-events: none;
+        padding: 9px 11px;
+        border: 1px solid rgba(255,255,255,.25);
+        background: var(--ink);
+        color: var(--cream);
+        box-shadow: 0 10px 30px rgba(0,0,0,.18);
+        font-size: 11px;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 120ms ease, transform 120ms ease;
+      }
+      .tooltip.show { opacity: 1; transform: translateY(0); }
+
+      @media (max-width: 1050px) {
+        .hero { grid-template-columns: 1fr; gap: 32px; }
+        .hero-aside { max-width: 560px; }
+        .kpis { grid-template-columns: 1fr 1fr; }
+        .section-head { grid-template-columns: 64px minmax(0, 1fr); }
+        .section-note { grid-column: 2; }
+        .weekly-layout { grid-template-columns: 1fr; }
+        .weekly-side { border-left: 0; border-top: 1px solid var(--line); }
+        .split-grid, .cloud-insight-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 680px) {
+        .shell { width: min(100% - 28px, 1440px); padding-top: 18px; }
+        .masthead-top { align-items: flex-start; }
+        .masthead-top > span:last-child { text-align: right; }
+        .hero { padding: 44px 0 34px; }
+        h1 { font-size: clamp(48px, 17vw, 76px); }
+        .kpis { grid-template-columns: 1fr; margin-bottom: 64px; }
+        .kpi { min-height: 175px; }
+        .section { margin-top: 72px; }
+        .section-head { grid-template-columns: 44px minmax(0,1fr); gap: 12px; }
+        .section-title { font-size: 34px; }
+        .weekly-chart { padding: 24px 18px; }
+        .weekly-side, .calendar-card, .donut-card, .word-card { padding: 24px 20px; }
+        .chart-axis, .week-row { grid-template-columns: 62px minmax(0,1fr) 35px; gap: 10px; }
+        .calendar-grid { grid-template-columns: repeat(4, 1fr); }
+        .day-head { display: none; }
+        .theme-list { grid-template-columns: 1fr; }
+        .cloud-insight-grid { gap: 14px; }
+        .insight { grid-template-columns: 52px minmax(0,1fr); }
+        .insight-text { padding: 20px; font-size: 15px; }
+        footer { flex-direction: column; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="masthead-top">
+          <div class="edition"><span class="edition-dot"></span><span>Market Signals / No. 03</span></div>
+          <span>美国市场 · Milled · 美东时间</span>
+        </div>
+
+        <div class="hero">
+          <div>
+            <div class="kicker">2026 秋季观察</div>
+            <h1>品牌营销触达趋势看板</h1>
+          </div>
+          <aside class="hero-aside">
+            <p>从发送密度、主题结构与高频词中，读出六个品牌不同的营销触达方式。</p>
+            <div class="meta-row">
+              <div class="meta-item"><span>观察窗口</span><span>2026-09-24 — 2026-10-15</span></div>
+              <div class="meta-item"><span>样本范围</span><span>6 品牌 / 196 封</span></div>
+              <div class="meta-item"><span>数据来源</span><span>Milled 品牌页收录</span></div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="pulse-rule" aria-hidden="true">
+          <svg viewBox="0 0 1440 54" preserveAspectRatio="none">
+            <path d="M0 27 H130 L148 27 L158 18 L168 36 L180 6 L194 45 L208 27 H360 L372 27 L381 21 L391 33 L403 11 L416 41 L430 27 H650 L662 27 L674 13 L686 38 L699 4 L713 47 L727 27 H950 L963 27 L975 20 L985 34 L999 9 L1012 43 L1025 27 H1210 L1222 27 L1232 17 L1243 37 L1255 7 L1270 45 L1285 27 H1440" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" />
+          </svg>
+        </div>
+      </header>
+
+      <section class="kpis" aria-label="关键指标">
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-index">01</span><svg class="mini-wave" viewBox="0 0 54 18"><path d="M0 9h12l4-6 5 13 6-12 5 8 4-3h18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div><div class="kpi-label">总触达样本</div><div class="kpi-value">196<span class="kpi-unit">封</span></div></div>
+          <div class="kpi-foot">近 3 周品牌页可见收录邮件</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-index">02</span><svg class="mini-wave" viewBox="0 0 54 18"><path d="M0 9h12l4-6 5 13 6-12 5 8 4-3h18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div><div class="kpi-label">观察品牌</div><div class="kpi-value">6<span class="kpi-unit">个</span></div></div>
+          <div class="kpi-foot">横跨运动生活方式与大众电商</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-index">03</span><svg class="mini-wave" viewBox="0 0 54 18"><path d="M0 9h12l4-6 5 13 6-12 5 8 4-3h18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div><div class="kpi-label">连续观察</div><div class="kpi-value">22<span class="kpi-unit">天</span></div></div>
+          <div class="kpi-foot">W1 / W2 各 7 天，W3 覆盖 8 天</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-index">04</span><svg class="mini-wave" viewBox="0 0 54 18"><path d="M0 9h12l4-6 5 13 6-12 5 8 4-3h18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div><div class="kpi-label">首要主题</div><div class="kpi-value">67<span class="kpi-unit">封</span></div></div>
+          <div class="kpi-foot">价格促销，占全部样本 34.2%</div>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <span class="section-no">01 / 04</span>
+          <h2 class="section-title">每周触达，节奏平稳但打法分明</h2>
+          <p class="section-note">三周总量为 64、63、69 封。堆叠长度代表周总量，颜色代表品牌贡献；W3 多覆盖一天，不宜直接解读为日均强度上升。</p>
+        </div>
+        <div class="paper-card weekly-layout">
+          <div class="weekly-chart" id="weeklyChart"></div>
+          <aside class="weekly-side">
+            <p class="side-label">BRAND SHARE / 196</p>
+            <div class="legend" id="brandLegend"></div>
+            <div class="side-total"><strong>69</strong><span>W3 为窗口内最高周总量</span></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <span class="section-no">02 / 04</span>
+          <h2 class="section-title">让日期成为版面，而不是拥挤的控件</h2>
+          <p class="section-note">左侧日历以周级真实总量映射到对应日期格，呈现观察窗口与节奏区间；右侧环形图展示 196 封邮件的主题构成。</p>
+        </div>
+        <div class="split-grid">
+          <article class="paper-card calendar-card">
+            <div class="card-eyebrow"><span>Calendar field</span><span>2026.09.24 — 10.15</span></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div class="calendar-caption">
+              <span>说明：`src/data.ts` 提供周级汇总，日期格颜色使用所在周总量映射，不表示单日发信数。</span>
+              <span class="heat-key"><i style="background:#edf3ec"></i><i style="background:#bad5cb"></i><i style="background:#6ca99d"></i><i style="background:#187f79"></i>低 → 高</span>
+            </div>
+          </article>
+          <article class="paper-card donut-card">
+            <div class="card-eyebrow"><span>Theme mix</span><span>单封邮件仅归一个主题</span></div>
+            <div class="donut-wrap" id="donutWrap"></div>
+            <div class="theme-list" id="themeList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <span class="section-no">03 / 04</span>
+          <h2 class="section-title">品牌与周次，一眼看出谁在制造音量</h2>
+          <p class="section-note">每个色块均对应 `src/data.ts` 中的品牌周度封数。SHEIN 三周持续居首，Halara 与 Temu 构成第二梯队。</p>
+        </div>
+        <div class="paper-card heat-table-card">
+          <table class="heat-table" aria-label="品牌每周邮件数量热力表">
+            <thead><tr><th>品牌</th><th>W1 · 9/24–9/30</th><th>W2 · 10/1–10/7</th><th>W3 · 10/8–10/15</th><th>总计</th></tr></thead>
+            <tbody id="heatBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <span class="section-no">04 / 04</span>
+          <h2 class="section-title">语言留下痕迹，策略藏在重复里</h2>
+          <p class="section-note">词频按“含该词的邮件数”计算，同一词在同一封邮件出现多次只计一次。字号映射出现频次。</p>
+        </div>
+        <div class="cloud-insight-grid">
+          <article class="paper-card word-card">
+            <div class="card-eyebrow"><span>Language signals</span><span>31 个高频词</span></div>
+            <div class="word-cloud" id="wordCloud"></div>
+          </article>
+          <aside class="insights" id="insightList" aria-label="关键洞察"></aside>
+        </div>
+      </section>
+
+      <footer>
+        <span><strong>品牌营销触达趋势看板</strong><br />数据来源：Milled（美国市场）</span>
+        <span>2026-09-24 — 2026-10-15（美东时间）<br />样本 196 封 · 每封邮件仅归一个主题</span>
+      </footer>
+    </main>
+
+    <div class="tooltip" id="tooltip" role="status"></div>
+
+    <script>
+      const data = {
+        total: 196,
+        weeks: [
+          { id: "W1", range: "9/24–9/30", total: 64, days: 7 },
+          { id: "W2", range: "10/1–10/7", total: 63, days: 7 },
+          { id: "W3", range: "10/8–10/15", total: 69, days: 8 }
+        ],
+        brands: [
+          { name: "Halara", weekly: [14, 14, 15], total: 43, color: "#ef6a4b" },
+          { name: "ALO Yoga", weekly: [8, 10, 9], total: 27, color: "#d79a21" },
+          { name: "SHEIN", weekly: [21, 20, 21], total: 62, color: "#187f79" },
+          { name: "Temu", weekly: [14, 15, 15], total: 44, color: "#6b5f52" },
+          { name: "lululemon", weekly: [4, 3, 6], total: 13, color: "#77aaa1" },
+          { name: "Zara", weekly: [3, 1, 3], total: 7, color: "#f7a08c" }
+        ],
+        themes: [
+          { name: "价格促销", count: 67, color: "#ef6a4b" },
+          { name: "行为触发", count: 47, color: "#d79a21" },
+          { name: "上新", count: 34, color: "#187f79" },
+          { name: "生活方式", count: 31, color: "#77aaa1" },
+          { name: "品类聚焦", count: 17, color: "#f1c46c" }
+        ],
+        words: [
+          ["New",31],["Off",21],["Up to",19],["Down",13],["Credit",12],["Deal",12],["Buy",11],["Required",11],["Fall",11],["Style",11],["Offer",10],["Sale",10],["Action",8],["Coupon",7],["Got",7],["Listing",7],["Please",7],["Start",7],["Under",7],["Arrivals",6],["Back",6],["Price",6],["Sent",6],["Drop",6],["Denim",5],["Good",5],["Less",5],["Little",5],["Thank",5],["Attention",4],["Zara",4]
+        ],
+        insights: [
+          "Halara 与 SHEIN 均以价格促销为核心，但 Halara 是“捆绑价 + 闪购”模板高频轰炸，SHEIN 是“折扣 + 内容 + 券提醒”组合。",
+          "ALO Yoga、lululemon、Zara 完全避开价格战，用上新 + 生活方式 / 品类内容维持品牌调性。",
+          "Temu 几乎不推商品本身，而是用返现 / Credits、清单与行动提醒等行为触发机制驱动复购与回访。",
+          "各品牌每周均无断档；Halara、SHEIN、Temu 每日约 2–3 封，ALO 约 1–2 封，lululemon、Zara 低频。"
+        ]
+      };
+
+      const tooltip = document.getElementById("tooltip");
+      const showTip = (event, text) => {
+        tooltip.textContent = text;
+        tooltip.style.left = `${Math.min(event.clientX + 14, window.innerWidth - tooltip.offsetWidth - 16)}px`;
+        tooltip.style.top = `${Math.min(event.clientY + 14, window.innerHeight - tooltip.offsetHeight - 16)}px`;
+        tooltip.classList.add("show");
+      };
+      const hideTip = () => tooltip.classList.remove("show");
+
+      function renderWeekly() {
+        const max = Math.max(...data.weeks.map(week => week.total));
+        const chart = document.getElementById("weeklyChart");
+        chart.innerHTML = `
+          <div class="chart-axis"><span>周次</span><div class="axis-ticks"><span>0</span><span>20</span><span>40</span><span>60</span></div><span style="text-align:right">封</span></div>
+          ${data.weeks.map((week, weekIndex) => `
+            <div class="week-row">
+              <div class="week-name"><strong>${week.id}</strong><small>${week.range}</small></div>
+              <div class="stack-track">
+                <div class="stack-bar" style="--width:${(week.total / max) * 100}%">
+                  ${data.brands.map(brand => `<span class="stack-seg" data-tip="${brand.name} · ${brand.weekly[weekIndex]} 封" style="width:${(brand.weekly[weekIndex] / week.total) * 100}%;background:${brand.color}"></span>`).join("")}
+                </div>
+              </div>
+              <div class="week-total">${week.total}</div>
+            </div>`).join("")}`;
+
+        document.getElementById("brandLegend").innerHTML = data.brands.map(brand => `
+          <div class="legend-item"><span class="legend-name"><i class="swatch" style="background:${brand.color}"></i>${brand.name}</span><span class="legend-value">${brand.total}</span></div>
+        `).join("");
+      }
+
+      function renderCalendar() {
+        const grid = document.getElementById("calendarGrid");
+        const dates = [];
+        const start = new Date("2026-09-24T00:00:00Z");
+        for (let index = 0; index < 22; index++) {
+          const current = new Date(start);
+          current.setUTCDate(start.getUTCDate() + index);
+          const weekIndex = index < 7 ? 0 : index < 14 ? 1 : 2;
+          dates.push({
+            label: `${current.getUTCMonth() + 1}/${current.getUTCDate()}`,
+            weekday: ["日","一","二","三","四","五","六"][current.getUTCDay()],
+            week: data.weeks[weekIndex]
+          });
+        }
+        grid.innerHTML = dates.map(item => {
+          const heat = Math.round(24 + ((item.week.total - 63) / 6) * 58);
+          return `<div class="day" style="--heat:${heat}%" data-tip="${item.label} · ${item.week.id} 周总量 ${item.week.total} 封"><span class="day-date">${item.label} · ${item.weekday}</span><span class="day-week">${item.week.id}</span></div>`;
+        }).join("");
+      }
+
+      function renderDonut() {
+        const radius = 76;
+        const circumference = 2 * Math.PI * radius;
+        let offset = 0;
+        const circles = data.themes.map(theme => {
+          const length = theme.count / data.total * circumference;
+          const circle = `<circle cx="100" cy="100" r="${radius}" stroke="${theme.color}" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" data-tip="${theme.name} · ${theme.count} 封 · ${(theme.count / data.total * 100).toFixed(1)}%"></circle>`;
+          offset += length;
+          return circle;
+        }).join("");
+        document.getElementById("donutWrap").innerHTML = `<svg viewBox="0 0 200 200" aria-label="主题分布环形图">${circles}</svg><div class="donut-center"><strong>196</strong><span>主题样本</span></div>`;
+        document.getElementById("themeList").innerHTML = data.themes.map(theme => `
+          <div class="theme-item"><i class="swatch" style="background:${theme.color}"></i><span>${theme.name}</span><b>${theme.count}</b></div>
+        `).join("");
+      }
+
+      function renderHeatTable() {
+        const max = 21;
+        document.getElementById("heatBody").innerHTML = data.brands.map((brand, rowIndex) => `
+          <tr>
+            <td class="brand-cell">${brand.name}</td>
+            ${brand.weekly.map(value => `<td><span class="heat-number" style="--cell-color:${rowIndex % 2 ? '#d79a21' : '#187f79'};--alpha:${18 + value / max * 72}%">${value}</span></td>`).join("")}
+            <td class="row-total">${brand.total}</td>
+          </tr>
+        `).join("");
+      }
+
+      function renderWords() {
+        const min = Math.min(...data.words.map(word => word[1]));
+        const max = Math.max(...data.words.map(word => word[1]));
+        document.getElementById("wordCloud").innerHTML = data.words.map(([text, count], index) => {
+          const size = 14 + ((count - min) / (max - min)) * 52;
+          const rotate = [-4, 2, 0, 5, -2][index % 5];
+          const opacity = 0.58 + ((count - min) / (max - min)) * 0.42;
+          return `<span class="word" style="--size:${size}px;--rotate:${rotate}deg;--opacity:${opacity}" data-tip="${text} · ${count} 封">${text}</span>`;
+        }).join("");
+      }
+
+      function renderInsights() {
+        document.getElementById("insightList").innerHTML = data.insights.map((text, index) => `
+          <article class="insight"><div class="insight-no">0${index + 1}</div><p class="insight-text">${text}</p></article>
+        `).join("");
+      }
+
+      renderWeekly();
+      renderCalendar();
+      renderDonut();
+      renderHeatTable();
+      renderWords();
+      renderInsights();
+
+      document.addEventListener("pointermove", event => {
+        const target = event.target.closest("[data-tip]");
+        if (target) showTip(event, target.dataset.tip);
+        else hideTip();
+      });
+      document.addEventListener("pointerleave", hideTip);
+    </script>
+  </body>
+</html>
