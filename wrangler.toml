@@ -1,6 +1,6 @@
 # Cloudflare Pages 配置
 # 部署方式：Dashboard 里 Pages → 接 GitHub 仓库，构建命令 npm run build，输出目录 dist。
-# 或用 CLI：npx wrangler pages deploy dist --project-name edm-competitor-dashboard
-name = "edm-competitor-dashboard"
+# 或用 CLI：npx wrangler pages deploy dist --project-name edm-dashboard
+name = "edm-dashboard"
 compatibility_date = "2026-10-16"
 pages_build_output_dir = "dist"
