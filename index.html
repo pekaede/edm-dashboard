@@ -1,85 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EDM 竞品调研看板</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="wrap">
-      <h1 id="page-title">EDM 竞品调研看板</h1>
-      <p id="page-subtitle" class="subtitle"></p>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="kpis" id="kpis"></section>
-
-    <section class="card">
-      <h2>品牌 × 周 × Campaign 主题</h2>
-      <p class="hint">单元格数字为该品牌当周邮件封数，颜色越深封数越多。</p>
-      <div class="table-wrap">
-        <table id="brand-week-table">
-          <thead>
-            <tr>
-              <th>Brand</th>
-              <th>Week 1<br /><span class="th-sub">9/24–9/30</span></th>
-              <th>Week 2<br /><span class="th-sub">10/1–10/7</span></th>
-              <th>Week 3<br /><span class="th-sub">10/8–10/15</span></th>
-              <th>合计</th>
-              <th>日均</th>
-              <th>主要策略</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <details class="details">
-        <summary>各品牌每周主要 Campaign 主题</summary>
-        <div id="campaign-list"></div>
-      </details>
-    </section>
-
-    <section class="grid-two">
-      <div class="card">
-        <h2>内容结构分布</h2>
-        <p class="hint">196 封邮件，每封只归一类。</p>
-        <div class="pie-row">
-          <svg id="pie" viewBox="0 0 240 240" role="img" aria-label="内容结构分布饼图"></svg>
-          <ul id="pie-legend" class="legend"></ul>
-        </div>
-      </div>
-      <div class="card">
-        <h2>各品牌内容结构</h2>
-        <p class="hint">每行 = 该品牌 3 周邮件的主题占比。</p>
-        <div id="brand-mix"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>主题行高频词云</h2>
-      <p class="hint">统计口径：含该词的邮件数，同一词在同一主题出现多次只计 1 次；字号越大，出现邮件越多。</p>
-      <div id="word-cloud" class="cloud"></div>
-      <details class="details">
-        <summary>Top 词频明细</summary>
-        <ol id="word-list" class="word-list"></ol>
-      </details>
-    </section>
-
-    <section class="card">
-      <h2>关键洞察</h2>
-      <ul id="insights" class="insights"></ul>
-    </section>
-
-    <footer class="foot">
-      <p>数据来源：Milled（美国市场）· 2026-09-24 至 2026-10-15（美东时间）· 样本 196 封</p>
-      <p>口径说明：计数为 Milled 品牌页在窗口内可见的收录邮件数，非品牌向全量收件人的发送量；主题分类为按主题行 + 正文主推内容判定，每封只归一类；本页不引用任何竞品原始文案。</p>
-    </footer>
-  </main>
-
-  <script src="data.js"></script>
-  <script src="app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EDM 竞品调研看板</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

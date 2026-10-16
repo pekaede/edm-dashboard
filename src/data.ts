@@ -4,7 +4,37 @@
  * 非品牌向全量收件人的发送量。词频按“含该词的邮件数”统计，同一词在同一主题出现多次只计 1 次。
  * 更新数据时只改这个文件即可。
  */
-window.DASHBOARD_DATA = {
+
+export interface Week {
+  id: string;
+  label: string;
+  range: string;
+}
+
+export interface Theme {
+  key: string;
+  label: string;
+  labelZh: string;
+  count: number;
+  color: string;
+}
+
+export interface Brand {
+  name: string;
+  weekly: number[];
+  total: number;
+  perDay: number;
+  strategy: string;
+  themes: Record<string, number>;
+  campaigns: string[];
+}
+
+export interface Word {
+  text: string;
+  count: number;
+}
+
+export const DATA = {
   meta: {
     title: "EDM 竞品调研看板",
     range: "2026-09-24 – 2026-10-15",
@@ -13,21 +43,21 @@ window.DASHBOARD_DATA = {
     source: "Milled",
     total: 196,
     brandCount: 6,
-    weekCount: 3
+    weekCount: 3,
   },
   weeks: [
     { id: "W1", label: "Week 1", range: "9/24–9/30" },
     { id: "W2", label: "Week 2", range: "10/1–10/7" },
-    { id: "W3", label: "Week 3", range: "10/8–10/15" }
-  ],
+    { id: "W3", label: "Week 3", range: "10/8–10/15" },
+  ] as Week[],
   // 主题分类：price 价格促销 / behavior 行为触发 / new 上新 / lifestyle 生活方式 / category 品类聚焦
   themes: [
     { key: "price", label: "Price Promotion", labelZh: "价格促销", count: 67, color: "#e85d7a" },
     { key: "behavior", label: "Behavior-triggered", labelZh: "行为触发", count: 47, color: "#f0a030" },
     { key: "new", label: "New Arrival", labelZh: "上新", count: 34, color: "#3fa66a" },
     { key: "lifestyle", label: "Lifestyle Content", labelZh: "生活方式", count: 31, color: "#8e7cc3" },
-    { key: "category", label: "Category Focus", labelZh: "品类聚焦", count: 17, color: "#5b9bd5" }
-  ],
+    { key: "category", label: "Category Focus", labelZh: "品类聚焦", count: 17, color: "#5b9bd5" },
+  ] as Theme[],
   brands: [
     {
       name: "Halara",
@@ -39,8 +69,8 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "Buy 2 for $69 捆绑、Afterpay 联名折扣、牛仔折扣",
         "Style Day 大促、Buy 2 for $59/$69、Buy 3 for $59",
-        "BOGO、Up to 80% Off、$9.95 闪购、VIP Deal、牛仔 50% Off"
-      ]
+        "BOGO、Up to 80% Off、$9.95 闪购、VIP Deal、牛仔 50% Off",
+      ],
     },
     {
       name: "ALO Yoga",
@@ -52,8 +82,8 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "Idol 系列、Lounging Sets、Pastel Lookbook",
         "Bamboo Green、Ribbed Reset 胶囊、Drop Report、穿搭建议",
-        "Rich Bordeaux、Momentum 胶囊、Everyday Pant、Sweater Weather"
-      ]
+        "Rich Bordeaux、Momentum 胶囊、Everyday Pant、Sweater Weather",
+      ],
     },
     {
       name: "SHEIN",
@@ -65,8 +95,8 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "Up to 90% Off 万圣节、All under $9.99、SHEINsight 趋势",
         "Under $10、Up to 70%/90% Off、穿搭建议、券到期提醒",
-        "Halloween Deals、Brand Deals、券/个性化提醒、新品、家居品类"
-      ]
+        "Halloween Deals、Brand Deals、券/个性化提醒、新品、家居品类",
+      ],
     },
     {
       name: "Temu",
@@ -78,8 +108,8 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "$350 Credits、Thank-you reward、清单提醒、Attention Required",
         "Credit Back 返现确认、$210/$350 Credits、限时 Offer",
-        "Credit Back 确认、Thank-you reward、清单提醒、限时 Offer"
-      ]
+        "Credit Back 确认、Thank-you reward、清单提醒、限时 Offer",
+      ],
     },
     {
       name: "lululemon",
@@ -91,8 +121,8 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "Smooth Spacer 等上新、品类聚焦、生活方式内容",
         "上新为主、品类聚焦",
-        "上新、品类聚焦（Puffers）、生活方式内容"
-      ]
+        "上新、品类聚焦（Puffers）、生活方式内容",
+      ],
     },
     {
       name: "Zara",
@@ -104,10 +134,10 @@ window.DASHBOARD_DATA = {
       campaigns: [
         "上新、品类聚焦、生活方式内容各 1 封",
         "Re{form} Vol.1 生活方式内容",
-        "品类聚焦、生活方式内容"
-      ]
-    }
-  ],
+        "品类聚焦、生活方式内容",
+      ],
+    },
+  ] as Brand[],
   // 主题行高频词：count = 含该词的邮件数（6 品牌合并，196 封样本）
   words: [
     { text: "New", count: 31 },
@@ -140,12 +170,12 @@ window.DASHBOARD_DATA = {
     { text: "Little", count: 5 },
     { text: "Thank", count: 5 },
     { text: "Attention", count: 4 },
-    { text: "Zara", count: 4 }
-  ],
+    { text: "Zara", count: 4 },
+  ] as Word[],
   insights: [
     "Halara 与 SHEIN 均以价格促销为核心，但 Halara 是“捆绑价 + 闪购”模板高频轰炸，SHEIN 是“折扣 + 内容 + 券提醒”组合。",
     "ALO Yoga、lululemon、Zara 完全避开价格战，用上新 + 生活方式 / 品类内容维持品牌调性。",
     "Temu 几乎不推商品本身，而是用返现 / Credits、清单与行动提醒等行为触发机制驱动复购与回访。",
-    "各品牌每周均无断档；Halara、SHEIN、Temu 每日约 2–3 封，ALO 约 1–2 封，lululemon、Zara 低频。"
-  ]
+    "各品牌每周均无断档；Halara、SHEIN、Temu 每日约 2–3 封，ALO 约 1–2 封，lululemon、Zara 低频。",
+  ],
 };
