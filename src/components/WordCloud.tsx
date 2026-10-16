@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { DATA, EXTENDED_3MONTH, type Word } from "../data";
+import { useMemo, useState } from "react";
+import { DATA, type Word } from "../data";
+import { useExtendedEmails, type EmailRecord } from "../email-data";
 import { Card } from "./Card";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
 type TimeRange = "threeWeeks" | "threeMonths";
 type CategoryKey = "category" | "promotion" | "season" | "style" | "audience" | "other";
@@ -117,24 +119,20 @@ function formatWord(word: string): string {
     .join("");
 }
 
-function buildThreeMonthWords(): Word[] {
+function buildThreeMonthWords(emails: EmailRecord[]): Word[] {
   const counts = new Map<string, number>();
 
-  EXTENDED_3MONTH.brands.forEach((brand) => {
-    brand.emails.forEach((email) => {
-      const uniqueKeywords = new Set(email.keywords.map((keyword) => keyword.trim().toLowerCase()));
+  emails.forEach((email) => {
+    const uniqueKeywords = new Set(email.keywords.map((keyword) => keyword.trim().toLowerCase()));
 
-      uniqueKeywords.forEach((keyword) => {
-        if (!keyword || NOISE_WORDS.has(keyword)) return;
-        counts.set(keyword, (counts.get(keyword) ?? 0) + 1);
-      });
+    uniqueKeywords.forEach((keyword) => {
+      if (!keyword || NOISE_WORDS.has(keyword)) return;
+      counts.set(keyword, (counts.get(keyword) ?? 0) + 1);
     });
   });
 
   return Array.from(counts, ([text, count]) => ({ text: formatWord(text), count }));
 }
-
-const THREE_MONTH_WORDS = buildThreeMonthWords();
 
 function groupWords(
   words: Word[],
@@ -161,11 +159,14 @@ const THREE_WEEK_GROUPS = groupWords(
   THREE_WEEK_CATEGORIES,
   getThreeWeekCategory,
 );
-const THREE_MONTH_GROUPS = groupWords(
-  THREE_MONTH_WORDS,
-  THREE_MONTH_CATEGORIES,
-  (word) => getThreeMonthCategory(word.text.toLowerCase()),
-);
+
+export function buildThreeMonthGroups(emails: EmailRecord[]): GroupedCategory[] {
+  return groupWords(
+    buildThreeMonthWords(emails),
+    THREE_MONTH_CATEGORIES,
+    (word) => getThreeMonthCategory(word.text.toLowerCase()),
+  );
+}
 
 function getWordSize(count: number, words: Word[]): string {
   const counts = words.map((word) => word.count);
@@ -177,16 +178,22 @@ function getWordSize(count: number, words: Word[]): string {
 }
 
 export function WordCloud() {
+  const emailData = useExtendedEmails();
+  const { emails, meta, status, total } = emailData;
   const [timeRange, setTimeRange] = useState<TimeRange>("threeWeeks");
   const isThreeWeeks = timeRange === "threeWeeks";
-  const groupedWords = isThreeWeeks ? THREE_WEEK_GROUPS : THREE_MONTH_GROUPS;
+  const threeMonthGroups = useMemo(
+    () => !isThreeWeeks && status === "ready" ? buildThreeMonthGroups(emails) : [],
+    [emails, isThreeWeeks, status],
+  );
+  const groupedWords = isThreeWeeks ? THREE_WEEK_GROUPS : threeMonthGroups;
   const displayedWords = groupedWords.flatMap((category) => category.words);
   const title = isThreeWeeks
     ? `分类高频词 Top 10 · 三周窗口（${DATA.meta.total} 封）`
-    : `分类高频词 Top 10 · 三个月窗口（${EXTENDED_3MONTH.meta.total} 封）`;
+    : `分类高频词 Top 10 · 三个月窗口${status === "ready" ? `（${total} 封）` : ""}`;
   const hint = isThreeWeeks
     ? `${DATA.meta.range}；沿用现有分类，每类按含该词的邮件数倒序展示前 10 个。`
-    : `${EXTENDED_3MONTH.meta.range}；逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`;
+    : `${meta.range}；逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`;
 
   return (
     <Card title={title} hint={hint}>
@@ -225,64 +232,70 @@ export function WordCloud() {
           </div>
         </div>
 
-        <div className="divide-y divide-[#e2d7ca] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
-          {groupedWords.map((category) => {
-            const headingId = `word-category-${timeRange}-${category.key}`;
+        {!isThreeWeeks && status !== "ready" ? (
+          <div className="p-4 sm:p-5">
+            <ExtendedEmailsState {...emailData} />
+          </div>
+        ) : (
+          <div className="divide-y divide-[#e2d7ca] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
+            {groupedWords.map((category) => {
+              const headingId = `word-category-${timeRange}-${category.key}`;
 
-            return (
-              <section
-                key={category.key}
-                aria-labelledby={headingId}
-                className="min-w-0 py-5 first:pt-5 last:pb-5"
-              >
-                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h3
-                    id={headingId}
-                    className="flex items-center gap-2.5 text-sm font-bold tracking-wide text-[#292521]"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="h-3 w-1 shrink-0 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.label}
-                  </h3>
-                  <span className="shrink-0 text-xs tabular-nums text-[#746a60]">
-                    {category.total > MAX_WORDS_PER_CATEGORY
-                      ? `展示 ${category.words.length} / 共 ${category.total} 个词`
-                      : `${category.words.length} 个词`}
-                  </span>
-                </div>
-
-                <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-3 sm:gap-x-6 sm:gap-y-4">
-                  {category.words.map((word) => (
-                    <li key={word.text} className="min-w-0">
+              return (
+                <section
+                  key={category.key}
+                  aria-labelledby={headingId}
+                  className="min-w-0 py-5 first:pt-5 last:pb-5"
+                >
+                  <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3
+                      id={headingId}
+                      className="flex items-center gap-2.5 text-sm font-bold tracking-wide text-[#292521]"
+                    >
                       <span
-                        aria-label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}`}
-                        className="inline-block max-w-full whitespace-nowrap font-semibold tracking-tight transition-opacity hover:opacity-70"
-                        style={{
-                          color: "#1c1917",
-                          fontSize: getWordSize(word.count, displayedWords),
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        <span aria-hidden="true" className="break-words">
-                          {word.text}
-                        </span>
-                        <sup
-                          aria-hidden="true"
-                          className="ml-1 align-super font-mono text-[0.55em] font-bold tabular-nums"
+                        aria-hidden="true"
+                        className="h-3 w-1 shrink-0 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.label}
+                    </h3>
+                    <span className="shrink-0 text-xs tabular-nums text-[#746a60]">
+                      {category.total > MAX_WORDS_PER_CATEGORY
+                        ? `展示 ${category.words.length} / 共 ${category.total} 个词`
+                        : `${category.words.length} 个词`}
+                    </span>
+                  </div>
+
+                  <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-3 sm:gap-x-6 sm:gap-y-4">
+                    {category.words.map((word) => (
+                      <li key={word.text} className="min-w-0">
+                        <span
+                          aria-label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}`}
+                          className="inline-block max-w-full whitespace-nowrap font-semibold tracking-tight transition-opacity hover:opacity-70"
+                          style={{
+                            color: "#1c1917",
+                            fontSize: getWordSize(word.count, displayedWords),
+                            lineHeight: 1.1,
+                          }}
                         >
-                          {word.count}
-                        </sup>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+                          <span aria-hidden="true" className="break-words">
+                            {word.text}
+                          </span>
+                          <sup
+                            aria-hidden="true"
+                            className="ml-1 align-super font-mono text-[0.55em] font-bold tabular-nums"
+                          >
+                            {word.count}
+                          </sup>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -32,6 +32,8 @@ npm install
 npm run dev
 ```
 
+在本地 `.env` 中配置 `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY` 和 `VITE_EDM_DATA_SOURCE=supabase`；环境文件不纳入版本管理。部署时在构建环境中配置相同变量，修改后需重启开发服务或重新构建。
+
 ## 构建
 
 ```bash
@@ -42,7 +44,11 @@ npm run build
 
 ## 更新数据
 
-三周汇总维护在 `src/data.ts` 的 `DATA` 中；三个月逐封记录位于 `data-collection/`，由 `src/data.ts` 的 `EXTENDED_3MONTH` 引入并筛选。更新时需核对时间窗口、样本数与统计口径。
+三周汇总及编辑性内容固定保留在 `src/data.ts`，不依赖逐封记录，也不使用数据库重算旧 KPI、图表或三周词云。
+
+三个月记录默认由 `src/supabase.ts` 只读查询，经 `src/email-data.ts` 统一模型、共享缓存与完整性校验后用于邮件筛选、日历和三个月词云。查询窗口为 2026-07-16–2026-10-15，预期 770 封；未取齐时显示提示并支持全组件共享重试。
+
+本地回滚时设置 `VITE_EDM_DATA_SOURCE=json` 并重启或重新构建，才会懒加载 `src/email-data-json.ts` 和六份逐封 JSON（Temu 排除 `other`）。Supabase 构建不包含这些 JSON。更新时需核对时间窗口、样本数与统计口径，不覆盖旧三周快照。
 
 ## 部署到 Cloudflare Pages
 

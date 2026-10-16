@@ -1,7 +1,7 @@
 /**
  * 品牌营销触达趋势看板 - 90天日历视图数据层
  *
- * 数据源：data-collection/ 下 6 个品牌的 Milled 逐封衍生数据（JSON）与 src/data.ts EXTENDED_3MONTH
+ * 数据源：统一适配后的逐封邮件记录
  * 覆盖窗口：2026-07-16 至 2026-10-15（共 92 天）
  * 包含品牌（共 6 品牌，770 封消费者邮件）：
  *   - Zara（43 封）
@@ -14,34 +14,15 @@
  * 注：仅提供数据模型与导出接口，不含 UI 组件。
  */
 
-import aloRaw from "../data-collection/aloyoga-2026-07-16-to-2026-10-15.json";
-import halaraRaw from "../data-collection/halara-2026-07-16-to-2026-10-15.json";
-import luluRaw from "../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
-import sheinRaw from "../data-collection/shein-2026-07-16-to-2026-10-15.json";
-import temuRaw from "../data-collection/temu-2026-07-16-to-2026-10-15.json";
-import zaraRaw from "../data-collection/zara-2026-07-16-to-2026-10-15.json";
-import { EXTENDED_3MONTH } from "./data";
+import { BRAND_ORDER, EXTENDED_EMAIL_META, type EmailRecord } from "./email-data";
 
 // ==========================================
 // 类型定义
 // ==========================================
 
-export type BrandKey =
-  | "Zara"
-  | "lululemon"
-  | "ALO Yoga"
-  | "Halara"
-  | "Temu"
-  | "SHEIN";
+export type BrandKey = (typeof BRAND_ORDER)[number];
 
-export const CALENDAR_BRANDS: readonly BrandKey[] = [
-  "Zara",
-  "lululemon",
-  "ALO Yoga",
-  "Halara",
-  "Temu",
-  "SHEIN",
-] as const;
+export const CALENDAR_BRANDS: readonly BrandKey[] = BRAND_ORDER;
 
 export type CalendarThemeKey =
   | "price"
@@ -84,11 +65,8 @@ export const CALENDAR_KEYWORDS: readonly string[] = [
   "arrivals",
 ] as const;
 
-export interface CalendarEmail {
-  date: string; // YYYY-MM-DD
+export interface CalendarEmail extends EmailRecord {
   theme: CalendarThemeKey;
-  keywords: string[];
-  url?: string;
 }
 
 export interface BrandCalendarData {
@@ -96,7 +74,6 @@ export interface BrandCalendarData {
   source: string;
   market: string;
   note: string;
-  brandPage?: string;
   window: {
     start: string;
     end: string;
@@ -139,8 +116,8 @@ export interface OverlapComparisonItem {
 // 日期序列工具（生成 2026-07-16 至 2026-10-15 全部 92 天）
 // ==========================================
 
-export const CALENDAR_START_DATE = "2026-07-16";
-export const CALENDAR_END_DATE = "2026-10-15";
+export const CALENDAR_START_DATE = EXTENDED_EMAIL_META.windowStart;
+export const CALENDAR_END_DATE = EXTENDED_EMAIL_META.windowEnd;
 
 function generateDateRange(startStr: string, endStr: string): string[] {
   const dates: string[] = [];
@@ -163,23 +140,14 @@ export const CALENDAR_TOTAL_DAYS = CALENDAR_DATES.length; // 92 天
 // 数据转换与索引构建
 // ==========================================
 
-interface RawBrandMeta {
-  source?: string;
-  market?: string;
-  note?: string;
-  brandPage?: string;
-}
-
 function processBrand(
   brandName: BrandKey,
-  rawMeta: RawBrandMeta,
-  emailsInput: { date: string; theme: string; keywords: string[]; url?: string }[]
+  emailsInput: EmailRecord[]
 ): BrandCalendarData {
-  const emails: CalendarEmail[] = emailsInput.map((e) => ({
-    date: e.date,
-    theme: e.theme as CalendarThemeKey,
-    keywords: [...e.keywords],
-    url: e.url,
+  const emails: CalendarEmail[] = emailsInput.map((email) => ({
+    ...email,
+    theme: email.theme as CalendarThemeKey,
+    keywords: [...email.keywords],
   }));
 
   // 1. 每品牌每日封数（date → count，覆盖整个 92 天窗口，未发信日期置 0）
@@ -212,8 +180,8 @@ function processBrand(
   }
 
   const keywordIndex: Record<string, string[]> = {};
-  for (const kw of CALENDAR_KEYWORDS) {
-    keywordIndex[kw] = Array.from(keywordDatesMap[kw] || []).sort();
+  for (const keyword of Object.keys(keywordDatesMap)) {
+    keywordIndex[keyword] = Array.from(keywordDatesMap[keyword]).sort();
   }
 
   // 3. 主题汇总
@@ -235,10 +203,9 @@ function processBrand(
 
   return {
     brand: brandName,
-    source: rawMeta.source ?? "Milled",
-    market: rawMeta.market ?? "US",
-    note: rawMeta.note ?? "",
-    brandPage: rawMeta.brandPage,
+    source: EXTENDED_EMAIL_META.source,
+    market: "US",
+    note: "",
     window: {
       start: CALENDAR_START_DATE,
       end: CALENDAR_END_DATE,
@@ -253,123 +220,6 @@ function processBrand(
   };
 }
 
-// 建立 EXTENDED_3MONTH 的品牌邮件字典映射（严格对齐 EXTENDED_3MONTH）
-const extendedBrandsMap = new Map(
-  EXTENDED_3MONTH.brands.map((b) => [b.name, b])
-);
-
-// 实例化 6 个品牌数据
-export const ZARA_CALENDAR: BrandCalendarData = processBrand(
-  "Zara",
-  zaraRaw,
-  extendedBrandsMap.get("Zara")!.emails
-);
-
-export const LULULEMON_CALENDAR: BrandCalendarData = processBrand(
-  "lululemon",
-  luluRaw,
-  extendedBrandsMap.get("lululemon")!.emails
-);
-
-export const ALO_CALENDAR: BrandCalendarData = processBrand(
-  "ALO Yoga",
-  aloRaw,
-  extendedBrandsMap.get("ALO Yoga")!.emails
-);
-
-export const HALARA_CALENDAR: BrandCalendarData = processBrand(
-  "Halara",
-  halaraRaw,
-  extendedBrandsMap.get("Halara")!.emails
-);
-
-export const TEMU_CALENDAR: BrandCalendarData = processBrand(
-  "Temu",
-  temuRaw,
-  extendedBrandsMap.get("Temu")!.emails
-);
-
-export const SHEIN_CALENDAR: BrandCalendarData = processBrand(
-  "SHEIN",
-  sheinRaw,
-  extendedBrandsMap.get("SHEIN")!.emails
-);
-
-export const BRANDS_CALENDAR: Record<BrandKey, BrandCalendarData> = {
-  Zara: ZARA_CALENDAR,
-  lululemon: LULULEMON_CALENDAR,
-  "ALO Yoga": ALO_CALENDAR,
-  Halara: HALARA_CALENDAR,
-  Temu: TEMU_CALENDAR,
-  SHEIN: SHEIN_CALENDAR,
-};
-
-// ==========================================
-// 聚合数据汇总
-// ==========================================
-
-// 每日 6 品牌合计发信数
-export const DAILY_TOTALS: Record<string, number> = (() => {
-  const totals: Record<string, number> = {};
-  for (const date of CALENDAR_DATES) {
-    let daySum = 0;
-    for (const brand of Object.values(BRANDS_CALENDAR)) {
-      daySum += brand.dailyCounts[date] || 0;
-    }
-    totals[date] = daySum;
-  }
-  return totals;
-})();
-
-// 全品牌主题总汇总
-export const OVERALL_THEME_SUMMARY: Record<CalendarThemeKey, number> = (() => {
-  const summary: Record<CalendarThemeKey, number> = {
-    new: 0,
-    lifestyle: 0,
-    category: 0,
-    behavior: 0,
-    price: 0,
-    other: 0,
-  };
-  for (const brand of Object.values(BRANDS_CALENDAR)) {
-    for (const theme of CALENDAR_THEMES) {
-      summary[theme] += brand.themeSummary[theme] || 0;
-    }
-  }
-  return summary;
-})();
-
-// 分品牌每日封数映射表（便捷查询）
-export const DAILY_COUNTS_BY_BRAND: Record<BrandKey, Record<string, number>> = {
-  Zara: ZARA_CALENDAR.dailyCounts,
-  lululemon: LULULEMON_CALENDAR.dailyCounts,
-  "ALO Yoga": ALO_CALENDAR.dailyCounts,
-  Halara: HALARA_CALENDAR.dailyCounts,
-  Temu: TEMU_CALENDAR.dailyCounts,
-  SHEIN: SHEIN_CALENDAR.dailyCounts,
-};
-
-// 分品牌关键词索引映射表（便捷查询）
-export const KEYWORD_INDEX_BY_BRAND: Record<BrandKey, Record<string, string[]>> = {
-  Zara: ZARA_CALENDAR.keywordIndex,
-  lululemon: LULULEMON_CALENDAR.keywordIndex,
-  "ALO Yoga": ALO_CALENDAR.keywordIndex,
-  Halara: HALARA_CALENDAR.keywordIndex,
-  Temu: TEMU_CALENDAR.keywordIndex,
-  SHEIN: SHEIN_CALENDAR.keywordIndex,
-};
-
-// 分品牌主题汇总映射表（便捷查询）
-export const THEME_SUMMARY_BY_BRAND: Record<BrandKey, Record<CalendarThemeKey, number>> = {
-  Zara: ZARA_CALENDAR.themeSummary,
-  lululemon: LULULEMON_CALENDAR.themeSummary,
-  "ALO Yoga": ALO_CALENDAR.themeSummary,
-  Halara: HALARA_CALENDAR.themeSummary,
-  Temu: TEMU_CALENDAR.themeSummary,
-  SHEIN: SHEIN_CALENDAR.themeSummary,
-};
-
-// 元信息
 export const CALENDAR_META: CalendarDatasetMeta = {
   windowStart: CALENDAR_START_DATE,
   windowEnd: CALENDAR_END_DATE,
@@ -378,11 +228,43 @@ export const CALENDAR_META: CalendarDatasetMeta = {
   allDates: [...CALENDAR_DATES],
   keywordSet: [...CALENDAR_KEYWORDS],
   allThemes: [...CALENDAR_THEMES],
-  totalEmails: Object.values(BRANDS_CALENDAR).reduce(
-    (sum, b) => sum + b.totalEmails,
-    0
-  ),
+  totalEmails: EXTENDED_EMAIL_META.total,
 };
+
+export interface CalendarData {
+  brands: Record<BrandKey, BrandCalendarData>;
+  dailyTotals: Record<string, number>;
+  themeSummary: Record<CalendarThemeKey, number>;
+  keywordIndexByBrand: Record<BrandKey, Record<string, string[]>>;
+  dailyCountsByBrand: Record<BrandKey, Record<string, number>>;
+  themeSummaryByBrand: Record<BrandKey, Record<CalendarThemeKey, number>>;
+  meta: CalendarDatasetMeta;
+}
+
+export function buildCalendarData(emails: EmailRecord[]): CalendarData {
+  const brands = Object.fromEntries(CALENDAR_BRANDS.map((brand) => [
+    brand,
+    processBrand(brand, emails.filter((email) => email.brand === brand)),
+  ])) as Record<BrandKey, BrandCalendarData>;
+  const dailyTotals = Object.fromEntries(CALENDAR_DATES.map((date) => [
+    date,
+    CALENDAR_BRANDS.reduce((sum, brand) => sum + (brands[brand].dailyCounts[date] ?? 0), 0),
+  ]));
+  const themeSummary = Object.fromEntries(CALENDAR_THEMES.map((theme) => [
+    theme,
+    CALENDAR_BRANDS.reduce((sum, brand) => sum + (brands[brand].themeSummary[theme] ?? 0), 0),
+  ])) as Record<CalendarThemeKey, number>;
+
+  return {
+    brands,
+    dailyTotals,
+    themeSummary,
+    keywordIndexByBrand: Object.fromEntries(CALENDAR_BRANDS.map((brand) => [brand, brands[brand].keywordIndex])) as CalendarData["keywordIndexByBrand"],
+    dailyCountsByBrand: Object.fromEntries(CALENDAR_BRANDS.map((brand) => [brand, brands[brand].dailyCounts])) as CalendarData["dailyCountsByBrand"],
+    themeSummaryByBrand: Object.fromEntries(CALENDAR_BRANDS.map((brand) => [brand, brands[brand].themeSummary])) as CalendarData["themeSummaryByBrand"],
+    meta: { ...CALENDAR_META, totalEmails: emails.length },
+  };
+}
 
 // 重叠窗口对账记录（2026-09-24 至 2026-10-15）
 export const OVERLAP_AUDIT_DATA: OverlapComparisonItem[] = [
@@ -468,40 +350,50 @@ export interface CalendarValidationResult {
 }
 
 /**
- * 校验日历数据层与 EXTENDED_3MONTH 的数据合法性：
+ * 校验日历聚合与传入邮件记录的数据合法性：
  * 1. 总封数 === 770
- * 2. 6 品牌封数各自分别与 EXTENDED_3MONTH 一致
- * 3. 6 品牌主题分布各自分别与 EXTENDED_3MONTH 一致
+ * 2. 6 品牌封数各自分别与传入邮件一致
+ * 3. 6 品牌主题分布各自分别与传入邮件一致
  * 4. 每日封数完整覆盖 92 天窗口，无缺失日期，各日封数累加与总量守恒
  * 5. 关键词索引日期在窗口内升序排列
  */
-export function validateCalendarData(): CalendarValidationResult {
+export function validateCalendarData(emails: EmailRecord[], built: CalendarData): CalendarValidationResult {
   const errors: string[] = [];
-  const expectedTotalEmails = EXTENDED_3MONTH.meta.total; // 770
-  const expectedBrandsCount = EXTENDED_3MONTH.brands.length; // 6
+  const expectedTotalEmails = EXTENDED_EMAIL_META.total;
+  const expectedBrandsCount = CALENDAR_BRANDS.length;
+  const identities = new Set<string>();
+
+  for (const email of emails) {
+    const identity = `${email.brand}-${email.date}-${email.source_index}`;
+    if (identities.has(identity)) errors.push("邮件存在重复标识。");
+    identities.add(identity);
+    if (!CALENDAR_BRANDS.includes(email.brand as BrandKey)) errors.push("邮件包含未知品牌。");
+    if (!CALENDAR_DATES.includes(email.date)) errors.push("邮件日期不在统计窗口内。");
+    if (!CALENDAR_THEMES.includes(email.theme as CalendarThemeKey)) errors.push("邮件包含未知主题。");
+  }
+  if (emails.length !== expectedTotalEmails) {
+    errors.push(`邮件未取齐（已取 ${emails.length} / ${expectedTotalEmails} 封）。`);
+  }
+  if (built.meta.totalEmails !== emails.length) errors.push("日历元数据总数不一致。");
 
   let calculatedTotalEmails = 0;
   const brandValidations: Partial<Record<BrandKey, CalendarBrandValidation>> = {};
 
   for (const brandName of CALENDAR_BRANDS) {
     const brandErrors: string[] = [];
-    const brandData = BRANDS_CALENDAR[brandName];
-    const expectedBrand = EXTENDED_3MONTH.brands.find((b) => b.name === brandName);
+    const brandData = built.brands[brandName];
+    const expectedEmails = emails.filter((email) => email.brand === brandName);
 
     if (!brandData) {
-      errors.push(`品牌 ${brandName} 缺失于 BRANDS_CALENDAR`);
-      continue;
-    }
-    if (!expectedBrand) {
-      errors.push(`品牌 ${brandName} 缺失于 EXTENDED_3MONTH`);
+      errors.push(`品牌 ${brandName} 缺失于日历聚合`);
       continue;
     }
 
     calculatedTotalEmails += brandData.totalEmails;
-    const countMatch = brandData.totalEmails === expectedBrand.emails.length;
+    const countMatch = brandData.totalEmails === expectedEmails.length;
     if (!countMatch) {
       brandErrors.push(
-        `总封数不一致: calendar=${brandData.totalEmails}, expected=${expectedBrand.emails.length}`
+        `总封数不一致: calendar=${brandData.totalEmails}, expected=${expectedEmails.length}`
       );
     }
 
@@ -516,9 +408,13 @@ export function validateCalendarData(): CalendarValidationResult {
           brandErrors.push(`日期 ${date} 发信数非法: ${count}`);
         }
         dailySum += count;
+        if (count !== expectedEmails.filter((email) => email.date === date).length) {
+          brandErrors.push(`日期 ${date} 发信数与邮件记录不一致`);
+        }
       }
     }
-    const dailyCoverageMatch = dailyCoverageDays === CALENDAR_TOTAL_DAYS;
+    const dailyCoverageMatch = dailyCoverageDays === CALENDAR_TOTAL_DAYS &&
+      Object.keys(brandData.dailyCounts).length === CALENDAR_TOTAL_DAYS;
     if (!dailyCoverageMatch) {
       brandErrors.push(
         `每日覆盖天数不足: ${dailyCoverageDays} / ${CALENDAR_TOTAL_DAYS}`
@@ -532,10 +428,10 @@ export function validateCalendarData(): CalendarValidationResult {
       );
     }
 
-    // 主题分布校验（与 EXTENDED_3MONTH 逐主题核对）
+    // 主题分布校验（与传入邮件逐主题核对）
     const expectedThemes: Record<string, number> = {};
-    for (const e of expectedBrand.emails) {
-      expectedThemes[e.theme] = (expectedThemes[e.theme] || 0) + 1;
+    for (const email of expectedEmails) {
+      expectedThemes[email.theme] = (expectedThemes[email.theme] || 0) + 1;
     }
 
     let themeDistributionMatch = true;
@@ -552,29 +448,37 @@ export function validateCalendarData(): CalendarValidationResult {
 
     // 关键词索引合法性校验（升序、窗口内、索引键覆盖）
     let keywordIndexValid = true;
-    for (const kw of CALENDAR_KEYWORDS) {
-      const dates = brandData.keywordIndex[kw] || [];
-      for (let i = 0; i < dates.length; i++) {
-        const d = dates[i];
-        if (d < CALENDAR_START_DATE || d > CALENDAR_END_DATE) {
+    const keywords = new Set([...CALENDAR_KEYWORDS, ...expectedEmails.flatMap((email) => email.keywords)]);
+    for (const keyword of keywords) {
+      const dates = brandData.keywordIndex[keyword] || [];
+      const expectedDates = [...new Set(expectedEmails
+        .filter((email) => email.keywords.includes(keyword))
+        .map((email) => email.date))].sort();
+      if (!(keyword in brandData.keywordIndex) || dates.join() !== expectedDates.join()) {
+        keywordIndexValid = false;
+        brandErrors.push("关键词索引与邮件记录不一致");
+      }
+      for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
+        const date = dates[dateIndex];
+        if (!CALENDAR_DATES.includes(date)) {
           keywordIndexValid = false;
-          brandErrors.push(`关键词 [${kw}] 包含越界日期: ${d}`);
+          brandErrors.push("关键词索引包含越界日期");
         }
-        if (i > 0 && dates[i] <= dates[i - 1]) {
+        if (dateIndex > 0 && date <= dates[dateIndex - 1]) {
           keywordIndexValid = false;
-          brandErrors.push(`关键词 [${kw}] 日期未严格递增: ${dates[i - 1]} -> ${d}`);
+          brandErrors.push("关键词索引日期未严格递增");
         }
       }
     }
 
     if (brandErrors.length > 0) {
-      errors.push(...brandErrors.map((e) => `[${brandName}] ${e}`));
+      errors.push(...brandErrors.map((message) => `[${brandName}] ${message}`));
     }
 
     brandValidations[brandName] = {
       brand: brandName,
       totalEmails: brandData.totalEmails,
-      expectedEmails: expectedBrand.emails.length,
+      expectedEmails: expectedEmails.length,
       countMatch,
       dailySumMatch,
       dailyCoverageDays,
@@ -591,11 +495,11 @@ export function validateCalendarData(): CalendarValidationResult {
   let dailyTotalsSum = 0;
   let dailyTotalsMatch = true;
   for (const date of CALENDAR_DATES) {
-    const totalForDate = DAILY_TOTALS[date] ?? 0;
+    const totalForDate = built.dailyTotals[date] ?? 0;
     dailyTotalsSum += totalForDate;
     let sumOfBrandsForDate = 0;
     for (const bName of CALENDAR_BRANDS) {
-      sumOfBrandsForDate += BRANDS_CALENDAR[bName]?.dailyCounts[date] ?? 0;
+      sumOfBrandsForDate += built.brands[bName]?.dailyCounts[date] ?? 0;
     }
     if (totalForDate !== sumOfBrandsForDate) {
       dailyTotalsMatch = false;
@@ -614,14 +518,20 @@ export function validateCalendarData(): CalendarValidationResult {
 
   if (calculatedTotalEmails !== expectedTotalEmails) {
     errors.push(
-      `看板总邮件数 (${calculatedTotalEmails}) 与 EXTENDED_3MONTH 总数 (${expectedTotalEmails}) 不一致`
+      `看板总邮件数 (${calculatedTotalEmails}) 与期望总数 (${expectedTotalEmails}) 不一致`
     );
   }
 
-  if (CALENDAR_BRANDS.length !== expectedBrandsCount) {
+  if (Object.keys(built.brands).length !== expectedBrandsCount) {
     errors.push(
-      `看板品牌数 (${CALENDAR_BRANDS.length}) 与 EXTENDED_3MONTH 品牌数 (${expectedBrandsCount}) 不一致`
+      `看板品牌数与期望品牌数 (${expectedBrandsCount}) 不一致`
     );
+  }
+
+  for (const theme of CALENDAR_THEMES) {
+    if (built.themeSummary[theme] !== emails.filter((email) => email.theme === theme).length) {
+      errors.push("全品牌主题汇总与邮件记录不一致。");
+    }
   }
 
   return {
@@ -637,47 +547,26 @@ export function validateCalendarData(): CalendarValidationResult {
   };
 }
 
-export const CALENDAR_VALIDATION: CalendarValidationResult = validateCalendarData();
-
-if (!CALENDAR_VALIDATION.isValid) {
-  throw new Error(
-    `Calendar data validation failed:\n${CALENDAR_VALIDATION.errors.join("\n")}`
-  );
-}
-
-// 综合导出对象
-export const CALENDAR_DATA = {
-  meta: CALENDAR_META,
-  brands: BRANDS_CALENDAR,
-  dailyTotals: DAILY_TOTALS,
-  themeSummary: OVERALL_THEME_SUMMARY,
-  keywordIndexByBrand: KEYWORD_INDEX_BY_BRAND,
-  dailyCountsByBrand: DAILY_COUNTS_BY_BRAND,
-  themeSummaryByBrand: THEME_SUMMARY_BY_BRAND,
-  overlapAudit: OVERLAP_AUDIT_DATA,
-  validation: CALENDAR_VALIDATION,
-};
-
 // ==========================================
 // 便捷查询辅助函数
 // ==========================================
 
 /** 获取指定品牌指定日期的发信数 */
-export function getDailyCount(brand: BrandKey, date: string): number {
-  return BRANDS_CALENDAR[brand]?.dailyCounts[date] ?? 0;
+export function getDailyCount(built: CalendarData, brand: BrandKey, date: string): number {
+  return built.brands[brand]?.dailyCounts[date] ?? 0;
 }
 
 /** 获取指定品牌命中某关键词的日期列表 */
-export function getKeywordDates(brand: BrandKey, keyword: string): string[] {
-  return BRANDS_CALENDAR[brand]?.keywordIndex[keyword] ?? [];
+export function getKeywordDates(built: CalendarData, brand: BrandKey, keyword: string): string[] {
+  return built.brands[brand]?.keywordIndex[keyword] ?? [];
 }
 
 /** 获取指定品牌指定主题的邮件数 */
-export function getThemeCount(brand: BrandKey, theme: CalendarThemeKey): number {
-  return BRANDS_CALENDAR[brand]?.themeSummary[theme] ?? 0;
+export function getThemeCount(built: CalendarData, brand: BrandKey, theme: CalendarThemeKey): number {
+  return built.brands[brand]?.themeSummary[theme] ?? 0;
 }
 
 /** 获取指定品牌在某一天的全部邮件详情 */
-export function getEmailsForDate(brand: BrandKey, date: string): CalendarEmail[] {
-  return BRANDS_CALENDAR[brand]?.emails.filter((e) => e.date === date) ?? [];
+export function getEmailsForDate(built: CalendarData, brand: BrandKey, date: string): CalendarEmail[] {
+  return built.brands[brand]?.emails.filter((email) => email.date === date) ?? [];
 }

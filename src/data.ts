@@ -5,13 +5,6 @@
  * 更新数据时只改这个文件即可。
  */
 
-import aloYogaCollection from "../data-collection/aloyoga-2026-07-16-to-2026-10-15.json";
-import halaraCollection from "../data-collection/halara-2026-07-16-to-2026-10-15.json";
-import lululemonCollection from "../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
-import sheinCollection from "../data-collection/shein-2026-07-16-to-2026-10-15.json";
-import temuCollection from "../data-collection/temu-2026-07-16-to-2026-10-15.json";
-import zaraCollection from "../data-collection/zara-2026-07-16-to-2026-10-15.json";
-
 export interface Week {
   id: string;
   label: string;
@@ -39,19 +32,6 @@ export interface Brand {
 export interface Word {
   text: string;
   count: number;
-}
-
-export interface ExtendedEmailRecord {
-  date: string;
-  theme: string;
-  keywords: string[];
-  url?: string;
-}
-
-export interface ExtendedBrandCollection {
-  name: string;
-  brandPage?: string;
-  emails: ExtendedEmailRecord[];
 }
 
 export const DATA = {
@@ -205,50 +185,11 @@ export const DATA = {
 // 第二轮重叠窗口：Halara 44 vs DATA 43，Temu 44 vs DATA 44，SHEIN 65 vs DATA 62；仅记录差异，不覆盖 DATA。
 // Temu 原始 93 封中的 8 封 other 为商家侧 listing 邮件，不是消费者 EDM；EXTENDED_3MONTH 排除后计 85 封。
 // Halara 3 个月主题按标题主钩分类，与 DATA 旧 3 周口径不同；此处保留原始分类，不强行调和。
-export const EXTENDED_3MONTH = {
-  meta: {
-    range: "2026-07-16 – 2026-10-15",
-    market: "美国市场",
-    source: "Milled",
-    brandCount: 6,
-    total: 770,
-  },
-  brands: [
-    {
-      name: zaraCollection.brand,
-      emails: zaraCollection.emails,
-    },
-    {
-      name: lululemonCollection.brand,
-      emails: lululemonCollection.emails,
-    },
-    {
-      name: aloYogaCollection.brand,
-      brandPage: aloYogaCollection.brandPage,
-      emails: aloYogaCollection.emails,
-    },
-    {
-      name: halaraCollection.brand,
-      brandPage: halaraCollection.brandPage,
-      emails: halaraCollection.emails,
-    },
-    {
-      name: temuCollection.brand,
-      brandPage: temuCollection.brandPage,
-      emails: temuCollection.emails.filter((email) => email.theme !== "other"),
-    },
-    {
-      name: sheinCollection.brand,
-      brandPage: sheinCollection.brandPage,
-      emails: sheinCollection.emails,
-    },
-  ] as ExtendedBrandCollection[],
-  reconciliation: [
-    { brand: "Zara", collected: 8, existing: 7, status: "difference-recorded" },
-    { brand: "ALO Yoga", collected: 28, existing: 27, status: "difference-recorded" },
-    { brand: "lululemon", collected: 13, existing: 13, status: "matched" },
-    { brand: "Halara", collected: 44, existing: 43, status: "difference-recorded" },
-    { brand: "Temu", collected: 44, existing: 44, status: "matched" },
-    { brand: "SHEIN", collected: 65, existing: 62, status: "difference-recorded" },
-  ],
-};
+export const EXTENDED_RECONCILIATION = [
+  { brand: "Zara", collected: 8, existing: 7, status: "difference-recorded" },
+  { brand: "ALO Yoga", collected: 28, existing: 27, status: "difference-recorded" },
+  { brand: "lululemon", collected: 13, existing: 13, status: "matched" },
+  { brand: "Halara", collected: 44, existing: 43, status: "difference-recorded" },
+  { brand: "Temu", collected: 44, existing: 44, status: "matched" },
+  { brand: "SHEIN", collected: 65, existing: 62, status: "difference-recorded" },
+];

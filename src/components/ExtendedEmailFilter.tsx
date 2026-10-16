@@ -1,8 +1,7 @@
 import { useId, useMemo, useState } from "react";
-import lululemonCollection from "../../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
-import zaraCollection from "../../data-collection/zara-2026-07-16-to-2026-10-15.json";
-import { EXTENDED_3MONTH } from "../data";
+import { BRAND_ORDER, useExtendedEmails } from "../email-data";
 import { Card } from "./Card";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
 const PAGE_SIZE = 50;
 
@@ -14,14 +13,7 @@ const FILTER_THEMES = [
   { key: "category", label: "品类聚焦" },
 ] as const;
 
-const FILTER_BRANDS = [
-  "Zara",
-  "lululemon",
-  "ALO Yoga",
-  "Halara",
-  "Temu",
-  "SHEIN",
-] as const;
+const FILTER_BRANDS = BRAND_ORDER;
 
 type FilterTheme = (typeof FILTER_THEMES)[number]["key"];
 type FilterBrand = (typeof FILTER_BRANDS)[number];
@@ -52,40 +44,13 @@ const FILTER_DOT_STYLES: Record<FilterTheme, string> = {
   category: "bg-[#558b97]",
 };
 
-const EMAIL_URLS_BY_BRAND_AND_DATE = new Map<string, (string | undefined)[]>();
-
-for (const collection of [zaraCollection, lululemonCollection]) {
-  for (const email of collection.emails) {
-    const key = `${collection.brand}-${email.date}`;
-    const urls = EMAIL_URLS_BY_BRAND_AND_DATE.get(key) ?? [];
-    urls.push(email.url);
-    EMAIL_URLS_BY_BRAND_AND_DATE.set(key, urls);
-  }
-}
-
-const ALL_EMAILS = EXTENDED_3MONTH.brands
-  .flatMap((brand) => {
-    const dailyCounts = new Map<string, number>();
-
-    return brand.emails.map((email, index) => {
-      const dailyIndex = dailyCounts.get(email.date) ?? 0;
-      dailyCounts.set(email.date, dailyIndex + 1);
-
-      return {
-        ...email,
-        brand: brand.name,
-        id: `${brand.name}-${email.date}-${index}`,
-        url: EMAIL_URLS_BY_BRAND_AND_DATE.get(`${brand.name}-${email.date}`)?.[dailyIndex],
-      };
-    });
-  })
-  .sort((a, b) => b.date.localeCompare(a.date));
-
 export function ExtendedEmailFilter({
   initialTheme,
 }: {
   initialTheme?: string | null;
 }) {
+  const emailData = useExtendedEmails();
+  const { emails, meta, status } = emailData;
   const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(() =>
     FILTER_THEMES.some((theme) => theme.key === initialTheme)
       ? (initialTheme as FilterTheme)
@@ -97,12 +62,12 @@ export function ExtendedEmailFilter({
 
   const filteredEmails = useMemo(
     () =>
-      ALL_EMAILS.filter(
+      emails.filter(
         (email) =>
           (!selectedBrand || email.brand === selectedBrand) &&
           (!selectedTheme || email.theme === selectedTheme),
       ),
-    [selectedBrand, selectedTheme],
+    [emails, selectedBrand, selectedTheme],
   );
 
   const visibleEmails = filteredEmails.slice(0, visibleCount);
@@ -125,10 +90,19 @@ export function ExtendedEmailFilter({
     setVisibleCount(PAGE_SIZE);
   };
 
+  const hint = `${meta.range} · ${meta.market} · 逐封记录按日期倒序`;
+  if (status !== "ready") {
+    return (
+      <Card title="3 个月邮件筛选" hint={hint}>
+        <ExtendedEmailsState {...emailData} />
+      </Card>
+    );
+  }
+
   return (
     <Card
       title="3 个月邮件筛选"
-      hint={`${EXTENDED_3MONTH.meta.range} · ${EXTENDED_3MONTH.meta.market} · 逐封记录按日期倒序`}
+      hint={hint}
     >
       <div className="overflow-hidden rounded-xl border border-[#d9d0c3] bg-[#f7f1e8]">
         <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
@@ -280,7 +254,7 @@ export function ExtendedEmailFilter({
             <tbody>
               {visibleEmails.map((email, index) => (
                 <tr
-                  key={email.id}
+                  key={`${email.brand}-${email.date}-${email.source_index}`}
                   className={`transition-colors hover:bg-[#fff1e9] ${index % 2 === 0 ? "bg-[#fffdf9]" : "bg-[#f8f2e9]"}`}
                 >
                   <td className="border-b border-[#e5ddd2] px-5 py-4 font-mono text-xs font-medium tabular-nums text-[#6f665c]">

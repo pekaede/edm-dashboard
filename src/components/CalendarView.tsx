@@ -1,8 +1,18 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
-import { EXTENDED_3MONTH } from "../data";
+import {
+  buildCalendarData,
+  CALENDAR_BRANDS,
+  CALENDAR_DATES,
+  CALENDAR_END_DATE,
+  CALENDAR_START_DATE,
+  validateCalendarData,
+  type BrandKey,
+} from "../data-calendar";
+import { useExtendedEmails } from "../email-data";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
-const WINDOW_START = "2026-07-16";
-const WINDOW_END = "2026-10-15";
+const WINDOW_START = CALENDAR_START_DATE;
+const WINDOW_END = CALENDAR_END_DATE;
 const ALL_BRANDS = "全部" as const;
 const DAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] as const;
 const EMPTY_DAY_COLOR = "#f2eadf";
@@ -25,16 +35,6 @@ const THEME_LABELS: Record<string, string> = {
   other: "其他",
 };
 
-interface CalendarEmailRecord {
-  date: string;
-  theme: string;
-  keywords: string[];
-}
-
-interface CalendarEmail extends CalendarEmailRecord {
-  brand: string;
-}
-
 interface CalendarDay {
   date: string;
   inMonth: boolean;
@@ -51,16 +51,7 @@ export interface CalendarViewProps {
   className?: string;
 }
 
-const BRANDS = EXTENDED_3MONTH.brands.map((brand) => brand.name);
-
-const EMAILS: CalendarEmail[] = EXTENDED_3MONTH.brands.flatMap((brand) =>
-  brand.emails.map((email) => ({
-    brand: brand.name,
-    date: email.date,
-    theme: email.theme,
-    keywords: [...email.keywords],
-  })),
-);
+const BRANDS = CALENDAR_BRANDS;
 
 function parseDate(date: string): Date {
   return new Date(`${date}T00:00:00Z`);
@@ -100,18 +91,7 @@ function createMonthWeeks(month: MonthKey): CalendarDay[][] {
   return weeks;
 }
 
-function createWindowDates(): string[] {
-  const dates: string[] = [];
-  const end = parseDate(WINDOW_END);
-
-  for (let date = parseDate(WINDOW_START); date <= end; date = addDays(date, 1)) {
-    dates.push(toDateString(date));
-  }
-
-  return dates;
-}
-
-const WINDOW_DATES = createWindowDates();
+const WINDOW_DATES = CALENDAR_DATES;
 
 function formatDate(date: string, includeYear = false): string {
   const parsed = parseDate(date);
@@ -139,14 +119,25 @@ function getThemeLabel(theme: string): string {
 }
 
 export function CalendarView({ className = "" }: CalendarViewProps) {
+  const emailData = useExtendedEmails();
+  const { emails, status, total, meta } = emailData;
   const titleId = useId();
   const detailId = useId();
   const searchHelpId = useId();
   const monthPanelId = useId();
-  const [selectedBrand, setSelectedBrand] = useState<string>(ALL_BRANDS);
+  const [selectedBrand, setSelectedBrand] = useState<BrandKey | typeof ALL_BRANDS>(ALL_BRANDS);
   const [selectedMonth, setSelectedMonth] = useState<MonthKey>("2026-08");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const built = useMemo(
+    () => status === "ready" ? buildCalendarData(emails) : null,
+    [emails, status],
+  );
+  const validation = useMemo(
+    () => built ? validateCalendarData(emails, built) : null,
+    [built, emails],
+  );
 
   const calendarWeeks = useMemo(() => createMonthWeeks(selectedMonth), [selectedMonth]);
   const activeMonth = MONTHS.find((month) => month.key === selectedMonth) ?? MONTHS[1];
@@ -154,21 +145,18 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const filteredEmails = useMemo(
     () =>
       selectedBrand === ALL_BRANDS
-        ? EMAILS
-        : EMAILS.filter((email) => email.brand === selectedBrand),
-    [selectedBrand],
+        ? emails
+        : emails.filter((email) => email.brand === selectedBrand),
+    [emails, selectedBrand],
   );
 
-  const dailyCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const email of filteredEmails) {
-      counts.set(email.date, (counts.get(email.date) ?? 0) + 1);
-    }
-    return counts;
-  }, [filteredEmails]);
+  const dailyCounts = useMemo(
+    () => (selectedBrand === ALL_BRANDS ? built?.dailyTotals : built?.dailyCountsByBrand[selectedBrand]) ?? {},
+    [built, selectedBrand],
+  );
 
   const heatRange = useMemo(() => {
-    const positiveCounts = WINDOW_DATES.map((date) => dailyCounts.get(date) ?? 0)
+    const positiveCounts = WINDOW_DATES.map((date) => dailyCounts[date] ?? 0)
       .filter((count) => count > 0);
 
     return {
@@ -214,7 +202,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
     );
   }, [filteredEmails, normalizedSearchTerm]);
 
-  function selectBrand(brand: string) {
+  function selectBrand(brand: BrandKey | typeof ALL_BRANDS) {
     setSelectedBrand(brand);
     setSelectedDate(null);
   }
@@ -249,6 +237,25 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
     setSelectedDate((currentDate) => (currentDate === date ? null : date));
   }
 
+  if (status !== "ready" || (validation && !validation.isValid)) {
+    return (
+      <section
+        className={`dashboard-card mx-auto w-full max-w-3xl p-3! sm:p-4! ${className}`.trim()}
+        aria-labelledby={titleId}
+      >
+        <h2 id={titleId} className="text-lg font-bold tracking-tight text-[#1c1917] sm:text-xl">
+          日历热力图与关键词搜索
+        </h2>
+        <p className="mb-4 mt-1 text-sm text-[#6f655e]">{meta.range} · {meta.market}</p>
+        <ExtendedEmailsState
+          {...emailData}
+          status={status === "ready" ? "error" : status}
+          error={validation && !validation.isValid ? `日历数据校验失败：${validation.errors.join("；")}` : emailData.error}
+        />
+      </section>
+    );
+  }
+
   return (
     <section
       className={`dashboard-card mx-auto w-full max-w-3xl p-3! sm:p-4! ${className}`.trim()}
@@ -259,7 +266,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           日历热力图与关键词搜索
         </h2>
         <p className="mt-1 text-sm leading-5 text-[#6f655e]">
-          2026年7月16日至10月15日 · 6 个品牌 · 共 {EXTENDED_3MONTH.meta.total} 封邮件
+          2026年7月16日至10月15日 · 6 个品牌 · 共 {total} 封邮件
         </p>
       </div>
 
@@ -393,7 +400,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                       );
                     }
 
-                    const count = dailyCounts.get(day.date) ?? 0;
+                    const count = dailyCounts[day.date] ?? 0;
                     const isSelected = selectedDate === day.date;
                     const heatColor = getHeatColor(count, heatRange.minimum, heatRange.maximum);
                     const usesWhiteText = heatColor === HEAT_COLORS[3] || heatColor === HEAT_COLORS[4];
