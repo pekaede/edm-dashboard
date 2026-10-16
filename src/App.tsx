@@ -4,6 +4,7 @@ import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CampaignOverview } from "./components/CampaignOverview";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
+import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
 import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
 import { MarkdownReport } from "./components/MarkdownReport";
@@ -92,6 +93,8 @@ export default function App() {
                 <Insights />
               </div>
             </div>
+
+            <ExtendedEmailFilter />
 
             <DashboardFooter />
           </>
