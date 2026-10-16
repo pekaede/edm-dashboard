@@ -251,20 +251,20 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
   return (
     <section
-      className={`dashboard-card ${className}`.trim()}
+      className={`dashboard-card mx-auto w-full max-w-3xl p-3! sm:p-4! ${className}`.trim()}
       aria-labelledby={titleId}
     >
       <div>
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-[#1c1917] sm:text-xl">
           日历热力图与关键词搜索
         </h2>
-        <p className="mt-1.5 text-sm leading-5 text-[#6f655e]">
+        <p className="mt-1 text-sm leading-5 text-[#6f655e]">
           2026年7月16日至10月15日 · 6 个品牌 · 共 {EXTENDED_3MONTH.meta.total} 封邮件
         </p>
       </div>
 
-      <div className="mt-5">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="按品牌筛选邮件">
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="按品牌筛选邮件">
           {[ALL_BRANDS, ...BRANDS].map((brand) => {
             const isSelected = selectedBrand === brand;
             return (
@@ -273,7 +273,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 key={brand}
                 aria-pressed={isSelected}
                 onClick={() => selectBrand(brand)}
-                className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-2 ${
+                className={`min-h-11 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-2 ${
                   isSelected
                     ? "border-[#1c1917] bg-[#1c1917] text-[#fffaf1]"
                     : "border-[#dfd2c2] bg-[#fffaf1] text-[#514943] hover:border-[#d98262] hover:bg-[#fff3e4] hover:text-[#1c1917]"
@@ -286,7 +286,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
         </div>
 
         <div
-          className="mt-5 flex gap-1 rounded-xl border border-[#e7dccd] bg-[#f7eee2] p-1"
+          className="mt-3 flex gap-1 rounded-xl border border-[#e7dccd] bg-[#f7eee2] p-1"
           role="tablist"
           aria-label="选择月份"
         >
@@ -303,7 +303,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 tabIndex={isSelected ? 0 : -1}
                 onClick={() => selectMonth(month.key)}
                 onKeyDown={(event) => handleMonthKeyDown(event, monthIndex)}
-                className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#f7eee2] ${
+                className={`min-h-11 flex-1 rounded-lg px-2 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#f7eee2] ${
                   isSelected
                     ? "bg-[#1c1917] text-[#fffaf1] shadow-sm"
                     : "text-[#6f655e] hover:bg-[#fffaf1] hover:text-[#1c1917]"
@@ -315,15 +315,15 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           })}
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h3 className="text-base font-bold text-[#1c1917]">{activeMonth.fullLabel}每日发信量</h3>
-            <p className="mt-1 text-sm text-[#6f655e]" aria-live="polite">
+            <p className="mt-0.5 text-sm text-[#6f655e]" aria-live="polite">
               当前范围：{selectedBrand}，共 {filteredEmails.length} 封
             </p>
           </div>
           <div
-            className="flex flex-wrap items-center gap-2 text-xs text-[#6f655e]"
+            className="flex flex-wrap items-center gap-1.5 text-xs text-[#6f655e]"
             aria-label={`热力图颜色图例，无邮件为米白，有邮件时从每日 ${heatRange.minimum} 封到 ${heatRange.maximum} 封由浅至深`}
           >
             <span>少</span>
@@ -348,9 +348,9 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           id={monthPanelId}
           role="tabpanel"
           aria-labelledby={`${monthPanelId}-${selectedMonth}-tab`}
-          className="mt-3 rounded-2xl border border-[#e7dccd] bg-[#fffaf1] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:p-4"
+          className="mt-2 rounded-xl border border-[#e7dccd] bg-[#fffaf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:p-2"
         >
-          <table className="w-full table-fixed border-separate border-spacing-1 text-center sm:border-spacing-1.5">
+          <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
             <caption className="sr-only">
               {activeMonth.fullLabel}邮件日历，颜色深浅使用2026年7月16日至10月15日的全局刻度
             </caption>
@@ -360,7 +360,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   <th
                     scope="col"
                     key={dayLabel}
-                    className="h-7 text-[10px] font-semibold text-[#7f7167] sm:text-[11px]"
+                    className="h-5 text-[11px] font-semibold text-[#7f7167]"
                   >
                     {dayLabel}
                   </th>
@@ -374,7 +374,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                     if (!day.inMonth) {
                       return (
                         <td key={day.date} className="p-0" aria-hidden="true">
-                          <span className="block h-14 rounded-lg sm:h-16" />
+                          <span className="block h-12 rounded-md" />
                         </td>
                       );
                     }
@@ -384,7 +384,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                       return (
                         <td key={day.date} className="p-0">
                           <div
-                            className="h-14 rounded-lg border border-[#eee5da] bg-[#f7f1e9] p-1.5 text-left text-[10px] font-medium text-[#776b63] sm:h-16 sm:p-2"
+                            className="h-12 rounded-md border border-[#eee5da] bg-[#f7f1e9] p-1 text-left text-[11px] font-medium leading-4 text-[#776b63]"
                             aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
                           >
                             {dayNumber}
@@ -406,17 +406,17 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           aria-expanded={isSelected}
                           aria-controls={detailId}
                           title={`${formatDate(day.date, true)} · ${count} 封邮件`}
-                          className={`group relative flex h-14 w-full flex-col items-start justify-between rounded-lg border border-black/[0.06] p-1.5 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c1917] focus-visible:ring-offset-1 focus-visible:ring-offset-[#fffaf1] sm:h-16 sm:p-2 ${
+                          className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c1917] focus-visible:ring-offset-1 focus-visible:ring-offset-[#fffaf1] sm:p-1 ${
                             usesWhiteText ? "text-white" : "text-[#1c1917]"
                           } ${
                             isSelected ? "ring-2 ring-[#1c1917] ring-offset-1 ring-offset-[#fffaf1]" : ""
                           }`}
                           style={{ backgroundColor: heatColor }}
                         >
-                          <span className="text-[10px] font-semibold leading-none sm:text-[11px]">
+                          <span className="text-[11px] font-semibold leading-4">
                             {dayNumber}
                           </span>
-                          <span className="self-end whitespace-nowrap text-[10px] font-bold leading-none sm:text-xs">
+                          <span className="whitespace-nowrap text-[11px] font-bold leading-4">
                             {count} 封
                           </span>
                         </button>
@@ -429,7 +429,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           </table>
         </div>
 
-        <div id={detailId} className="mt-4" aria-live="polite">
+        <div id={detailId} className={selectedDate ? "mt-3" : ""} aria-live="polite">
           {selectedDate ? (
             <div className="rounded-2xl border border-[#e3d4c2] bg-[#fff6e9] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -473,7 +473,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           ) : null}
         </div>
 
-        <div className="mt-7 border-t border-[#e7dccd] pt-6">
+        <div className="mt-4 border-t border-[#e7dccd] pt-3">
           <label htmlFor={`${searchHelpId}-input`} className="text-base font-bold text-[#1c1917]">
             关键词搜索
           </label>
@@ -487,7 +487,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             onChange={(event) => setSearchTerm(event.target.value)}
             aria-describedby={searchHelpId}
             placeholder="输入关键词"
-            className="mt-3 min-h-11 w-full rounded-xl border border-[#d9cbbb] bg-[#fffdf8] px-4 py-2.5 text-base text-[#1c1917] outline-none transition placeholder:text-[#7f7167] focus:border-[#d5674e] focus:ring-2 focus:ring-[#f3c5b5]"
+            className="mt-2 min-h-11 w-full rounded-xl border border-[#d9cbbb] bg-[#fffdf8] px-3 py-2 text-base text-[#1c1917] outline-none transition placeholder:text-[#7f7167] focus:border-[#d5674e] focus:ring-2 focus:ring-[#f3c5b5]"
           />
 
           {normalizedSearchTerm ? (
