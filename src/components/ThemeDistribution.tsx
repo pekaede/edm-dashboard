@@ -1,76 +1,167 @@
+import { useState } from "react";
 import { DATA } from "../data";
 import { Card } from "./Card";
-import { pct, THEME_COLORS, TOTAL } from "./dashboard";
+import { THEME_COLORS, TOTAL } from "./dashboard";
 
-function Donut() {
-  const C = 2 * Math.PI * 80;
-  let acc = 0;
-  const segments = DATA.themes.map((t) => {
-    const len = (t.count / TOTAL) * C;
-    const el = (
-      <circle
-        key={t.key}
-        cx="120"
-        cy="120"
-        r="80"
-        fill="none"
-        stroke={THEME_COLORS[t.key]}
-        strokeWidth="38"
-        strokeDasharray={`${len.toFixed(1)} ${(C - len).toFixed(1)}`}
-        strokeDashoffset={(-acc).toFixed(1)}
-        transform="rotate(-90 120 120)"
-      />
-    );
-    acc += len;
-    return el;
-  });
+// SVG arc helper
+function describeArc(
+  cx: number,
+  cy: number,
+  rIn: number,
+  rOut: number,
+  startDeg: number,
+  endDeg: number,
+) {
+  const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
+  const a0 = toRad(startDeg);
+  const a1 = toRad(endDeg);
 
-  return (
-    <svg
-      viewBox="0 0 240 240"
-      className="h-52 w-52 shrink-0 drop-shadow-[0_10px_20px_rgb(79_70_229/0.08)] sm:h-56 sm:w-56"
-      role="img"
-      aria-label="内容结构分布"
-    >
-      <circle cx="120" cy="120" r="80" fill="none" stroke="#eef2f7" strokeWidth="38" />
-      {segments}
-      <text
-        x="120"
-        y="113"
-        textAnchor="middle"
-        className="fill-slate-950 font-mono text-3xl font-semibold tracking-tight tabular-nums"
-      >
-        {TOTAL}
-      </text>
-      <text x="120" y="139" textAnchor="middle" className="fill-slate-400 text-xs font-medium">
-        封邮件
-      </text>
-    </svg>
-  );
+  const x0_out = cx + rOut * Math.cos(a0);
+  const y0_out = cy + rOut * Math.sin(a0);
+  const x1_out = cx + rOut * Math.cos(a1);
+  const y1_out = cy + rOut * Math.sin(a1);
+
+  const x0_in = cx + rIn * Math.cos(a1);
+  const y0_in = cy + rIn * Math.sin(a1);
+  const x1_in = cx + rIn * Math.cos(a0);
+  const y1_in = cy + rIn * Math.sin(a0);
+
+  const largeArcFlag = endDeg - startDeg > 180 ? 1 : 0;
+
+  return [
+    `M ${x0_out.toFixed(2)} ${y0_out.toFixed(2)}`,
+    `A ${rOut} ${rOut} 0 ${largeArcFlag} 1 ${x1_out.toFixed(2)} ${y1_out.toFixed(2)}`,
+    `L ${x0_in.toFixed(2)} ${y0_in.toFixed(2)}`,
+    `A ${rIn} ${rIn} 0 ${largeArcFlag} 0 ${x1_in.toFixed(2)} ${y1_in.toFixed(2)}`,
+    "Z",
+  ].join(" ");
 }
 
 export function ThemeDistribution() {
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+  // Exact angles matching the prototype visual layout
+  // Start price at ~15° so category (last segment) centers around 0° (top)
+  let currentDeg = 15;
+  const sliceData = DATA.themes.map((t) => {
+    const span = (t.count / TOTAL) * 360;
+    const startDeg = currentDeg;
+    const endDeg = currentDeg + span;
+    currentDeg = endDeg;
+
+    const midDeg = (startDeg + endDeg) / 2;
+    const midRad = ((midDeg - 90) * Math.PI) / 180;
+    const rMid = 78;
+    const tx = 110 + rMid * Math.cos(midRad);
+    const ty = 110 + rMid * Math.sin(midRad);
+    const pct = Math.round((t.count / TOTAL) * 100);
+
+    return {
+      theme: t,
+      startDeg,
+      endDeg,
+      tx,
+      ty,
+      pct,
+    };
+  });
+
   return (
-    <Card title="内容结构分布" hint="196 封邮件，每封只归一类。">
-      <div className="flex flex-col items-center justify-center gap-7 sm:flex-row sm:justify-start lg:gap-8">
-        <Donut />
-        <ul className="w-full space-y-1.5 text-sm">
-          {DATA.themes.map((t) => (
-            <li
-              key={t.key}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50"
+    <Card title="内容结构分布">
+      <div className="flex flex-col items-center">
+        {/* Donut Chart */}
+        <div className="relative my-2">
+          <svg
+            viewBox="0 0 220 220"
+            className="h-56 w-56 drop-shadow-sm sm:h-60 sm:w-60"
+            role="img"
+            aria-label="内容结构分布环形图"
+          >
+            {sliceData.map(({ theme, startDeg, endDeg, tx, ty, pct }) => {
+              const isHovered = hoveredKey === theme.key;
+              const rIn = isHovered ? 53 : 56;
+              const rOut = isHovered ? 103 : 100;
+              const d = describeArc(110, 110, rIn, rOut, startDeg, endDeg);
+
+              return (
+                <g
+                  key={theme.key}
+                  className="cursor-pointer transition-all duration-200"
+                  onMouseEnter={() => setHoveredKey(theme.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                >
+                  <path
+                    d={d}
+                    fill={THEME_COLORS[theme.key]}
+                    stroke="#ffffff"
+                    strokeWidth="2.5"
+                    className="transition-all duration-200"
+                  />
+                  <text
+                    x={tx}
+                    y={ty}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="#ffffff"
+                    fontSize="12"
+                    fontWeight="600"
+                    className="pointer-events-none select-none font-sans"
+                  >
+                    {pct}%
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Center Label */}
+            <text
+              x="110"
+              y="102"
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="fill-slate-900 font-mono text-3xl font-bold tracking-tight select-none"
             >
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: THEME_COLORS[t.key] }} />
-              <span className="min-w-0">
-                <span className="font-medium text-slate-800">{t.labelZh}</span>
-                <span className="ml-1.5 text-xs text-slate-400">{t.label}</span>
-              </span>
-              <span className="whitespace-nowrap font-mono text-xs text-slate-500 tabular-nums">
-                {t.count} 封 · {pct(t.count)}%
-              </span>
-            </li>
-          ))}
-        </ul>
+              {TOTAL}
+            </text>
+            <text
+              x="110"
+              y="126"
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="fill-slate-500 text-xs font-medium select-none"
+            >
+              封邮件
+            </text>
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-4 grid w-full grid-cols-2 gap-x-3 gap-y-2 text-xs sm:text-[13px]">
+          {sliceData.map(({ theme, pct }) => {
+            const isHovered = hoveredKey === theme.key;
+            return (
+              <div
+                key={theme.key}
+                onMouseEnter={() => setHoveredKey(theme.key)}
+                onMouseLeave={() => setHoveredKey(null)}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${
+                  isHovered ? "bg-slate-100 font-semibold" : "hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: THEME_COLORS[theme.key] }}
+                />
+                <span className="truncate text-slate-700">
+                  {theme.labelZh}{" "}
+                  <span className="font-mono text-slate-500 tabular-nums">
+                    {theme.count} ({pct}%)
+                  </span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </Card>
   );

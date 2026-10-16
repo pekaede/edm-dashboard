@@ -5,22 +5,49 @@
     "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
+:root {
+  --theme-price: #e85d75;
+  --theme-behavior: #f2a93b;
+  --theme-new: #39a96b;
+  --theme-lifestyle: #8b6bd6;
+  --theme-category: #55a6e8;
+}
+
 * {
   box-sizing: border-box;
 }
 
 html {
-  background: #f5f7fb;
+  background: #f6f9fc;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at 12% 18%, rgb(99 102 241 / 0.055), transparent 28rem),
-    radial-gradient(circle at 88% 36%, rgb(14 165 233 / 0.04), transparent 24rem),
-    #f5f7fb;
+    radial-gradient(circle at 10% 4%, rgb(85 166 232 / 0.08), transparent 28rem),
+    radial-gradient(circle at 90% 18%, rgb(232 93 117 / 0.055), transparent 26rem),
+    linear-gradient(180deg, #f9fbfd 0%, #f4f8fb 100%);
   color: #1e293b;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.dashboard-shell {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.34)),
+    radial-gradient(circle at 38% 0%, rgb(139 107 214 / 0.045), transparent 34rem);
+}
+
+.dashboard-card {
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-card :is(table, details) {
+  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
 }
 
 button,
@@ -30,6 +57,6 @@ summary,
 }
 
 ::selection {
-  background: rgb(99 102 241 / 0.18);
-  color: #312e81;
+  background: rgb(85 166 232 / 0.2);
+  color: #163f5f;
 }

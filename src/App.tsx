@@ -9,20 +9,33 @@ import { WordCloud } from "./components/WordCloud";
 
 export default function App() {
   return (
-    <div className="min-h-screen overflow-hidden font-sans text-slate-800 antialiased">
+    <div className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased">
       <DashboardHeader />
 
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <main className="mx-auto max-w-[1600px] space-y-4 px-4 pb-5 sm:px-6 lg:px-6">
         <KpiGrid />
-        <CampaignOverview />
 
-        <div className="grid items-stretch gap-8 lg:grid-cols-2">
-          <ThemeDistribution />
-          <BrandThemeBreakdown />
+        <div className="grid items-stretch gap-4 xl:grid-cols-[1.13fr_0.7fr_1.13fr]">
+          <div className="min-w-0">
+            <CampaignOverview />
+          </div>
+          <div className="min-w-0">
+            <ThemeDistribution />
+          </div>
+          <div className="min-w-0">
+            <BrandThemeBreakdown />
+          </div>
         </div>
 
-        <WordCloud />
-        <Insights />
+        <div className="grid items-stretch gap-4 xl:grid-cols-2">
+          <div className="min-w-0">
+            <WordCloud />
+          </div>
+          <div className="min-w-0">
+            <Insights />
+          </div>
+        </div>
+
         <DashboardFooter />
       </main>
     </div>

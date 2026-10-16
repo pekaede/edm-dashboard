@@ -4,16 +4,22 @@ import { Card } from "./Card";
 export function Insights() {
   return (
     <Card title="关键洞察">
-      <ul className="grid gap-3 text-sm leading-7 md:grid-cols-2">
+      <ul className="grid h-full gap-3 text-sm leading-6 sm:grid-cols-2">
         {DATA.insights.map((s, i) => (
           <li
             key={i}
-            className="flex gap-4 rounded-xl border border-slate-200/70 bg-slate-50/60 p-4 transition-colors hover:border-indigo-200/80 hover:bg-indigo-50/30 sm:p-5"
+            className="group flex min-h-24 gap-4 rounded-lg border border-slate-200/80 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_8px_20px_rgb(58_76_110/0.07)]"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600 font-mono text-xs font-semibold text-white shadow-sm shadow-indigo-200 tabular-nums">
-              0{i + 1}
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[5px] text-base font-bold text-white shadow-sm"
+              style={{
+                background: ["#e85d75", "#f2a93b", "#39a96b", "#8b6bd6"][i],
+                borderColor: ["#fdecef", "#fff4d9", "#e8f7ee", "#f0eafb"][i],
+              }}
+            >
+              {i + 1}
             </span>
-            <span className="text-slate-700">{s}</span>
+            <span className="pt-0.5 text-slate-600">{s}</span>
           </li>
         ))}
       </ul>
