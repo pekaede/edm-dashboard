@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import reportMarkdown from "../../reports/onepage-edm-2026-10-16.md?raw";
+import { THEME_COLORS } from "./dashboard";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
@@ -135,42 +136,60 @@ const blocks = parseMarkdown(reportMarkdown);
 
 export function MarkdownReport() {
   return (
-    <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_40px_rgb(58_76_110/0.07)]">
-      <div className="h-1.5 bg-gradient-to-r from-[#55a6e8] via-[#8b6bd6] to-[#e85d75]" />
-      <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+    <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
+      <div
+        className="h-1.5"
+        style={{
+          background: `linear-gradient(90deg, ${THEME_COLORS.category}, ${THEME_COLORS.lifestyle}, ${THEME_COLORS.price})`,
+        }}
+      />
+      <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         {blocks.map((block, blockIndex) => {
           if (block.type === "heading") {
             if (block.level === 1) {
               return (
-                <header key={blockIndex} className="mb-8 border-b border-slate-200 pb-6">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#6f51b5]">完整报告</p>
-                  <h1 className="text-3xl font-extrabold tracking-[-0.04em] text-[#10203f] sm:text-4xl">
+                <header key={blockIndex} className="mb-9 border-b border-slate-200 pb-7 sm:mb-10 sm:pb-8">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
+                    完整报告
+                  </p>
+                  <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl">
                     {renderInline(block.content)}
-                  </h1>
+                  </h2>
                 </header>
               );
             }
 
+            if (block.level >= 3) {
+              return (
+                <h4
+                  key={blockIndex}
+                  className="mb-3 mt-8 text-lg font-bold leading-snug text-slate-950"
+                >
+                  {renderInline(block.content)}
+                </h4>
+              );
+            }
+
             return (
-              <h2
+              <h3
                 key={blockIndex}
-                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[#55a6e8] pl-4 text-xl font-extrabold tracking-[-0.02em] text-[#10203f] sm:text-2xl"
+                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--theme-category)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-slate-950 sm:mt-12 sm:text-2xl"
               >
                 {renderInline(block.content)}
-              </h2>
+              </h3>
             );
           }
 
           if (block.type === "blockquote") {
             return (
-              <aside
+              <blockquote
                 key={blockIndex}
-                className="my-5 space-y-2 rounded-xl border border-amber-200/80 bg-amber-50/65 px-4 py-4 text-sm leading-7 text-slate-700 sm:px-5"
+                className="my-6 space-y-2 rounded-xl border-l-4 border-[var(--theme-behavior)] bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700 sm:px-5"
               >
                 {block.lines.map((line, lineIndex) => (
                   <p key={lineIndex}>{renderInline(line)}</p>
                 ))}
-              </aside>
+              </blockquote>
             );
           }
 
@@ -179,7 +198,7 @@ export function MarkdownReport() {
             return (
               <List
                 key={blockIndex}
-                className={`my-4 space-y-3 pl-6 text-[15px] leading-7 text-slate-700 marker:font-bold marker:text-[#6f51b5] ${
+                className={`my-5 space-y-3 pl-6 text-[15px] leading-7 text-slate-700 marker:font-bold marker:text-slate-700 ${
                   block.type === "ordered-list" ? "list-decimal" : "list-disc"
                 }`}
               >
@@ -194,12 +213,22 @@ export function MarkdownReport() {
 
           if (block.type === "table") {
             return (
-              <div key={blockIndex} className="my-6 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-[760px] w-full border-collapse text-left text-sm leading-6">
-                  <thead className="bg-slate-100 text-slate-900">
+              <div
+                key={blockIndex}
+                className="report-table-scroll my-7 overflow-x-auto rounded-xl border border-slate-200"
+                role="region"
+                aria-label={`报告数据表 ${blockIndex + 1}`}
+                tabIndex={0}
+              >
+                <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-6">
+                  <thead className="bg-slate-100 text-slate-950">
                     <tr>
                       {block.headers.map((header, cellIndex) => (
-                        <th key={cellIndex} className="border-b border-slate-200 px-4 py-3 font-bold">
+                        <th
+                          key={cellIndex}
+                          scope="col"
+                          className="border-b border-slate-200 px-4 py-3.5 font-bold"
+                        >
                           {renderInline(header)}
                         </th>
                       ))}
@@ -207,12 +236,18 @@ export function MarkdownReport() {
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-700">
                     {block.rows.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="align-top even:bg-slate-50/60">
-                        {row.map((cell, cellIndex) => (
-                          <td key={cellIndex} className="px-4 py-4">
-                            {renderInline(cell)}
-                          </td>
-                        ))}
+                      <tr key={rowIndex} className="align-top transition-colors even:bg-slate-50/70 hover:bg-slate-100/80">
+                        {row.map((cell, cellIndex) =>
+                          cellIndex === 0 ? (
+                            <th key={cellIndex} scope="row" className="px-4 py-4 font-bold text-slate-950">
+                              {renderInline(cell)}
+                            </th>
+                          ) : (
+                            <td key={cellIndex} className="px-4 py-4">
+                              {renderInline(cell)}
+                            </td>
+                          ),
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -222,7 +257,7 @@ export function MarkdownReport() {
           }
 
           return (
-            <p key={blockIndex} className="my-4 text-[15px] leading-7 text-slate-700">
+            <p key={blockIndex} className="my-5 text-[15px] leading-7 text-slate-700 sm:text-base sm:leading-8">
               {renderInline(block.content)}
             </p>
           );

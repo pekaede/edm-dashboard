@@ -1,4 +1,5 @@
 import { DATA } from "../data";
+import type { CSSProperties } from "react";
 
 export const TOTAL = DATA.meta.total;
 export const DAYS = 22;
@@ -28,3 +29,12 @@ export const THEME_TINTS: Record<string, string> = {
   lifestyle: "#f0eafb",
   category: "#e8f4fc",
 };
+
+export const DASHBOARD_THEME_STYLE = {
+  "--theme-price": THEME_COLORS.price,
+  "--theme-behavior": THEME_COLORS.behavior,
+  "--theme-new": THEME_COLORS.new,
+  "--theme-lifestyle": THEME_COLORS.lifestyle,
+  "--theme-category": THEME_COLORS.category,
+  "--theme-category-tint": THEME_TINTS.category,
+} as CSSProperties;

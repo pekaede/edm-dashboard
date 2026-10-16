@@ -7,25 +7,26 @@ const INSIGHT_THEMES = ["price", "behavior", "new", "lifestyle"];
 export function Insights() {
   return (
     <Card title="关键洞察">
-      <ul className="grid h-full gap-3 text-sm leading-6 sm:grid-cols-2">
+      <ol className="grid h-full gap-3 text-sm leading-6 sm:grid-cols-2">
         {DATA.insights.map((s, i) => (
           <li
             key={i}
-            className="group flex min-h-24 gap-4 rounded-lg border border-slate-200/80 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_8px_20px_rgb(58_76_110/0.07)]"
+            className="group flex min-h-24 gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition duration-200 hover:border-slate-300 hover:bg-white hover:shadow-sm sm:gap-4"
           >
             <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[5px] text-base font-bold text-white shadow-sm"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full border text-base font-bold text-slate-950 shadow-sm"
               style={{
-                background: THEME_COLORS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
-                borderColor: THEME_TINTS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
+                background: THEME_TINTS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
+                borderColor: THEME_COLORS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
               }}
+              aria-hidden="true"
             >
               {i + 1}
             </span>
-            <span className="pt-0.5 text-slate-600">{s}</span>
+            <span className="text-slate-700">{s}</span>
           </li>
         ))}
-      </ul>
+      </ol>
     </Card>
   );
 }

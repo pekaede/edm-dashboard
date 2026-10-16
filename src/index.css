@@ -6,17 +6,14 @@
 }
 
 html {
-  background: #f6f9fc;
+  background: rgb(246 249 252);
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at 10% 4%, rgb(85 166 232 / 0.08), transparent 28rem),
-    radial-gradient(circle at 90% 18%, rgb(232 93 117 / 0.055), transparent 26rem),
-    linear-gradient(180deg, #f9fbfd 0%, #f4f8fb 100%);
-  color: #1e293b;
+  background: linear-gradient(180deg, rgb(249 251 253) 0%, rgb(244 248 251) 100%);
+  color: rgb(30 41 59);
 }
 
 #root {
@@ -25,13 +22,112 @@ body {
 
 .dashboard-shell {
   background-image:
-    linear-gradient(rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.34)),
-    radial-gradient(circle at 38% 0%, rgb(139 107 214 / 0.045), transparent 34rem);
+    radial-gradient(circle at 10% 4%, color-mix(in srgb, var(--theme-category) 8%, transparent), transparent 28rem),
+    radial-gradient(circle at 90% 18%, color-mix(in srgb, var(--theme-price) 6%, transparent), transparent 26rem),
+    radial-gradient(circle at 38% 0%, color-mix(in srgb, var(--theme-lifestyle) 5%, transparent), transparent 34rem);
 }
 
-.dashboard-card :is(table, details) {
-  scrollbar-color: #cbd5e1 transparent;
+.dashboard-container {
+  width: min(100% - 2rem, 96rem);
+  margin-inline: auto;
+}
+
+.view-switcher {
+  display: inline-flex;
+  gap: 0.25rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255);
+  padding: 0.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+.view-switcher-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dashboard-card,
+.kpi-card {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255);
+  box-shadow: 0 8px 24px rgb(51 65 85 / 0.06);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.dashboard-card {
+  padding: 1rem;
+}
+
+.kpi-card {
+  display: flex;
+  min-height: 7rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dashboard-card:hover,
+.kpi-card:hover {
+  border-color: rgb(203 213 225);
+  box-shadow: 0 12px 30px rgb(51 65 85 / 0.1);
+  transform: translateY(-2px);
+}
+
+.dashboard-card :is(table, details),
+.report-table-scroll,
+.brand-dialog {
+  scrollbar-color: rgb(148 163 184) transparent;
   scrollbar-width: thin;
+}
+
+.report-table-scroll:focus-visible {
+  border-color: var(--theme-category);
+}
+
+.brand-dialog {
+  width: min(48rem, calc(100vw - 1.5rem));
+  max-width: none;
+  max-height: calc(100dvh - 1.5rem);
+  overscroll-behavior: contain;
+}
+
+.brand-dialog::backdrop {
+  transition: opacity 180ms ease;
+}
+
+.dialog-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  color: rgb(2 6 23);
+}
+
+.brand-week-row {
+  display: grid;
+  grid-template-columns: minmax(4.75rem, auto) minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-shell :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--theme-category) 70%, white);
+  outline-offset: 3px;
 }
 
 button,
@@ -40,7 +136,38 @@ summary,
   -webkit-tap-highlight-color: transparent;
 }
 
-::selection {
-  background: rgb(85 166 232 / 0.2);
-  color: #163f5f;
+.dashboard-shell ::selection {
+  background: color-mix(in srgb, var(--theme-category) 22%, transparent);
+  color: rgb(15 23 42);
+}
+
+@media (min-width: 40rem) {
+  .dashboard-container {
+    width: min(100% - 3rem, 96rem);
+  }
+
+  .dashboard-card {
+    padding: 1.25rem;
+  }
+
+  .kpi-card {
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .brand-dialog {
+    width: min(48rem, calc(100vw - 3rem));
+    max-height: calc(100dvh - 3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

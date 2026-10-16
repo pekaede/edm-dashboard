@@ -43,29 +43,31 @@ export function KpiGrid() {
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="关键指标">
-      {kpis.map((k) => (
-        <div
-          key={k.label}
-          className="group flex min-h-28 items-center gap-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_28px_rgb(58_76_110/0.05)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgb(58_76_110/0.09)] sm:gap-5 sm:px-6"
-        >
-          <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105 [&_svg]:h-8 [&_svg]:w-8 [&_svg]:fill-none [&_svg]:stroke-[1.9] [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round"
-            style={{
-              color: THEME_COLORS[k.theme],
-              background: THEME_TINTS[k.theme],
-            }}
-          >
-            {k.icon}
-          </div>
-          <div>
-            <div className="text-3xl font-extrabold tracking-[-0.04em] text-[#0d1836] tabular-nums sm:text-4xl">
-              {k.num}
+    <section aria-labelledby="kpi-title">
+      <h2 id="kpi-title" className="sr-only">
+        关键指标
+      </h2>
+      <dl className="grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-4">
+        {kpis.map((k) => (
+          <div key={k.label} className="kpi-card group">
+            <div
+              className="flex size-14 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 sm:size-16 [&_svg]:size-7 [&_svg]:fill-none [&_svg]:stroke-[1.9] [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round sm:[&_svg]:size-8"
+              style={{
+                color: THEME_COLORS[k.theme],
+                background: THEME_TINTS[k.theme],
+              }}
+            >
+              {k.icon}
             </div>
-            <div className="mt-0.5 text-sm font-medium text-slate-500 sm:text-base">{k.label}</div>
+            <div className="flex min-w-0 flex-col">
+              <dt className="order-2 mt-1 text-sm font-semibold text-slate-600 sm:text-base">{k.label}</dt>
+              <dd className="order-1 text-3xl font-extrabold tracking-tight text-slate-950 tabular-nums sm:text-4xl">
+                {k.num}
+              </dd>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </dl>
     </section>
   );
 }

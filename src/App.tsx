@@ -9,6 +9,7 @@ import { KpiGrid } from "./components/KpiGrid";
 import { MarkdownReport } from "./components/MarkdownReport";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
+import { DASHBOARD_THEME_STYLE } from "./components/dashboard";
 import type { Brand } from "./data";
 
 type View = "dashboard" | "report";
@@ -24,7 +25,8 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       setView(getViewFromHash());
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     };
 
     window.addEventListener("hashchange", handleHashChange);
@@ -32,19 +34,22 @@ export default function App() {
   }, []);
 
   return (
-    <div className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased">
+    <div
+      className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased"
+      style={DASHBOARD_THEME_STYLE}
+    >
       <DashboardHeader />
 
-      <main className="mx-auto max-w-[1600px] space-y-4 px-4 pb-5 sm:px-6 lg:px-6">
+      <main className="dashboard-container space-y-4 pb-6 sm:space-y-5 sm:pb-8">
         <nav aria-label="页面视图" className="flex justify-center sm:justify-end">
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          <div className="view-switcher">
             <a
               href="#dashboard"
               aria-current={view === "dashboard" ? "page" : undefined}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              className={`view-switcher-link ${
                 view === "dashboard"
-                  ? "bg-[#10203f] text-white shadow-sm"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
               数据看板
@@ -52,10 +57,10 @@ export default function App() {
             <a
               href="#report"
               aria-current={view === "report" ? "page" : undefined}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              className={`view-switcher-link ${
                 view === "report"
-                  ? "bg-[#10203f] text-white shadow-sm"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
             >
               OnePage 报告
@@ -67,7 +72,7 @@ export default function App() {
           <>
             <KpiGrid />
 
-            <div className="grid items-stretch gap-4 xl:grid-cols-[1.13fr_0.7fr_1.13fr]">
+            <div className="grid items-stretch gap-4 xl:grid-cols-[1.13fr_0.7fr_1.13fr] xl:gap-5">
               <div className="min-w-0">
                 <CampaignOverview onSelectBrand={setSelectedBrand} />
               </div>
@@ -79,7 +84,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="grid items-stretch gap-4 xl:grid-cols-2">
+            <div className="grid items-stretch gap-4 xl:grid-cols-2 xl:gap-5">
               <div className="min-w-0">
                 <WordCloud />
               </div>

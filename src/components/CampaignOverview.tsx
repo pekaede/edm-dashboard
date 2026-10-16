@@ -6,15 +6,28 @@ import { TOTAL } from "./dashboard";
 const maxWeekly = Math.max(...DATA.brands.flatMap((b) => b.weekly));
 const minWeekly = Math.min(...DATA.brands.flatMap((b) => b.weekly));
 
+/**
+ * Sequential blue scale with guaranteed WCAG AA contrast (>= 4.5:1).
+ * For lighter fills (count < 15), text is deep slate (#0f172a, contrast >= 4.8:1).
+ * For darker fills (count >= 15), text is pure white (#ffffff, contrast >= 4.7:1).
+ */
 function getHeatmapStyle(count: number) {
-  // Sequential blue scale (hue 218)
-  const ratio = (count - minWeekly) / (maxWeekly - minWeekly);
-  const lightness = 93 - ratio * 46; // from 93% down to 47%
-  const isDark = lightness <= 64;
+  if (count >= 15) {
+    // High volume: lightness 44% down to 32% (dark blue, white text)
+    const ratio = (count - 15) / Math.max(1, maxWeekly - 15);
+    const lightness = 44 - ratio * 12;
+    return {
+      background: `hsl(218 82% ${lightness.toFixed(1)}%)`,
+      color: "#ffffff",
+    };
+  }
 
+  // Low/moderate volume: lightness 96% down to 68% (light/mid blue, dark text)
+  const ratio = (count - minWeekly) / Math.max(1, 14 - minWeekly);
+  const lightness = 96 - ratio * 28;
   return {
-    background: `hsl(218 86% ${lightness.toFixed(1)}%)`,
-    color: isDark ? "#ffffff" : "#1e293b",
+    background: `hsl(218 84% ${lightness.toFixed(1)}%)`,
+    color: "#0f172a",
   };
 }
 
@@ -29,47 +42,82 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
 
   return (
     <Card
-      title="品牌 × 周 × Campaign 主题"
-      hint="单元格数字为该品牌当周邮件封数，颜色越深封数越多。"
+      title="品牌 × 周 × 发送频次"
+      hint="单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。"
     >
-      <div className="relative overflow-visible">
-        <table className="w-full border-collapse text-xs sm:text-sm">
+      {/* Responsive table wrapper with smooth horizontal scroll on mobile */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-1 scrollbar-thin">
+        <table className="w-full min-w-[450px] border-collapse text-xs sm:min-w-0 sm:text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-slate-700">
+            <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-700">
               <th className="py-2.5 pl-3 pr-2 text-left font-semibold">品牌</th>
               {DATA.weeks.map((w) => (
-                <th key={w.id} className="px-2 py-2.5 text-center font-semibold">
-                  {w.label}
+                <th key={w.id} className="px-2 py-2 text-center font-semibold">
+                  <div>{w.label}</div>
+                  <div className="text-[11px] font-normal text-slate-600">{w.range}</div>
                 </th>
               ))}
-              <th className="px-2 py-2.5 text-center font-semibold">合计</th>
+              <th className="border-l border-slate-200/80 px-2 py-2 text-center font-semibold text-slate-800">
+                合计
+              </th>
             </tr>
           </thead>
           <tbody>
-            {DATA.brands.map((b) => (
-              <tr key={b.name} className="border-b border-slate-100 transition-colors">
-                <td className="py-2 pl-3 pr-2 font-medium text-slate-800">
+            {DATA.brands.map((b, rowIndex) => (
+              <tr
+                key={b.name}
+                className="border-b border-slate-100 transition-colors hover:bg-slate-50/50"
+              >
+                <td className="py-2 pl-3 pr-2 font-medium">
                   <button
                     type="button"
-                    className="rounded-sm text-left font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 transition hover:text-blue-600 hover:decoration-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                    className="inline-flex items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-slate-800 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                     onClick={() => onSelectBrand(b)}
                   >
                     {b.name}
                   </button>
                 </td>
-                {b.weekly.map((n, i) => {
+
+                {b.weekly.map((n, colIndex) => {
                   const style = getHeatmapStyle(n);
-                  const weekLabel = DATA.weeks[i].label;
+                  const week = DATA.weeks[colIndex];
                   const pct = ((n / TOTAL) * 100).toFixed(1);
 
+                  // Position tooltip safely so it never clips outside card edges:
+                  // Top rows pop downwards, other rows pop upwards
+                  const isTopRow = rowIndex <= 1;
+                  const verticalPos = isTopRow
+                    ? "top-full mt-2"
+                    : "bottom-full mb-2";
+                  const arrowPos = isTopRow
+                    ? "-top-1 border-t border-l border-slate-800 bg-[#0f172a]"
+                    : "-bottom-1 border-b border-r border-slate-800 bg-[#0f172a]";
+
+                  // Horizontal alignment: col 0 left-anchored, col 2 right-anchored, col 1 centered
+                  const horizPos =
+                    colIndex === 0
+                      ? "left-0 translate-x-0"
+                      : colIndex === DATA.weeks.length - 1
+                        ? "right-0 translate-x-0"
+                        : "left-1/2 -translate-x-1/2";
+
+                  const arrowHoriz =
+                    colIndex === 0
+                      ? "left-5"
+                      : colIndex === DATA.weeks.length - 1
+                        ? "right-5"
+                        : "left-1/2 -translate-x-1/2";
+
                   return (
-                    <td key={i} className="p-0.5 text-center">
+                    <td key={colIndex} className="p-1 text-center">
                       <div
-                        className="group/cell relative flex h-10 w-full items-center justify-center rounded transition-all hover:z-20 hover:ring-2 hover:ring-blue-600 hover:ring-inset"
+                        className="group/cell relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:z-20 hover:ring-2 hover:ring-blue-500 focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                         tabIndex={0}
+                        role="cell"
+                        aria-label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
                       >
                         <span
-                          className="flex h-full w-full items-center justify-center rounded font-mono font-medium tabular-nums"
+                          className="flex h-full w-full items-center justify-center rounded-md font-mono text-xs font-semibold tabular-nums sm:text-sm"
                           style={{
                             backgroundColor: style.background,
                             color: style.color,
@@ -78,38 +126,51 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                           {n}
                         </span>
 
-                        {/* Hover Tooltip */}
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/cell:flex group-focus-within/cell:flex">
-                          <div className="whitespace-nowrap rounded-lg bg-[#1e293b] px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
+                        {/* Interactive Tooltip with focus-within & hover */}
+                        <div
+                          role="tooltip"
+                          className={`pointer-events-none absolute z-30 hidden flex-col ${verticalPos} ${horizPos} group-hover/cell:flex group-focus-within/cell:flex`}
+                        >
+                          <div className="whitespace-nowrap rounded-lg bg-[#0f172a] px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
                             <div className="font-semibold text-white">
-                              {b.name} · {weekLabel}
+                              {b.name} · {week.label} ({week.range})
                             </div>
-                            <div className="mt-0.5 font-medium text-slate-200">
+                            <div className="mt-1 font-mono font-medium text-blue-200">
                               {n} 封邮件
                             </div>
                             <div className="mt-0.5 text-[11px] text-slate-400">
-                              占总数 {pct}% ({n}/{TOTAL})
+                              占全期总量 {pct}% ({n}/{TOTAL})
                             </div>
                           </div>
-                          <div className="-mt-1 h-2 w-2 rotate-45 bg-[#1e293b]" />
+                          <div
+                            className={`absolute h-2 w-2 rotate-45 ${arrowPos} ${arrowHoriz}`}
+                          />
                         </div>
                       </div>
                     </td>
                   );
                 })}
-                <td className="px-2 py-2 text-center font-mono font-semibold text-slate-800 tabular-nums">
-                  {b.total}
+
+                <td className="border-l border-slate-200/80 px-2 py-2 text-center font-mono font-bold text-slate-900 tabular-nums">
+                  <span className="inline-block rounded px-1.5 py-0.5 bg-slate-100/80">
+                    {b.total}
+                  </span>
                 </td>
               </tr>
             ))}
-            <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-800">
+
+            {/* Bottom Total Row */}
+            <tr className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
               <td className="py-2.5 pl-3 pr-2 text-left font-bold">合计</td>
               {weekTotals.map((n, i) => (
-                <td key={i} className="px-2 py-2.5 text-center font-mono tabular-nums">
+                <td
+                  key={i}
+                  className="px-2 py-2.5 text-center font-mono font-bold tabular-nums"
+                >
                   {n}
                 </td>
               ))}
-              <td className="px-2 py-2.5 text-center font-mono font-bold tabular-nums">
+              <td className="border-l border-slate-200/80 px-2 py-2.5 text-center font-mono font-bold text-blue-600 tabular-nums">
                 {TOTAL}
               </td>
             </tr>
@@ -117,6 +178,18 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
         </table>
       </div>
 
+      {/* Heatmap Legend */}
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-600">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded bg-slate-200" />
+          <span>低 ({minWeekly} 封)</span>
+        </span>
+        <div className="mx-2 h-2 flex-1 max-w-[140px] rounded-full bg-gradient-to-r from-[hsl(218,84%,92%)] via-[hsl(218,84%,70%)] to-[hsl(218,82%,34%)]" />
+        <span className="flex items-center gap-1.5">
+          <span>高 ({maxWeekly} 封)</span>
+          <span className="inline-block h-2.5 w-2.5 rounded bg-[#1d4ed8]" />
+        </span>
+      </div>
     </Card>
   );
 }
