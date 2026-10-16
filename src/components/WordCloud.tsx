@@ -1,28 +1,19 @@
 import { DATA, type Word } from "../data";
 import { Card } from "./Card";
 
-type CategoryKey =
-  | "category"
-  | "promotion"
-  | "season"
-  | "audience"
-  | "style"
-  | "other";
+type CategoryKey = "category" | "promotion" | "season" | "style";
 
 interface WordCategory {
   key: CategoryKey;
   label: string;
   color: string;
-  tint: string;
 }
 
 const CATEGORIES: WordCategory[] = [
-  { key: "category", label: "品类类", color: "#2563eb", tint: "#eff6ff" },
-  { key: "promotion", label: "促销类", color: "#be123c", tint: "#fff1f2" },
-  { key: "season", label: "季节场景类", color: "#047857", tint: "#ecfdf5" },
-  { key: "audience", label: "人群类", color: "#7c3aed", tint: "#f5f3ff" },
-  { key: "style", label: "风格氛围类", color: "#b45309", tint: "#fffbeb" },
-  { key: "other", label: "其他", color: "#475569", tint: "#f8fafc" },
+  { key: "category", label: "品类类", color: "#2563eb" },
+  { key: "promotion", label: "促销类", color: "#be123c" },
+  { key: "season", label: "季节场景类", color: "#047857" },
+  { key: "style", label: "风格氛围类", color: "#b45309" },
 ];
 
 const WORD_CATEGORY = {
@@ -38,57 +29,65 @@ const WORD_CATEGORY = {
   Style: "style",
   Offer: "promotion",
   Sale: "promotion",
-  Action: "other",
   Coupon: "promotion",
-  Got: "other",
-  Listing: "other",
-  Please: "other",
-  Start: "other",
   Under: "promotion",
   Arrivals: "category",
   Back: "promotion",
   Price: "promotion",
-  Sent: "other",
   Drop: "category",
   Denim: "category",
   Good: "style",
   Less: "promotion",
-  Little: "other",
-  Thank: "other",
-  Attention: "other",
-  Zara: "other",
 } as const satisfies Record<string, CategoryKey>;
 
-const MAX_WORDS_PER_CATEGORY = 10;
-const maxCount = Math.max(...DATA.words.map((word) => word.count));
-const minCount = Math.min(...DATA.words.map((word) => word.count));
+// 排除不能描述 EDM 内容的噪音：通用动词/功能词、商家邮件操作词，以及品牌名。
+const NOISE_WORDS = new Set([
+  "Action",
+  "Got",
+  "Please",
+  "Start",
+  "Sent",
+  "Little",
+  "Thank",
+  "Attention",
+  "Listing",
+  "Zara",
+]);
 
-function getCategory(word: Word): CategoryKey {
-  return WORD_CATEGORY[word.text as keyof typeof WORD_CATEGORY] ?? "other";
+const MAX_WORDS_PER_CATEGORY = 10;
+const meaningfulWords = DATA.words.filter((word) => !NOISE_WORDS.has(word.text));
+const maxCount = Math.max(...meaningfulWords.map((word) => word.count));
+const minCount = Math.min(...meaningfulWords.map((word) => word.count));
+
+function getCategory(word: Word): CategoryKey | undefined {
+  return WORD_CATEGORY[word.text as keyof typeof WORD_CATEGORY];
 }
 
 function getWordSize(count: number): string {
   const range = Math.max(maxCount - minCount, 1);
   const scale = (count - minCount) / range;
-  return `${0.875 + scale * 0.875}rem`;
+  return `${0.95 + scale * 1.05}rem`;
 }
 
 export function WordCloud() {
-  const groupedWords = CATEGORIES.map((category) => ({
-    ...category,
-    words: DATA.words
+  const groupedWords = CATEGORIES.map((category) => {
+    const categoryWords = meaningfulWords
       .filter((word) => getCategory(word) === category.key)
-      .sort((first, second) => second.count - first.count)
-      .slice(0, MAX_WORDS_PER_CATEGORY),
-    total: DATA.words.filter((word) => getCategory(word) === category.key).length,
-  }));
+      .sort((first, second) => second.count - first.count);
+
+    return {
+      ...category,
+      words: categoryWords.slice(0, MAX_WORDS_PER_CATEGORY),
+      total: categoryWords.length,
+    };
+  }).filter((category) => category.words.length > 0);
 
   return (
     <Card
       title="分类高频词 Top 10"
-      hint="按品类、促销、季节场景、人群、风格氛围与其他分组；每类按含该词的邮件数倒序展示前 10 个，字号反映词频。"
+      hint="按品类、促销、季节场景与风格氛围分组；每类按含该词的邮件数倒序展示前 10 个，字号反映词频。"
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="divide-y divide-slate-200/80">
         {groupedWords.map((category) => {
           const headingId = `word-category-${category.key}`;
 
@@ -96,55 +95,55 @@ export function WordCloud() {
             <section
               key={category.key}
               aria-labelledby={headingId}
-              className="min-w-0 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs"
+              className="min-w-0 py-5 first:pt-0 last:pb-0"
             >
-              <div className="mb-3 flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <h3
                   id={headingId}
-                  className="flex items-center gap-2 text-sm font-bold text-slate-800"
+                  className="flex items-center gap-2.5 text-sm font-bold tracking-wide text-slate-800"
                 >
                   <span
                     aria-hidden="true"
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    className="h-3 w-1 shrink-0 rounded-full"
                     style={{ backgroundColor: category.color }}
                   />
                   {category.label}
                 </h3>
                 <span className="shrink-0 text-xs tabular-nums text-slate-500">
-                  {category.words.length}/{category.total}
+                  {category.total > MAX_WORDS_PER_CATEGORY
+                    ? `展示 ${category.words.length} / 共 ${category.total} 个词`
+                    : `${category.words.length} 个词`}
                 </span>
               </div>
 
-              {category.words.length > 0 ? (
-                <ul className="flex min-h-20 flex-wrap content-start items-center gap-2">
-                  {category.words.map((word) => (
-                    <li key={word.text}>
+              <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-3 sm:gap-x-6 sm:gap-y-4">
+                {category.words.map((word) => (
+                  <li key={word.text} className="min-w-0">
+                    <span
+                      aria-label={`${word.text}，出现 ${word.count} 次，${category.label}`}
+                      className="inline-block max-w-full whitespace-nowrap font-semibold tracking-tight transition-opacity hover:opacity-70"
+                      style={{
+                        color: category.color,
+                        fontSize: getWordSize(word.count),
+                        lineHeight: 1.1,
+                      }}
+                    >
                       <span
-                        aria-label={`${word.text}，出现 ${word.count} 次，${category.label}`}
-                        className="inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-semibold leading-none transition-transform hover:-translate-y-0.5"
-                        style={{
-                          backgroundColor: category.tint,
-                          borderColor: `${category.color}55`,
-                          color: category.color,
-                          fontSize: getWordSize(word.count),
-                        }}
+                        aria-hidden="true"
+                        className="break-words"
                       >
-                        <span className="truncate">{word.text}</span>
-                        <span
-                          aria-hidden="true"
-                          className="rounded-full bg-white/80 px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums shadow-xs"
-                        >
-                          {word.count}
-                        </span>
+                        {word.text}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="flex min-h-20 items-center justify-center text-sm text-slate-400">
-                  暂无高频词
-                </p>
-              )}
+                      <sup
+                        aria-hidden="true"
+                        className="ml-1 align-super font-mono text-[0.55em] font-bold tabular-nums opacity-65"
+                      >
+                        {word.count}
+                      </sup>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </section>
           );
         })}
