@@ -32,6 +32,7 @@ export function WordCloud() {
       <div
         key={w.text}
         className="group/word relative inline-flex cursor-pointer items-baseline transition-transform duration-200 hover:scale-105"
+        tabIndex={0}
       >
         <span
           className="font-bold tracking-tight select-none"
@@ -50,7 +51,7 @@ export function WordCloud() {
         </span>
 
         {/* Hover Tooltip */}
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/word:flex">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/word:flex group-focus-within/word:flex">
           <div className="whitespace-nowrap rounded-lg bg-[#1e293b] px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
             <div className="font-semibold text-white">{w.text}</div>
             <div className="mt-0.5 text-xs text-slate-200">
@@ -72,7 +73,10 @@ export function WordCloud() {
   const bottomWords = WORDS.slice(5); // Deal 12, Buy 11, Fall 11, Style 11, Sale 10
 
   return (
-    <Card title="主题行高频词云">
+    <Card
+      title="主题行高频词云"
+      hint="统计口径：含该词的邮件数，同一词在同一主题出现多次只计 1 次；字号越大，出现邮件越多。"
+    >
       <div className="flex min-h-[220px] flex-col justify-between gap-y-6 py-2">
         {/* Top row */}
         <div className="flex items-center justify-between px-4 sm:px-8">

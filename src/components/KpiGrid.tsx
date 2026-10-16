@@ -1,5 +1,5 @@
 import { DATA } from "../data";
-import { DAYS, TOTAL } from "./dashboard";
+import { DAYS, THEME_COLORS, THEME_TINTS, TOTAL } from "./dashboard";
 
 function MailIcon() {
   return (
@@ -36,10 +36,10 @@ function ChartIcon() {
 
 export function KpiGrid() {
   const kpis = [
-    { num: String(TOTAL), label: "邮件总数", icon: <MailIcon />, color: "#e85d75", tint: "#fdecef" },
-    { num: String(DATA.meta.brandCount), label: "品牌", icon: <TagIcon />, color: "#f2a93b", tint: "#fff4d9" },
-    { num: String(DATA.meta.weekCount), label: "周", icon: <CalendarIcon />, color: "#39a96b", tint: "#e8f7ee" },
-    { num: (TOTAL / DAYS).toFixed(1), label: "日均邮件", icon: <ChartIcon />, color: "#55a6e8", tint: "#e8f4fc" },
+    { num: String(TOTAL), label: "邮件总数", icon: <MailIcon />, theme: "price" },
+    { num: String(DATA.meta.brandCount), label: "品牌", icon: <TagIcon />, theme: "behavior" },
+    { num: String(DATA.meta.weekCount), label: "周", icon: <CalendarIcon />, theme: "new" },
+    { num: (TOTAL / DAYS).toFixed(1), label: "日均邮件", icon: <ChartIcon />, theme: "category" },
   ];
 
   return (
@@ -51,7 +51,10 @@ export function KpiGrid() {
         >
           <div
             className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105 [&_svg]:h-8 [&_svg]:w-8 [&_svg]:fill-none [&_svg]:stroke-[1.9] [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round"
-            style={{ color: k.color, background: k.tint }}
+            style={{
+              color: THEME_COLORS[k.theme],
+              background: THEME_TINTS[k.theme],
+            }}
           >
             {k.icon}
           </div>

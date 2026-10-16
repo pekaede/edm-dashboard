@@ -21,7 +21,10 @@ export const THEME_COLORS: Record<string, string> = {
   lifestyle: "#8b6bd6",
   category: "#55a6e8",
 };
-
-export function pct(n: number) {
-  return ((n / TOTAL) * 100).toFixed(1);
-}
+export const THEME_TINTS: Record<string, string> = {
+  price: "#fdecef",
+  behavior: "#fff4d9",
+  new: "#e8f7ee",
+  lifestyle: "#f0eafb",
+  category: "#e8f4fc",
+};

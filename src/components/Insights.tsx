@@ -1,5 +1,8 @@
 import { DATA } from "../data";
 import { Card } from "./Card";
+import { THEME_COLORS, THEME_TINTS } from "./dashboard";
+
+const INSIGHT_THEMES = ["price", "behavior", "new", "lifestyle"];
 
 export function Insights() {
   return (
@@ -13,8 +16,8 @@ export function Insights() {
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[5px] text-base font-bold text-white shadow-sm"
               style={{
-                background: ["#e85d75", "#f2a93b", "#39a96b", "#8b6bd6"][i],
-                borderColor: ["#fdecef", "#fff4d9", "#e8f7ee", "#f0eafb"][i],
+                background: THEME_COLORS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
+                borderColor: THEME_TINTS[INSIGHT_THEMES[i % INSIGHT_THEMES.length]],
               }}
             >
               {i + 1}

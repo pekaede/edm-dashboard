@@ -4,7 +4,10 @@ import { THEME_COLORS } from "./dashboard";
 
 export function BrandThemeBreakdown() {
   return (
-    <Card title="各品牌内容结构">
+    <Card
+      title="各品牌内容结构"
+      hint={`每行 = 该品牌 ${DATA.meta.weekCount} 周邮件的主题占比。`}
+    >
       {/* Top Legend */}
       <div className="-mt-1 mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
         {DATA.themes.map((t) => (
@@ -39,39 +42,40 @@ export function BrandThemeBreakdown() {
               </span>
 
               <div className="relative flex h-7 flex-1 overflow-visible rounded-md bg-slate-100">
-                <div className="flex h-full w-full overflow-hidden rounded-md">
-                  {segs.map((t) => (
+                {segs.map((t) => (
+                  <div
+                    key={t.key}
+                    className="group/seg relative h-full first:[&_.segment-fill]:rounded-l-md last:[&_.segment-fill]:rounded-r-md"
+                    style={{ width: `${t.widthPct}%` }}
+                    tabIndex={0}
+                  >
                     <div
-                      key={t.key}
-                      className="group/seg relative flex h-full items-center justify-center border-r border-white/60 transition-opacity hover:opacity-95 last:border-r-0"
+                      className="segment-fill flex h-full w-full items-center justify-center border-r border-white/60 transition-opacity group-last/seg:border-r-0 group-hover/seg:opacity-95"
                       style={{
-                        width: `${t.widthPct}%`,
                         backgroundColor: THEME_COLORS[t.key],
                       }}
                     >
-                      <span
-                        className={`select-none font-sans font-semibold text-white ${
-                          t.pct < 5 ? "text-[10px] px-0.5" : "text-xs"
-                        }`}
-                      >
-                        {t.pct}%
-                      </span>
-
-                      {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/seg:flex">
-                        <div className="whitespace-nowrap rounded-lg bg-[#1e293b] px-3 py-1.5 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
-                          <span className="font-semibold text-white">
-                            {b.name} · {t.labelZh}
-                          </span>
-                          <span className="ml-1.5 font-mono text-slate-300">
-                            {t.themeCount} 封 ({t.pct}%)
-                          </span>
-                        </div>
-                        <div className="-mt-1 h-2 w-2 rotate-45 bg-[#1e293b]" />
-                      </div>
+                      {t.pct >= 10 ? (
+                        <span className="select-none px-0.5 font-sans text-xs font-semibold text-white">
+                          {t.pct}%
+                        </span>
+                      ) : null}
                     </div>
-                  ))}
-                </div>
+
+                    {/* Tooltip */}
+                    <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/seg:flex group-focus-within/seg:flex">
+                      <div className="whitespace-nowrap rounded-lg bg-[#1e293b] px-3 py-1.5 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
+                        <span className="font-semibold text-white">
+                          {b.name} · {t.labelZh}
+                        </span>
+                        <span className="ml-1.5 font-mono text-slate-300">
+                          {t.themeCount} 封 ({t.pct}%)
+                        </span>
+                      </div>
+                      <div className="-mt-1 h-2 w-2 rotate-45 bg-[#1e293b]" />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           );

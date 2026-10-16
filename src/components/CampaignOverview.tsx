@@ -2,13 +2,14 @@ import { DATA } from "../data";
 import { Card } from "./Card";
 import { TOTAL } from "./dashboard";
 
+const maxWeekly = Math.max(...DATA.brands.flatMap((b) => b.weekly));
+const minWeekly = Math.min(...DATA.brands.flatMap((b) => b.weekly));
+
 function getHeatmapStyle(count: number) {
   // Sequential blue scale (hue 218)
-  const min = 1;
-  const max = 21;
-  const ratio = (count - min) / (max - min);
+  const ratio = (count - minWeekly) / (maxWeekly - minWeekly);
   const lightness = 93 - ratio * 46; // from 93% down to 47%
-  const isDark = count >= 14;
+  const isDark = lightness <= 64;
 
   return {
     background: `hsl(218 86% ${lightness.toFixed(1)}%)`,
@@ -22,7 +23,10 @@ export function CampaignOverview() {
   );
 
   return (
-    <Card title="品牌 × 周 × Campaign 主题">
+    <Card
+      title="品牌 × 周 × Campaign 主题"
+      hint="单元格数字为该品牌当周邮件封数，颜色越深封数越多。"
+    >
       <div className="relative overflow-visible">
         <table className="w-full border-collapse text-xs sm:text-sm">
           <thead>
@@ -49,7 +53,10 @@ export function CampaignOverview() {
 
                   return (
                     <td key={i} className="p-0.5 text-center">
-                      <div className="group/cell relative flex h-10 w-full items-center justify-center rounded transition-all hover:z-20 hover:ring-2 hover:ring-blue-600 hover:ring-inset">
+                      <div
+                        className="group/cell relative flex h-10 w-full items-center justify-center rounded transition-all hover:z-20 hover:ring-2 hover:ring-blue-600 hover:ring-inset"
+                        tabIndex={0}
+                      >
                         <span
                           className="flex h-full w-full items-center justify-center rounded font-mono font-medium tabular-nums"
                           style={{
@@ -61,7 +68,7 @@ export function CampaignOverview() {
                         </span>
 
                         {/* Hover Tooltip */}
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/cell:flex">
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 flex-col items-center group-hover/cell:flex group-focus-within/cell:flex">
                           <div className="whitespace-nowrap rounded-lg bg-[#1e293b] px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
                             <div className="font-semibold text-white">
                               {b.name} · {weekLabel}
@@ -111,6 +118,9 @@ export function CampaignOverview() {
             <div key={b.name} className="grid gap-1 sm:grid-cols-[6rem_1fr]">
               <span className="font-semibold text-slate-900">{b.name}</span>
               <div className="space-y-1">
+                <div className="leading-5 text-slate-600">
+                  主要策略：{b.strategy} · 日均：{b.perDay.toFixed(1)} 封
+                </div>
                 {b.campaigns.map((c, i) => (
                   <div key={i} className="leading-5 text-slate-600">
                     <span className="font-medium text-slate-800">

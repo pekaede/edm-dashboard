@@ -67,7 +67,7 @@ export function ThemeDistribution() {
   });
 
   return (
-    <Card title="内容结构分布">
+    <Card title="内容结构分布" hint={`${TOTAL} 封邮件，每封只归一类。`}>
       <div className="flex flex-col items-center">
         {/* Donut Chart */}
         <div className="relative my-2">

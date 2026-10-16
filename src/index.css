@@ -5,18 +5,6 @@
     "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
-:root {
-  --theme-price: #e85d75;
-  --theme-behavior: #f2a93b;
-  --theme-new: #39a96b;
-  --theme-lifestyle: #8b6bd6;
-  --theme-category: #55a6e8;
-}
-
-* {
-  box-sizing: border-box;
-}
-
 html {
   background: #f6f9fc;
 }
@@ -39,10 +27,6 @@ body {
   background-image:
     linear-gradient(rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.34)),
     radial-gradient(circle at 38% 0%, rgb(139 107 214 / 0.045), transparent 34rem);
-}
-
-.dashboard-card {
-  backdrop-filter: blur(8px);
 }
 
 .dashboard-card :is(table, details) {
