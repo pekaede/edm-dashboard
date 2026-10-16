@@ -7,12 +7,17 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(SCRIPT_DIR, "..", "data-collection");
 const DAY_MS = 24 * 60 * 60 * 1000;
-const TARGET_BRANDS = new Set(["Zara", "lululemon", "ALO Yoga"]);
+const TARGET_BRANDS = new Set(["Zara", "lululemon", "ALO Yoga", "Halara", "Temu", "SHEIN"]);
 
 const RECONCILIATION_NOTES = [
   "重叠窗口 2026-09-24 至 2026-10-15：Zara 新收 8 封 vs data.ts 7 封；不覆盖现有总数。",
   "重叠窗口 2026-09-24 至 2026-10-15：ALO Yoga 新收 28 封 vs data.ts 27 封；不覆盖现有总数。",
   "重叠窗口 2026-09-24 至 2026-10-15：lululemon 新收 13 封，与 data.ts 一致。",
+  "重叠窗口 2026-09-24 至 2026-10-15：Halara 新收 44 封 vs data.ts 43 封；不覆盖现有总数。",
+  "重叠窗口 2026-09-24 至 2026-10-15：Temu 新收 44 封，与 data.ts 一致。",
+  "重叠窗口 2026-09-24 至 2026-10-15：SHEIN 新收 65 封 vs data.ts 62 封；不覆盖现有总数。",
+  "Temu 原始收录 93 封，其中 8 封 other 为商家侧 listing 邮件，不属于消费者 EDM；聚合时排除，消费者邮件计 85 封。",
+  "Halara 3 个月主题按标题主钩（lead-hook）分类，与 data.ts 旧 3 周主题口径不同；保留原始分类，不强行调和。",
 ];
 
 function compareText(left, right) {
@@ -28,6 +33,16 @@ function assert(condition, message) {
 function parseWindow(windowText, fileName) {
   const match = /^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/.exec(windowText);
   assert(match, `${fileName}: invalid window ${JSON.stringify(windowText)}`);
+  return { start: match[1], end: match[2] };
+}
+
+function resolveWindow(collection) {
+  if (typeof collection.window === "string") {
+    return parseWindow(collection.window, collection.fileName);
+  }
+
+  const match = /-(\d{4}-\d{2}-\d{2})-to-(\d{4}-\d{2}-\d{2})\.json$/.exec(collection.fileName);
+  assert(match, `${collection.fileName}: missing window and file name has no date range`);
   return { start: match[1], end: match[2] };
 }
 
@@ -63,7 +78,6 @@ async function loadCollections() {
     fileNames.map(async (fileName) => {
       const raw = JSON.parse(await readFile(join(DATA_DIR, fileName), "utf8"));
       assert(typeof raw.brand === "string" && raw.brand.length > 0, `${fileName}: missing brand`);
-      assert(typeof raw.window === "string", `${fileName}: missing window`);
       assert(Array.isArray(raw.emails), `${fileName}: missing emails array`);
 
       for (const [index, email] of raw.emails.entries()) {
@@ -89,8 +103,11 @@ function aggregateBrand(collection, dates) {
   const dailyCounts = new Map(dates.map((date) => [date, 0]));
   const themeCounts = new Map();
   const keywordCounts = new Map();
+  const emails = collection.brand === "Temu"
+    ? collection.emails.filter((email) => email.theme !== "other")
+    : collection.emails;
 
-  for (const email of collection.emails) {
+  for (const email of emails) {
     assert(dailyCounts.has(email.date), `${collection.fileName}: email date ${email.date} is outside the declared window`);
     increment(dailyCounts, email.date);
     increment(themeCounts, email.theme);
@@ -102,16 +119,17 @@ function aggregateBrand(collection, dates) {
   }
 
   return {
-    total: collection.emails.length,
+    total: emails.length,
     daily: dates.map((date) => ({ date, count: dailyCounts.get(date) })),
     themes: sortedCountObject(themeCounts),
     keywords: sortedCountObject(keywordCounts),
+    ...(typeof collection.brandPage === "string" ? { brandPage: collection.brandPage } : {}),
   };
 }
 
 async function main() {
   const collections = await loadCollections();
-  const windows = collections.map((collection) => parseWindow(collection.window, collection.fileName));
+  const windows = collections.map(resolveWindow);
   const [{ start, end }] = windows;
 
   for (const window of windows) {

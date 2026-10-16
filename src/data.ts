@@ -6,7 +6,10 @@
  */
 
 import aloYogaCollection from "../data-collection/aloyoga-2026-07-16-to-2026-10-15.json";
+import halaraCollection from "../data-collection/halara-2026-07-16-to-2026-10-15.json";
 import lululemonCollection from "../data-collection/lululemon-2026-07-16-to-2026-10-15.json";
+import sheinCollection from "../data-collection/shein-2026-07-16-to-2026-10-15.json";
+import temuCollection from "../data-collection/temu-2026-07-16-to-2026-10-15.json";
 import zaraCollection from "../data-collection/zara-2026-07-16-to-2026-10-15.json";
 
 export interface Week {
@@ -199,13 +202,16 @@ export const DATA = {
 
 // 独立追加的 3 个月逐封衍生数据；现有 DATA 的 3 周口径、总数及主题数保持不变。
 // 重叠窗口 2026-09-24 至 2026-10-15：Zara 8 vs DATA 7，ALO Yoga 28 vs DATA 27，lululemon 13 vs DATA 13。
+// 第二轮重叠窗口：Halara 44 vs DATA 43，Temu 44 vs DATA 44，SHEIN 65 vs DATA 62；仅记录差异，不覆盖 DATA。
+// Temu 原始 93 封中的 8 封 other 为商家侧 listing 邮件，不是消费者 EDM；EXTENDED_3MONTH 排除后计 85 封。
+// Halara 3 个月主题按标题主钩分类，与 DATA 旧 3 周口径不同；此处保留原始分类，不强行调和。
 export const EXTENDED_3MONTH = {
   meta: {
     range: "2026-07-16 – 2026-10-15",
     market: "美国市场",
     source: "Milled",
-    brandCount: 3,
-    total: 215,
+    brandCount: 6,
+    total: 770,
   },
   brands: [
     {
@@ -221,10 +227,28 @@ export const EXTENDED_3MONTH = {
       brandPage: aloYogaCollection.brandPage,
       emails: aloYogaCollection.emails,
     },
+    {
+      name: halaraCollection.brand,
+      brandPage: halaraCollection.brandPage,
+      emails: halaraCollection.emails,
+    },
+    {
+      name: temuCollection.brand,
+      brandPage: temuCollection.brandPage,
+      emails: temuCollection.emails.filter((email) => email.theme !== "other"),
+    },
+    {
+      name: sheinCollection.brand,
+      brandPage: sheinCollection.brandPage,
+      emails: sheinCollection.emails,
+    },
   ] as ExtendedBrandCollection[],
   reconciliation: [
     { brand: "Zara", collected: 8, existing: 7, status: "difference-recorded" },
     { brand: "ALO Yoga", collected: 28, existing: 27, status: "difference-recorded" },
     { brand: "lululemon", collected: 13, existing: 13, status: "matched" },
+    { brand: "Halara", collected: 44, existing: 43, status: "difference-recorded" },
+    { brand: "Temu", collected: 44, existing: 44, status: "matched" },
+    { brand: "SHEIN", collected: 65, existing: 62, status: "difference-recorded" },
   ],
 };
