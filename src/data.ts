@@ -53,7 +53,7 @@ export interface ExtendedBrandCollection {
 
 export const DATA = {
   meta: {
-    title: "EDM 竞品调研看板",
+    title: "品牌节拍",
     range: "2026-09-24 – 2026-10-15",
     rangeLabel: "近 3 周 · 美东时间",
     market: "美国市场",
