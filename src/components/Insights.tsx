@@ -33,7 +33,7 @@ export function Insights() {
 
   if (!aggregated || aggregated.total === 0) {
     const marketLabel = getMarketLabel(market);
-    const windowText = aggregated ? formatWindowRange(aggregated.window) : "2026-09-24 – 2026-10-15";
+    const windowText = aggregated ? formatWindowRange(aggregated.window) : "2026-09-25 – 2026-10-16";
     return (
       <Card title="关键洞察" hint={`${emailData.meta.market} · 三周实时聚合`}>
         <div className="py-4">

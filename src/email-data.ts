@@ -37,8 +37,8 @@ export const BRAND_ORDER = ["Zara", "lululemon", "ALO Yoga", "Halara", "Temu", "
 
 export const EXTENDED_EMAIL_META = {
   windowStart: "2026-07-16",
-  windowEnd: "2026-10-15",
-  range: "2026-07-16 – 2026-10-15",
+  windowEnd: "2026-10-16",
+  range: "2026-07-16 – 2026-10-16",
   market: "美国 / 英国 / 澳洲 / 法国 / 德国 / 意大利 / 荷兰；西班牙 0 封",
   source: "Milled",
   brandCount: BRAND_ORDER.length,
