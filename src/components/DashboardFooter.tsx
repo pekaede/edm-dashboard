@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import { useExtendedEmails } from "../email-data";
 import { useSiteEmails } from "../site-data";
 import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 
 export function DashboardFooter() {
   const { status, emails, meta } = useSiteEmails();
-  const allEmails = useExtendedEmails();
 
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
@@ -14,7 +12,6 @@ export function DashboardFooter() {
 
   const safeThreeWeekTotal = data ? `${data.total} 封` : status === "loading" ? "加载中…" : "—";
   const safeSiteTotal = status === "ready" ? `${emails.length} 封` : status === "loading" ? "加载中…" : "—";
-  const safeGlobalTotal = allEmails.status === "ready" ? `${allEmails.total} 封` : allEmails.status === "loading" ? "加载中…" : "—";
 
   return (
     <footer
@@ -37,8 +34,6 @@ export function DashboardFooter() {
             <span>当前站点样本：<strong className="text-[var(--text-heading)]">{safeSiteTotal}</strong></span>
             <span aria-hidden="true" className="text-[var(--border-strong)]">|</span>
             <span>近 3 周聚合：<strong className="text-[var(--text-heading)]">{safeThreeWeekTotal}</strong>（{formatWindowRange(THREE_WEEK_WINDOW)}）</span>
-            <span aria-hidden="true" className="text-[var(--border-strong)]">|</span>
-            <span>{meta.dataSource === "supabase" ? "全局多市场样本：" : "历史 US 样本："}<strong className="text-[var(--text-heading)]">{safeGlobalTotal}</strong></span>
           </div>
         </div>
       </div>
@@ -74,7 +69,7 @@ export function DashboardFooter() {
             市场覆盖与分析规则
           </h3>
           <p>
-            <strong className="font-semibold text-[var(--text-body)]">市场覆盖：</strong>系统共配置 8 个市场（US、UK、AU、FR、DE、IT、NL、ES），当前 7 个市场已有收录记录，西班牙（ES）收录为 0（选择后暂无邮件）。按基准核对总量 1433 封 = US 778 + UK 90 + AU 33 + FR 50 + DE 38 + IT 252 + NL 192 + ES 0。意大利（IT）与荷兰（NL）已有收录记录。{meta.dataSource === "json" ? "（当前为离线快照，仅展示历史 US 770 封样本。）" : ""}
+            <strong className="font-semibold text-[var(--text-body)]">市场覆盖：</strong>系统共配置 8 个市场（US、UK、AU、FR、DE、IT、NL、ES），当前 7 个市场已有收录记录，西班牙（ES）收录为 0（选择后暂无邮件）。意大利（IT）与荷兰（NL）已有收录记录。{meta.dataSource === "json" ? "（当前为离线快照，仅展示历史 US 770 封样本。）" : ""}
           </p>
           <p>
             <strong className="font-semibold text-[var(--text-body)]">品牌与分类：</strong>监测包含 Zara、lululemon、ALO Yoga、Halara、Temu、SHEIN 共 6 个品牌。主题分类依据主题行与正文推介判定，每封邮件唯一归入一个主导主题；词频按包含该词的去重邮件篇数计算；看板严格遵守合规边界，不引用任何竞品未经授权的原始文案。
