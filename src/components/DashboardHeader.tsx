@@ -1,13 +1,23 @@
+import { useMemo } from "react";
 import { DATA } from "../data";
+import { useExtendedEmails } from "../email-data";
+import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 
 export function DashboardHeader() {
+  // 市场/总数不再用冻结快照 DATA.meta（market = "美国市场"、total = 196）：
+  // 市场取逐封数据的 meta.market（"美国 + 英国"），样本取 3 周实时聚合 total（默认窗口 211）。
+  const { status, emails, meta } = useExtendedEmails();
+  const data = useMemo(
+    () => (status === "ready" ? aggregateThreeWeek(emails) : null),
+    [status, emails],
+  );
   const tags = [
-    { label: DATA.meta.market, theme: "price" },
-    { label: DATA.meta.source, theme: "behavior" },
-    { label: `${DATA.meta.total} 封样本`, theme: "new" },
+    { label: meta.market, theme: "price" },
+    { label: meta.source, theme: "behavior" },
+    { label: `${data ? data.total : "—"} 封样本（3 周）`, theme: "new" },
     {
-      label: `${DATA.meta.brandCount} 品牌 × ${DATA.meta.weekCount} 周`,
+      label: `${meta.brandCount} 品牌 × ${meta.weekCount} 周`,
       theme: "lifestyle",
     },
   ];
@@ -37,7 +47,7 @@ export function DashboardHeader() {
         </div>
         <div className="shrink-0 border-l-2 border-[var(--accent)] pl-3 lg:text-right">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">研究周期</p>
-          <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800">{DATA.meta.range}</p>
+          <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
         </div>
       </div>
     </header>

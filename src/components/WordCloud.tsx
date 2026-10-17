@@ -1,29 +1,23 @@
 import { useMemo, useState } from "react";
-import { DATA, type Word } from "../data";
-import { useExtendedEmails, type EmailRecord } from "../email-data";
+import { useExtendedEmails, countEmailsByMarket, matchesMarket, type EmailRecord } from "../email-data";
+import {
+  MAX_WORDS_PER_CATEGORY,
+  NOISE_WORDS,
+  filterEmailsByWindow,
+  type GroupedCategory,
+  type Word,
+  type WordCategory,
+  type WordCategoryKey,
+} from "../word-cloud-groups";
+import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
 
 type TimeRange = "threeWeeks" | "threeMonths";
-type CategoryKey = "category" | "promotion" | "season" | "style" | "audience" | "other";
 
-interface WordCategory {
-  key: CategoryKey;
-  label: string;
-  color: string;
-}
-
-interface GroupedCategory extends WordCategory {
-  words: Word[];
-  total: number;
-}
-
-const THREE_WEEK_CATEGORIES: WordCategory[] = [
-  { key: "category", label: "品类类", color: "#d95d45" },
-  { key: "promotion", label: "促销类", color: "#c77b18" },
-  { key: "season", label: "季节场景类", color: "#e28a57" },
-  { key: "style", label: "风格氛围类", color: "#c9573f" },
-];
+// 3 周词云窗口（滑动 = 改 three-week-aggregation.ts 里的 THREE_WEEK_WINDOW）；实时聚合 emails 表，不读快照。
+const THREE_WEEK_RANGE = formatWindowRange(THREE_WEEK_WINDOW);
 
 const THREE_MONTH_CATEGORIES: WordCategory[] = [
   { key: "category", label: "品类类", color: "#d95d45" },
@@ -32,27 +26,6 @@ const THREE_MONTH_CATEGORIES: WordCategory[] = [
   { key: "audience", label: "人群类", color: "#c9573f" },
   { key: "other", label: "其他", color: "#b87912" },
 ];
-
-const THREE_WEEK_WORD_CATEGORY = {
-  New: "style",
-  Off: "promotion",
-  Down: "promotion",
-  Credit: "promotion",
-  Deal: "promotion",
-  Buy: "promotion",
-  Fall: "season",
-  Style: "style",
-  Offer: "promotion",
-  Sale: "promotion",
-  Coupon: "promotion",
-  Under: "promotion",
-  Arrivals: "style",
-  Back: "promotion",
-  Price: "promotion",
-  Drop: "style",
-  Denim: "category",
-  Less: "promotion",
-} as const satisfies Record<string, CategoryKey>;
 
 const THREE_MONTH_CATEGORY_WORDS = new Set([
   "dress",
@@ -75,36 +48,7 @@ const THREE_MONTH_PROMOTION_WORDS = new Set(["sale"]);
 const THREE_MONTH_STYLE_WORDS = new Set(["new", "arrivals", "drop"]);
 const THREE_MONTH_AUDIENCE_WORDS = new Set(["kids", "man", "woman"]);
 
-// 排除不能描述 EDM 内容的噪音：功能/操作提示词、礼貌用语、泛化形容词，以及品牌名。
-const NOISE_WORDS = new Set(
-  [
-    "Up to",
-    "Required",
-    "Good",
-    "Action",
-    "Got",
-    "Please",
-    "Start",
-    "Sent",
-    "Little",
-    "Thank",
-    "Attention",
-    "Listing",
-    "Zara",
-  ].map((word) => word.toLowerCase()),
-);
-
-const MAX_WORDS_PER_CATEGORY = 10;
-
-const THREE_WEEK_WORDS = DATA.words.filter(
-  (word) => !NOISE_WORDS.has(word.text.toLowerCase()),
-);
-
-function getThreeWeekCategory(word: Word): CategoryKey | undefined {
-  return THREE_WEEK_WORD_CATEGORY[word.text as keyof typeof THREE_WEEK_WORD_CATEGORY];
-}
-
-function getThreeMonthCategory(word: string): CategoryKey {
+function getThreeMonthCategory(word: string): WordCategoryKey {
   if (THREE_MONTH_CATEGORY_WORDS.has(word)) return "category";
   if (THREE_MONTH_PROMOTION_WORDS.has(word)) return "promotion";
   if (THREE_MONTH_STYLE_WORDS.has(word)) return "style";
@@ -137,7 +81,7 @@ function buildThreeMonthWords(emails: EmailRecord[]): Word[] {
 function groupWords(
   words: Word[],
   categories: WordCategory[],
-  getCategory: (word: Word) => CategoryKey | undefined,
+  getCategory: (word: Word) => WordCategoryKey | undefined,
 ): GroupedCategory[] {
   return categories
     .map((category) => {
@@ -153,12 +97,6 @@ function groupWords(
     })
     .filter((category) => category.words.length > 0);
 }
-
-const THREE_WEEK_GROUPS = groupWords(
-  THREE_WEEK_WORDS,
-  THREE_WEEK_CATEGORIES,
-  getThreeWeekCategory,
-);
 
 export function buildThreeMonthGroups(emails: EmailRecord[]): GroupedCategory[] {
   return groupWords(
@@ -179,25 +117,59 @@ function getWordSize(count: number, words: Word[]): string {
 
 export function WordCloud() {
   const emailData = useExtendedEmails();
-  const { emails, meta, status, total } = emailData;
+  const { emails, meta, status } = emailData;
   const [timeRange, setTimeRange] = useState<TimeRange>("threeWeeks");
+  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
   const isThreeWeeks = timeRange === "threeWeeks";
-  const threeMonthGroups = useMemo(
-    () => !isThreeWeeks && status === "ready" ? buildThreeMonthGroups(emails) : [],
+  const marketLabel = getMarketLabel(selectedMarket);
+  // 下拉计数（m4）：按当前窗口、未按市场筛选的集合计算，随窗口变、不随选中市场变
+  // （若用选中市场过滤后的集合算计数，下拉选项会随自身选择循环变化；若用 3 个月全量，
+  // 则与三周标题计数口径不一致）。三周 = 窗口内邮件，三个月 = 全部邮件。
+  const windowEmails = useMemo(
+    () => (status === "ready" ? (isThreeWeeks ? filterEmailsByWindow(emails) : emails) : []),
     [emails, isThreeWeeks, status],
   );
-  const groupedWords = isThreeWeeks ? THREE_WEEK_GROUPS : threeMonthGroups;
+  const marketCounts = useMemo(() => countEmailsByMarket(windowEmails), [windowEmails]);
+  const marketFilteredEmails = useMemo(
+    () => (status === "ready" ? emails.filter((email) => matchesMarket(email, selectedMarket)) : []),
+    [emails, selectedMarket, status],
+  );
+  const threeWeekEmails = useMemo(
+    () => (status === "ready" ? filterEmailsByWindow(marketFilteredEmails) : []),
+    [marketFilteredEmails, status],
+  );
+  // 3 周与三个月共享同一套 keywords 分组规则（见 buildThreeMonthGroups），3 周只多一道窗口过滤：
+  // 旧静态版的标题词映射与 emails.keywords 词表几乎无重叠（仅 New/Sale/Denim/Arrivals 4 词），不可复用。
+  const threeWeekGroups = useMemo(
+    () => (isThreeWeeks && status === "ready" ? buildThreeMonthGroups(threeWeekEmails) : []),
+    [threeWeekEmails, isThreeWeeks, status],
+  );
+  const threeMonthGroups = useMemo(
+    () => !isThreeWeeks && status === "ready" ? buildThreeMonthGroups(marketFilteredEmails) : [],
+    [marketFilteredEmails, isThreeWeeks, status],
+  );
+  const groupedWords = isThreeWeeks ? threeWeekGroups : threeMonthGroups;
   const displayedWords = groupedWords.flatMap((category) => category.words);
   const title = isThreeWeeks
-    ? `分类高频词 Top 10 · 三周窗口（${DATA.meta.total} 封）`
-    : `分类高频词 Top 10 · 三个月窗口${status === "ready" ? `（${total} 封）` : ""}`;
+    ? `分类高频词 Top 10 · 三周窗口${status === "ready" ? `（${marketLabel} · ${threeWeekEmails.length} 封 · 实时聚合）` : ""}`
+    : `分类高频词 Top 10 · 三个月窗口${status === "ready" ? `（${marketLabel} · ${marketFilteredEmails.length} 封）` : ""}`;
   const hint = isThreeWeeks
-    ? `${DATA.meta.range}；沿用现有分类，每类按含该词的邮件数倒序展示前 10 个。`
-    : `${meta.range}；逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`;
+    ? `${THREE_WEEK_RANGE}；市场：${marketLabel}；实时聚合窗口内邮件，与三个月词云同口径分组，逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`
+    : `${meta.range}；市场：${marketLabel}；逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`;
 
   return (
     <Card title={title} hint={hint}>
       <div className="overflow-hidden rounded-2xl border border-[#ded2c3] bg-[#fffaf3]">
+        {status === "ready" ? (
+          <div className="flex flex-col gap-3 border-b border-[#ded2c3] bg-[#f7f1e8] px-4 py-4 sm:px-5">
+            <MarketFilter
+              value={selectedMarket}
+              onChange={setSelectedMarket}
+              counts={marketCounts}
+              total={windowEmails.length}
+            />
+          </div>
+        ) : null}
         <div className="flex flex-col gap-3 border-b border-[#ded2c3] bg-[#f7f1e8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <span className="text-sm font-bold text-[#292521]">时间范围</span>
           <div
@@ -232,9 +204,29 @@ export function WordCloud() {
           </div>
         </div>
 
-        {!isThreeWeeks && status !== "ready" ? (
+        {status !== "ready" ? (
           <div className="p-4 sm:p-5">
             <ExtendedEmailsState {...emailData} />
+          </div>
+        ) : marketFilteredEmails.length === 0 ? (
+          <div className="p-4 sm:p-5" role="status">
+            <p className="text-sm font-bold text-[#292521]">该市场暂无邮件</p>
+            <p className="mt-2 text-sm leading-6 text-[#6f655b]">
+              {marketLabel}在统计窗口内暂无邮件，请切换市场。
+            </p>
+          </div>
+        ) : groupedWords.length === 0 ? (
+          <div className="p-4 sm:p-5" role="status">
+            <p className="text-sm font-bold text-[#292521]">
+              {isThreeWeeks && threeWeekEmails.length === 0
+                ? "该市场在三周窗口内暂无邮件"
+                : "无有效词"}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#6f655b]">
+              {isThreeWeeks && threeWeekEmails.length === 0
+                ? "该市场在三周窗口内暂无邮件，请切换市场或时间范围。"
+                : "该市场邮件的关键词均为空或为噪音词，无法生成词云。"}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-[#e2d7ca] px-4 sm:px-5" aria-live="polite" aria-atomic="true">

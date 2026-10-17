@@ -1,8 +1,7 @@
-import { DATA } from "../data";
 import type { CSSProperties } from "react";
 
-export const TOTAL = DATA.meta.total;
-export const DAYS = 22;
+// 冻结快照常量 TOTAL / DAYS 已删除（B2）：KPI 不再用 DATA.meta.total = 196，
+// 改由 KpiGrid 对 emails 表做 3 周实时聚合（默认窗口全市场 211，日均 211/22）。
 export const PALETTE = [
   "#e85d75",
   "#f2a93b",

@@ -8,6 +8,7 @@ import { DashboardHeader } from "./components/DashboardHeader";
 import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
 import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
+import { MarketComparison } from "./components/MarketComparison";
 import { MarkdownReport } from "./components/MarkdownReport";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
@@ -48,11 +49,17 @@ function getEmailThemeFromHash(): string | null {
 export default function App() {
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [view, setView] = useState<View>(getViewFromHash);
-  const emailTheme = view === "emails" ? getEmailThemeFromHash() : null;
+  // emailTheme 必须是独立 state：同页 hash 变化时 view 可能仍为 "emails"，
+  // 仅 setView 会被 React 跳过渲染，主题与组件 key 都不会更新（P0-01）。
+  const [emailTheme, setEmailTheme] = useState<string | null>(() =>
+    getViewFromHash() === "emails" ? getEmailThemeFromHash() : null,
+  );
 
   useEffect(() => {
     const handleHashChange = () => {
-      setView(getViewFromHash());
+      const nextView = getViewFromHash();
+      setView(nextView);
+      setEmailTheme(nextView === "emails" ? getEmailThemeFromHash() : null);
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     };
@@ -132,6 +139,7 @@ export default function App() {
               </div>
             </div>
 
+            <MarketComparison />
             <CalendarView />
             <DashboardFooter />
           </>

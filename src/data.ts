@@ -27,6 +27,9 @@ export interface Brand {
   strategy: string;
   themes: Record<string, number>;
   campaigns: string[];
+  // 聚合周定义（m1）：实时聚合弹窗用，由 buildAggregatedBrand 从聚合 weeks 填入；
+  // 缺失时弹窗回落到静态 DATA.weeks（默认窗口下两者一致）。
+  weeks?: Week[];
 }
 
 export interface Word {

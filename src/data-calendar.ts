@@ -3,18 +3,18 @@
  *
  * 数据源：统一适配后的逐封邮件记录
  * 覆盖窗口：2026-07-16 至 2026-10-15（共 92 天）
- * 包含品牌（共 6 品牌，770 封消费者邮件）：
- *   - Zara（43 封）
- *   - lululemon（59 封）
- *   - ALO Yoga（113 封）
- *   - Halara（191 封）
- *   - Temu（85 封消费者邮件，已排除 8 封商家侧 listing 邮件）
- *   - SHEIN（279 封）
+ * 包含品牌（共 6 品牌，859 封 = US 770 + UK 89）：
+ *   - Zara（92 封 = US 43 + UK 49）
+ *   - lululemon（99 封 = US 59 + UK 40）
+ *   - ALO Yoga（113 封，US only）
+ *   - Halara（191 封，US only）
+ *   - Temu（85 封消费者邮件，US only，已排除 8 封商家侧 listing 邮件）
+ *   - SHEIN（279 封，US only）
  *
  * 注：仅提供数据模型与导出接口，不含 UI 组件。
  */
 
-import { BRAND_ORDER, EXTENDED_EMAIL_META, type EmailRecord } from "./email-data";
+import { BRAND_ORDER, EXTENDED_EMAIL_META, getEmailMarket, type EmailRecord } from "./email-data";
 
 // ==========================================
 // 类型定义
@@ -204,7 +204,9 @@ function processBrand(
   return {
     brand: brandName,
     source: EXTENDED_EMAIL_META.source,
-    market: "US",
+    // 该品牌覆盖的市场（由传入邮件推导；多市场时为 "US + UK" 形式）。此前硬编码 "US" 已失真。
+    // 注意：CalendarView 目前不消费 built.brands[].market（用自己的 selectedMarket），此处仅保真。
+    market: [...new Set(emailsInput.map((email) => getEmailMarket(email)))].join(" + ") || "US",
     note: "",
     window: {
       start: CALENDAR_START_DATE,
@@ -351,7 +353,7 @@ export interface CalendarValidationResult {
 
 /**
  * 校验日历聚合与传入邮件记录的数据合法性：
- * 1. 总封数 === 770
+ * 1. 总封数 === EXTENDED_EMAIL_META.total（当前 859 = US 770 + UK 89，多市场导入后同步更新）
  * 2. 6 品牌封数各自分别与传入邮件一致
  * 3. 6 品牌主题分布各自分别与传入邮件一致
  * 4. 每日封数完整覆盖 92 天窗口，无缺失日期，各日封数累加与总量守恒
@@ -364,7 +366,9 @@ export function validateCalendarData(emails: EmailRecord[], built: CalendarData)
   const identities = new Set<string>();
 
   for (const email of emails) {
-    const identity = `${email.brand}-${email.date}-${email.source_index}`;
+    // 标识必须含市场：同一品牌同一天同一 source_index 在不同市场是不同邮件
+    //（source_index 按市场内品牌文件重排，US 与 UK 有 7 个 (brand, date, source_index) 碰撞）。
+    const identity = `${getEmailMarket(email)}-${email.brand}-${email.date}-${email.source_index}`;
     if (identities.has(identity)) errors.push("邮件存在重复标识。");
     identities.add(identity);
     if (!CALENDAR_BRANDS.includes(email.brand as BrandKey)) errors.push("邮件包含未知品牌。");

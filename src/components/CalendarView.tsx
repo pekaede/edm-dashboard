@@ -8,8 +8,9 @@ import {
   validateCalendarData,
   type BrandKey,
 } from "../data-calendar";
-import { useExtendedEmails } from "../email-data";
+import { useExtendedEmails, countEmailsByMarket, getEmailMarket, matchesMarket } from "../email-data";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
 
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
@@ -44,6 +45,7 @@ interface CalendarDay {
 interface SearchResult {
   date: string;
   brand: string;
+  market: string;
   count: number;
 }
 
@@ -129,6 +131,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const [selectedMonth, setSelectedMonth] = useState<MonthKey>("2026-08");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
 
   const built = useMemo(
     () => status === "ready" ? buildCalendarData(emails) : null,
@@ -142,18 +145,30 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const calendarWeeks = useMemo(() => createMonthWeeks(selectedMonth), [selectedMonth]);
   const activeMonth = MONTHS.find((month) => month.key === selectedMonth) ?? MONTHS[1];
 
+  const marketCounts = useMemo(() => countEmailsByMarket(emails), [emails]);
+
   const filteredEmails = useMemo(
     () =>
-      selectedBrand === ALL_BRANDS
-        ? emails
-        : emails.filter((email) => email.brand === selectedBrand),
-    [emails, selectedBrand],
+      emails.filter(
+        (email) =>
+          (selectedBrand === ALL_BRANDS || email.brand === selectedBrand) &&
+          matchesMarket(email, selectedMarket),
+      ),
+    [emails, selectedBrand, selectedMarket],
   );
 
-  const dailyCounts = useMemo(
-    () => (selectedBrand === ALL_BRANDS ? built?.dailyTotals : built?.dailyCountsByBrand[selectedBrand]) ?? {},
-    [built, selectedBrand],
-  );
+  // 日历格子与热力刻度按（品牌 + 市场）过滤后的邮件逐日计数，不走 built 的品牌预聚合
+  //（built 仍用于全量校验，不随市场筛选变化；data-calendar.ts 不在此任务改动范围内）。
+  const dailyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const date of WINDOW_DATES) {
+      counts[date] = 0;
+    }
+    for (const email of filteredEmails) {
+      counts[email.date] = (counts[email.date] ?? 0) + 1;
+    }
+    return counts;
+  }, [filteredEmails]);
 
   const heatRange = useMemo(() => {
     const positiveCounts = WINDOW_DATES.map((date) => dailyCounts[date] ?? 0)
@@ -188,12 +203,13 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
         continue;
       }
 
-      const key = `${email.date}\u0000${email.brand}`;
+      // 搜索 key 含市场（m3）：US/UK 同日同品牌不再合并为一行，避免市场混淆。
+      const key = `${email.date}\u0000${email.brand}\u0000${getEmailMarket(email)}`;
       const current = matches.get(key);
       if (current) {
         current.count += 1;
       } else {
-        matches.set(key, { date: email.date, brand: email.brand, count: 1 });
+        matches.set(key, { date: email.date, brand: email.brand, market: getEmailMarket(email), count: 1 });
       }
     }
 
@@ -204,6 +220,11 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
   function selectBrand(brand: BrandKey | typeof ALL_BRANDS) {
     setSelectedBrand(brand);
+    setSelectedDate(null);
+  }
+
+  function selectMarket(market: MarketFilterValue) {
+    setSelectedMarket(market);
     setSelectedDate(null);
   }
 
@@ -271,6 +292,15 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
       </div>
 
       <div className="mt-3">
+        <MarketFilter
+          value={selectedMarket}
+          onChange={selectMarket}
+          counts={marketCounts}
+          total={emails.length}
+        />
+      </div>
+
+      <div className="mt-3">
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="按品牌筛选邮件">
           {[ALL_BRANDS, ...BRANDS].map((brand) => {
             const isSelected = selectedBrand === brand;
@@ -326,8 +356,13 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           <div>
             <h3 className="text-base font-bold text-[#1c1917]">{activeMonth.fullLabel}每日发信量</h3>
             <p className="mt-0.5 text-sm text-[#6f655e]" aria-live="polite">
-              当前范围：{selectedBrand}，共 {filteredEmails.length} 封
+              当前范围：{selectedBrand} · {getMarketLabel(selectedMarket)}，共 {filteredEmails.length} 封
             </p>
+            {filteredEmails.length === 0 ? (
+              <p className="mt-1 text-sm font-semibold text-[#9b4b3c]" role="status">
+                该市场在统计窗口内暂无邮件，请切换市场或清除筛选。
+              </p>
+            ) : null}
           </div>
           <div
             className="flex flex-wrap items-center gap-1.5 text-xs text-[#6f655e]"
@@ -409,10 +444,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                         <button
                           type="button"
                           onClick={() => toggleDate(day.date)}
-                          aria-label={`${formatDate(day.date, true)}，${selectedBrand} ${count} 封邮件`}
+                          aria-label={`${formatDate(day.date, true)}，${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
                           aria-expanded={isSelected}
                           aria-controls={detailId}
-                          title={`${formatDate(day.date, true)} · ${count} 封邮件`}
+                          title={`${formatDate(day.date, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
                           className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c1917] focus-visible:ring-offset-1 focus-visible:ring-offset-[#fffaf1] sm:p-1 ${
                             usesWhiteText ? "text-white" : "text-[#1c1917]"
                           } ${
@@ -463,6 +498,8 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                         <dd className="text-[#29231f]">{email.date}</dd>
                         <dt className="font-semibold text-[#7f7167]">品牌</dt>
                         <dd className="font-semibold text-[#29231f]">{email.brand}</dd>
+                        <dt className="font-semibold text-[#7f7167]">市场</dt>
+                        <dd className="text-[#29231f]">{getMarketLabel(getEmailMarket(email))}</dd>
                         <dt className="font-semibold text-[#7f7167]">主题</dt>
                         <dd className="text-[#29231f]">{getThemeLabel(email.theme)}</dd>
                         <dt className="font-semibold text-[#7f7167]">关键词</dt>
@@ -485,7 +522,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             关键词搜索
           </label>
           <p id={searchHelpId} className="mt-1 text-sm text-[#6f655e]">
-            搜索范围跟随品牌筛选；支持完整词或部分词，例如 dress、sale、new。
+            搜索范围跟随品牌与市场筛选；支持完整词或部分词，例如 dress、sale、new。
           </p>
           <input
             id={`${searchHelpId}-input`}
@@ -502,18 +539,19 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               {searchResults.length > 0 ? (
                 <>
                   <p className="text-sm font-semibold text-[#514943]">
-                    找到 {searchResults.length} 个日期与品牌组合
+                    找到 {searchResults.length} 个日期与品牌与市场组合
                   </p>
                   <ul className="mt-2 divide-y divide-[#eee3d6] rounded-xl border border-[#e7dccd] bg-[#fffdf8]">
                     {searchResults.map((result) => (
                       <li
-                        key={`${result.date}-${result.brand}`}
-                        className="grid gap-1 px-4 py-3 text-sm sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-3"
+                        key={`${result.date}-${result.brand}-${result.market}`}
+                        className="grid gap-1 px-4 py-3 text-sm sm:grid-cols-[8rem_1fr_5rem_auto] sm:items-center sm:gap-3"
                       >
                         <time dateTime={result.date} className="font-medium text-[#6f655e]">
                           {result.date}
                         </time>
                         <span className="font-semibold text-[#1c1917]">{result.brand}</span>
+                        <span className="text-[#6f655e]">{getMarketLabel(result.market)}</span>
                         <span className="text-[#6f655e]">{result.count} 封</span>
                       </li>
                     ))}

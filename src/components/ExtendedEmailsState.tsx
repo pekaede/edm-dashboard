@@ -1,14 +1,17 @@
-import type { ExtendedEmailsResult } from "../email-data";
+import { EXTENDED_EMAIL_META, type ExtendedEmailsResult } from "../email-data";
 
-type ExtendedEmailsStateProps = Pick<ExtendedEmailsResult, "status" | "total" | "error" | "retry">;
+// meta 可选：3 周汇总三组件（他人文件）只传 {status, total, error, retry}，缺失时回落到 EXTENDED_EMAIL_META。
+type ExtendedEmailsStateProps = Pick<ExtendedEmailsResult, "status" | "total" | "error" | "retry"> & {
+  meta?: typeof EXTENDED_EMAIL_META;
+};
 
-export function ExtendedEmailsState({ status, total, error, retry }: ExtendedEmailsStateProps) {
+export function ExtendedEmailsState({ status, total, error, retry, meta }: ExtendedEmailsStateProps) {
   if (status === "ready") return null;
 
   const message = status === "loading"
     ? "正在加载邮件…"
     : status === "incomplete"
-      ? `数据未取齐（已取 ${total} / 770 封）`
+      ? `数据未取齐（已取 ${total} / ${(meta ?? EXTENDED_EMAIL_META).total} 封）`
       : error ?? "邮件加载失败，请重试。";
 
   return (

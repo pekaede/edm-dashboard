@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { Brand } from "../data";
 import { DATA } from "../data";
-import { THEME_COLORS, THEME_TINTS } from "./dashboard";
+import { themeColor } from "../three-week-aggregation";
+import { THEME_TINTS } from "./dashboard";
 
 interface BrandDetailDialogProps {
   brand: Brand;
@@ -11,6 +12,24 @@ interface BrandDetailDialogProps {
 export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const maxWeekly = Math.max(...brand.weekly, 1);
+  // 周标签（m1）：优先用实时聚合 weeks（buildAggregatedBrand 传入），缺失时回落静态 DATA.weeks。
+  const weeks = brand.weeks ?? DATA.weeks;
+  // 主题列表（m1）：静态主题 + 窗口内出现的未知主题（如 other），不要丢计数；
+  // 未知主题标签回落为 "其他"（other）或原 key，颜色用 themeColor 的中性回落。
+  const themeEntries = [
+    ...DATA.themes.map((theme) => ({
+      key: theme.key,
+      labelZh: theme.labelZh,
+      count: brand.themes[theme.key] ?? 0,
+    })),
+    ...Object.keys(brand.themes)
+      .filter((key) => !DATA.themes.some((theme) => theme.key === key))
+      .map((key) => ({
+        key,
+        labelZh: key === "other" ? "其他" : key,
+        count: brand.themes[key] ?? 0,
+      })),
+  ];
   const closeDialog = () => dialogRef.current?.close();
 
   useEffect(() => {
@@ -100,17 +119,17 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           </h3>
           <div className="mt-4 space-y-4">
             {brand.weekly.map((count, index) => (
-              <div key={DATA.weeks[index].id} className="brand-week-row">
+              <div key={weeks[index].id} className="brand-week-row">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{DATA.weeks[index].label}</p>
-                  <p className="text-xs text-slate-600">{DATA.weeks[index].range}</p>
+                  <p className="text-sm font-semibold text-slate-800">{weeks[index].label}</p>
+                  <p className="text-xs text-slate-600">{weeks[index].range}</p>
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
                   <div
                     className="h-full rounded-full transition-[width] duration-300"
                     style={{
                       width: `${(count / maxWeekly) * 100}%`,
-                      backgroundColor: THEME_COLORS.category,
+                      backgroundColor: themeColor("category"),
                     }}
                   />
                 </div>
@@ -127,24 +146,26 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
             主题结构
           </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {DATA.themes.map((theme) => {
-              const count = brand.themes[theme.key] ?? 0;
-              const percentage = Math.round((count / brand.total) * 100);
+            {themeEntries.map((theme) => {
+              const count = theme.count;
+              const percentage = brand.total > 0 ? Math.round((count / brand.total) * 100) : 0;
+              const color = themeColor(theme.key);
+              const tint = THEME_TINTS[theme.key] ?? "#f4f0e9";
 
               return (
                 <div
                   key={theme.key}
                   className="rounded-xl border p-4"
                   style={{
-                    borderColor: THEME_COLORS[theme.key],
-                    backgroundColor: THEME_TINTS[theme.key],
+                    borderColor: color,
+                    backgroundColor: tint,
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
                       <span
                         className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: THEME_COLORS[theme.key] }}
+                        style={{ backgroundColor: color }}
                         aria-hidden="true"
                       />
                       {theme.labelZh}
@@ -159,7 +180,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                         className="h-full rounded-full"
                         style={{
                           width: `${percentage}%`,
-                          backgroundColor: THEME_COLORS[theme.key],
+                          backgroundColor: color,
                         }}
                       />
                     </div>
@@ -179,7 +200,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           </h3>
           <ol className="mt-4 space-y-3">
             {brand.campaigns.slice(0, 3).map((campaign, index) => (
-              <li key={DATA.weeks[index].id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:gap-4">
+              <li key={weeks[index].id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:gap-4">
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold"
                   style={{
@@ -191,9 +212,9 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                 </span>
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-slate-900">
-                    {DATA.weeks[index].label}
+                    {weeks[index].label}
                     <span className="text-xs font-normal text-slate-600">
-                      {DATA.weeks[index].range}
+                      {weeks[index].range}
                     </span>
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">{campaign}</p>

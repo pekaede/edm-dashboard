@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Brand } from "../data";
-import { DATA } from "../data";
+import { useExtendedEmails } from "../email-data";
+import {
+  aggregateThreeWeek,
+  buildAggregatedBrand,
+  formatWindowRange,
+  themeColor,
+  themeLabelColor,
+  THREE_WEEK_WINDOW,
+} from "../three-week-aggregation";
 import { Card } from "./Card";
-import { THEME_COLORS, THEME_LABEL_COLORS } from "./dashboard";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
 interface BrandThemeBreakdownProps {
   onSelectBrand: (brand: Brand) => void;
@@ -10,11 +18,28 @@ interface BrandThemeBreakdownProps {
 
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
   const [highlightedTheme, setHighlightedTheme] = useState<string | null>(null);
+  const { status, emails, total, error, retry, meta } = useExtendedEmails();
+  const data = useMemo(
+    () => (status === "ready" ? aggregateThreeWeek(emails) : null),
+    [status, emails],
+  );
+
+  const hint = data
+    ? `各品牌 3 周实时聚合（窗口 ${formatWindowRange(data.window)}，共 ${data.total} 封）邮件主题占比与封数分布，与 3 个月 ${meta.total} 封为不同口径。`
+    : `各品牌 3 周实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}）邮件主题占比与封数分布，与 3 个月 ${meta.total} 封为不同口径。`;
+
+  if (status !== "ready" || !data) {
+    return (
+      <Card title="各品牌内容结构" hint={hint}>
+        <ExtendedEmailsState status={status} total={total} error={error} retry={retry} />
+      </Card>
+    );
+  }
 
   return (
     <Card
       title="各品牌内容结构"
-      hint={`各品牌近 ${DATA.meta.weekCount} 周邮件主题占比与封数分布。`}
+      hint={hint}
     >
       {/* Top Legend with interactive focus & hover states */}
       <div
@@ -22,7 +47,9 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
         role="group"
         aria-label="主题筛选图例"
       >
-        {DATA.themes.map((t) => {
+        {data.themes
+          .filter((t) => t.count > 0)
+          .map((t) => {
           const isHighlighted = highlightedTheme === t.key;
           return (
             <button
@@ -40,7 +67,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: THEME_COLORS[t.key] }}
+                style={{ backgroundColor: themeColor(t.key) }}
               />
               <span>{t.labelZh}</span>
             </button>
@@ -50,9 +77,9 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
       {/* Brand rows */}
       <div className="space-y-3.5">
-        {DATA.brands.map((b) => {
+        {data.brands.map((b) => {
           // Sort brand's themes by count descending to match visual layout
-          const segs = DATA.themes
+          const segs = data.themes
             .filter((t) => (b.themes[t.key] || 0) > 0)
             .map((t) => ({
               ...t,
@@ -71,7 +98,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               <button
                 type="button"
                 className="min-h-8 w-fit shrink-0 rounded-md px-1 py-0.5 text-left text-xs font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] sm:w-22 sm:text-sm"
-                onClick={() => onSelectBrand(b)}
+                onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name))}
               >
                 {b.name}
               </button>
@@ -114,7 +141,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
                   const isThemeDimmed =
                     highlightedTheme !== null && highlightedTheme !== t.key;
-                  const textColor = isThemeDimmed ? "#171411" : THEME_LABEL_COLORS[t.key];
+                  const textColor = isThemeDimmed ? "#171411" : themeLabelColor(t.key);
 
                   return (
                     <div
@@ -131,8 +158,8 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                         }`}
                         style={{
                           backgroundColor: isThemeDimmed
-                            ? `color-mix(in srgb, ${THEME_COLORS[t.key]} 30%, var(--surface-card))`
-                            : THEME_COLORS[t.key],
+                            ? `color-mix(in srgb, ${themeColor(t.key)} 30%, var(--surface-card))`
+                            : themeColor(t.key),
                         }}
                       >
                         {/* Only show percentage when wide enough to prevent overlap/clipping */}
@@ -155,7 +182,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                           <div className="flex items-center gap-1.5 font-semibold text-white">
                             <span
                               className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: THEME_COLORS[t.key] }}
+                              style={{ backgroundColor: themeColor(t.key) }}
                             />
                             <span>
                               {b.name} · {t.labelZh}

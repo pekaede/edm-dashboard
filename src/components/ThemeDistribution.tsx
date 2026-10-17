@@ -1,7 +1,14 @@
-import { useState } from "react";
-import { DATA } from "../data";
+import { useMemo, useState } from "react";
+import { useExtendedEmails } from "../email-data";
+import {
+  aggregateThreeWeek,
+  formatWindowRange,
+  themeColor,
+  themeLabelColor,
+  THREE_WEEK_WINDOW,
+} from "../three-week-aggregation";
 import { Card } from "./Card";
-import { THEME_COLORS, THEME_LABEL_COLORS, TOTAL } from "./dashboard";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
 // SVG arc generator helper
 function describeArc(
@@ -39,12 +46,42 @@ function describeArc(
 
 export function ThemeDistribution() {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const { status, emails, total: emailTotal, error, retry, meta } = useExtendedEmails();
+  const data = useMemo(
+    () => (status === "ready" ? aggregateThreeWeek(emails) : null),
+    [status, emails],
+  );
 
-  // Exact angles matching the prototype visual layout
-  // Start price at ~15° so category (last segment) centers around 0° (top)
+  const hint = data
+    ? `实时聚合（窗口 ${formatWindowRange(data.window)}，全期 ${data.total} 封），与 3 个月 ${meta.total} 封为不同口径。每封严格归入唯一主题。`
+    : `实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}），与 3 个月 ${meta.total} 封为不同口径。每封严格归入唯一主题。`;
+
+  if (status !== "ready" || !data) {
+    return (
+      <Card title="内容结构分布" hint={hint}>
+        <ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} />
+      </Card>
+    );
+  }
+
+  const total = data.total;
+
+  // 空窗口（total = 0）时 0/0 会产生 NaN 弧度与无效 SVG 坐标，不画环图，改显空态。
+  if (total === 0) {
+    return (
+      <Card title="内容结构分布" hint={hint}>
+        <p className="py-6 text-center text-sm text-slate-500">该窗口内暂无邮件。</p>
+      </Card>
+    );
+  }
+
+  // 零计数主题（m2）：过滤 count === 0 的切片，不渲染零弧度切片与 0% 标签；
+  // 图例随切片一起过滤（零主题在窗口内无邮件，不再单独占一行）。
   let currentDeg = 15;
-  const sliceData = DATA.themes.map((t) => {
-    const span = (t.count / TOTAL) * 360;
+  const sliceData = data.themes
+    .filter((t) => t.count > 0)
+    .map((t) => {
+    const span = (t.count / total) * 360;
     const startDeg = currentDeg;
     const endDeg = currentDeg + span;
     currentDeg = endDeg;
@@ -54,7 +91,7 @@ export function ThemeDistribution() {
     const rMid = 84;
     const tx = 120 + rMid * Math.cos(midRad);
     const ty = 120 + rMid * Math.sin(midRad);
-    const pct = Math.round((t.count / TOTAL) * 100);
+    const pct = t.pct;
 
     return {
       theme: t,
@@ -71,7 +108,7 @@ export function ThemeDistribution() {
   return (
     <Card
       title="内容结构分布"
-      hint={`全期 ${TOTAL} 封邮件，每封严格归入唯一主题。`}
+      hint={hint}
     >
       <div className="flex flex-col items-center">
         {/* Donut Chart SVG */}
@@ -87,7 +124,7 @@ export function ThemeDistribution() {
               const rIn = isHovered ? 58 : 62;
               const rOut = isHovered ? 110 : 104;
               const d = describeArc(120, 120, rIn, rOut, startDeg, endDeg);
-              const textColor = THEME_LABEL_COLORS[theme.key];
+              const textColor = themeLabelColor(theme.key);
 
               return (
                 <a
@@ -102,7 +139,7 @@ export function ThemeDistribution() {
                 >
                   <path
                     d={d}
-                    fill={THEME_COLORS[theme.key]}
+                    fill={themeColor(theme.key)}
                     stroke="var(--surface-card)"
                     strokeWidth={isHovered ? "3" : "2"}
                     className="transition-all duration-200 group-focus-visible:stroke-slate-900"
@@ -160,7 +197,7 @@ export function ThemeDistribution() {
                   dominantBaseline="central"
                   className="fill-slate-900 font-mono text-3xl font-bold tracking-tight select-none"
                 >
-                  {TOTAL}
+                  {total}
                 </text>
                 <text
                   x="120"
@@ -202,7 +239,7 @@ export function ThemeDistribution() {
                 <span className="flex min-w-0 items-center gap-2">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: THEME_COLORS[theme.key] }}
+                    style={{ backgroundColor: themeColor(theme.key) }}
                   />
                   <span
                     className={`truncate ${

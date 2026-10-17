@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
-import reportMarkdown from "../../reports/onepage-edm-2026-10-16.md?raw";
+import { useMemo, type ReactNode } from "react";
+import { useSnapshotData } from "../snapshot";
+import { fetchOnePageMarkdown } from "../supabase";
+import { SnapshotState } from "./SnapshotState";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
@@ -131,9 +133,32 @@ function renderInline(content: string): ReactNode[] {
   });
 }
 
-const blocks = parseMarkdown(reportMarkdown);
-
 export function MarkdownReport() {
+  const onepageSnapshot = useSnapshotData("onepage", fetchOnePageMarkdown);
+  const blocks = useMemo(
+    () =>
+      onepageSnapshot.status === "ready" && onepageSnapshot.data
+        ? parseMarkdown(onepageSnapshot.data)
+        : [],
+    [onepageSnapshot.status, onepageSnapshot.data],
+  );
+
+  if (onepageSnapshot.status !== "ready") {
+    return (
+      <div className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
+        <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />
+        <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+          <SnapshotState
+            status={onepageSnapshot.status}
+            error={onepageSnapshot.error}
+            retry={onepageSnapshot.retry}
+            loadingText="正在加载 OnePage 报告快照…"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
       <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />

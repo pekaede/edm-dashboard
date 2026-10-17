@@ -9,6 +9,30 @@ export interface EmailRecord {
   url?: string;
   day_seq: number;
   source_index: number;
+  // 市场代码（US/UK/AU/FR/DE/EU）。Supabase 行由 supabase.ts SELECT market 并经 isEmailRow 校验，
+  // 此处直接透传；JSON 回滚行无 market 时由 getEmailMarket() 兜底为 "US"。
+  market?: string;
+}
+
+/** 市场兜底 + 归一化：market 缺失/空串时视为 US；统一 trim + 大写（防 DB 返回 "" 或小写导致行从筛选中静默消失）。 */
+export function getEmailMarket(email: EmailRecord): string {
+  const normalized = (email.market ?? "US").trim().toUpperCase();
+  return normalized === "" ? "US" : normalized;
+}
+
+/** 市场匹配：null = 全部市场，否则按 getEmailMarket() 的兜底值精确匹配。 */
+export function matchesMarket(email: EmailRecord, market: string | null): boolean {
+  return market === null || getEmailMarket(email) === market;
+}
+
+/** 按市场统计封数（market 代码 → 封数），供三视图的市场下拉展示。 */
+export function countEmailsByMarket(emails: EmailRecord[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const email of emails) {
+    const market = getEmailMarket(email);
+    counts[market] = (counts[market] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export const BRAND_ORDER = ["Zara", "lululemon", "ALO Yoga", "Halara", "Temu", "SHEIN"] as const;
@@ -17,10 +41,14 @@ export const EXTENDED_EMAIL_META = {
   windowStart: "2026-07-16",
   windowEnd: "2026-10-15",
   range: "2026-07-16 – 2026-10-15",
-  market: "美国市场",
+  // 数据集已含多市场（US 770 + UK 89 = 859）。新增市场导入后需同步更新 total 与 market，
+  // 否则 ready 判定（emails.length === meta.total）与日历校验（validateCalendarData）会误判为未取齐。
+  market: "美国 + 英国",
   source: "Milled",
   brandCount: BRAND_ORDER.length,
-  total: 770,
+  // 3 周视图的周数（结构常量，非冻结计数；KPI/页眉用聚合 weeks.length 亦可）。
+  weekCount: 3,
+  total: 859,
 } as const;
 
 export type EmailDataSource = "supabase" | "json";
@@ -76,6 +104,7 @@ async function supabaseAdapter(): Promise<EmailRecord[]> {
     url: row.original_url ?? undefined,
     day_seq: row.day_seq,
     source_index: row.source_index,
+    market: row.market,
   })));
 }
 

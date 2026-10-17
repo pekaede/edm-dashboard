@@ -1,7 +1,8 @@
 import { useId, useMemo, useState } from "react";
-import { BRAND_ORDER, useExtendedEmails } from "../email-data";
+import { BRAND_ORDER, countEmailsByMarket, getEmailMarket, matchesMarket, useExtendedEmails } from "../email-data";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
 
 const PAGE_SIZE = 50;
 
@@ -11,6 +12,7 @@ const FILTER_THEMES = [
   { key: "new", label: "上新" },
   { key: "lifestyle", label: "生活方式" },
   { key: "category", label: "品类聚焦" },
+  { key: "other", label: "其他" },
 ] as const;
 
 const FILTER_BRANDS = BRAND_ORDER;
@@ -42,6 +44,7 @@ const FILTER_DOT_STYLES: Record<FilterTheme, string> = {
   new: "bg-[#568d72]",
   lifestyle: "bg-[#8069a3]",
   category: "bg-[#558b97]",
+  other: "bg-[#a39a8d]",
 };
 
 export function ExtendedEmailFilter({
@@ -58,22 +61,27 @@ export function ExtendedEmailFilter({
   );
   const [selectedBrand, setSelectedBrand] = useState<FilterBrand | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
   const listId = useId();
+
+  const marketCounts = useMemo(() => countEmailsByMarket(emails), [emails]);
 
   const filteredEmails = useMemo(
     () =>
       emails.filter(
         (email) =>
           (!selectedBrand || email.brand === selectedBrand) &&
-          (!selectedTheme || email.theme === selectedTheme),
+          (!selectedTheme || email.theme === selectedTheme) &&
+          matchesMarket(email, selectedMarket),
       ),
-    [emails, selectedBrand, selectedTheme],
+    [emails, selectedBrand, selectedTheme, selectedMarket],
   );
 
   const visibleEmails = filteredEmails.slice(0, visibleCount);
   const selectedThemeLabel = selectedTheme ? THEME_LABELS[selectedTheme] : "全部";
   const selectedBrandLabel = selectedBrand ?? "全部";
-  const filterSummary = `品牌：${selectedBrandLabel}，主题：${selectedThemeLabel}`;
+  const selectedMarketLabel = getMarketLabel(selectedMarket);
+  const filterSummary = `市场：${selectedMarketLabel}，品牌：${selectedBrandLabel}，主题：${selectedThemeLabel}`;
   const hasMore = visibleEmails.length < filteredEmails.length;
 
   const selectBrand = (brand: FilterBrand | null) => {
@@ -87,6 +95,11 @@ export function ExtendedEmailFilter({
     setSelectedTheme((currentTheme) =>
       theme !== null && currentTheme === theme ? null : theme,
     );
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const selectMarket = (market: MarketFilterValue) => {
+    setSelectedMarket(market);
     setVisibleCount(PAGE_SIZE);
   };
 
@@ -124,6 +137,15 @@ export function ExtendedEmailFilter({
           </div>
 
           <div className="space-y-5">
+            <div>
+              <MarketFilter
+                value={selectedMarket}
+                onChange={selectMarket}
+                counts={marketCounts}
+                total={emails.length}
+              />
+            </div>
+
             <div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
@@ -232,6 +254,17 @@ export function ExtendedEmailFilter({
           </div>
         </div>
 
+        {filteredEmails.length === 0 ? (
+          <div
+            className="border-y border-[#d9d0c3] bg-[#fffdf9] px-4 py-10 text-center sm:px-6"
+            role="status"
+          >
+            <p className="text-sm font-bold text-[#292521]">无符合当前筛选的邮件</p>
+            <p className="mt-2 text-sm leading-6 text-[#6f655b]">
+              {filterSummary}。请切换市场、品牌或主题，或清除筛选。
+            </p>
+          </div>
+        ) : (
         <div
           id={listId}
           className="max-h-[min(42rem,65dvh)] overflow-auto border-y border-[#d9d0c3] bg-[#fffdf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent-ink)]"
@@ -246,6 +279,7 @@ export function ExtendedEmailFilter({
               <tr>
                 <th scope="col" className="w-32 px-5 py-4">日期</th>
                 <th scope="col" className="w-44 px-5 py-4">品牌</th>
+                <th scope="col" className="w-24 px-5 py-4">市场</th>
                 <th scope="col" className="w-40 px-5 py-4">主题</th>
                 <th scope="col" className="px-5 py-4">关键词</th>
                 <th scope="col" className="w-24 whitespace-nowrap px-5 py-4">原文</th>
@@ -254,7 +288,7 @@ export function ExtendedEmailFilter({
             <tbody>
               {visibleEmails.map((email, index) => (
                 <tr
-                  key={`${email.brand}-${email.date}-${email.source_index}`}
+                  key={`${getEmailMarket(email)}-${email.brand}-${email.date}-${email.source_index}`}
                   className={`transition-colors hover:bg-[#fff1e9] ${index % 2 === 0 ? "bg-[#fffdf9]" : "bg-[#f8f2e9]"}`}
                 >
                   <td className="border-b border-[#e5ddd2] px-5 py-4 font-mono text-xs font-medium tabular-nums text-[#6f665c]">
@@ -262,6 +296,9 @@ export function ExtendedEmailFilter({
                   </td>
                   <td className="border-b border-[#e5ddd2] px-5 py-4 align-middle">
                     <span className="font-bold tracking-[-0.01em] text-[#211e1b]">{email.brand}</span>
+                  </td>
+                  <td className="border-b border-[#e5ddd2] px-5 py-4 align-middle text-[#5f574f]">
+                    {getMarketLabel(getEmailMarket(email))}
                   </td>
                   <td className="border-b border-[#e5ddd2] px-5 py-4 align-middle">
                     <span
@@ -293,6 +330,7 @@ export function ExtendedEmailFilter({
             </tbody>
           </table>
         </div>
+        )}
 
         <div className="flex flex-col gap-4 bg-[#f7f1e8] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p className="text-xs leading-5 text-[#746a60]" aria-live="polite">
