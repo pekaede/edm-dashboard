@@ -92,7 +92,7 @@ export function PageNav({ sections }: PageNavProps) {
   return (
     <nav
       aria-label="页面内容导航"
-      className="sticky top-0 z-20 border-b border-[#e5dbce] bg-[#fffdf9]/95 backdrop-blur-sm shadow-xs transition-colors"
+      className="sticky top-0 z-20 border-b border-[var(--border-default)] bg-[var(--surface-card)]/95 backdrop-blur-sm shadow-xs transition-colors"
     >
       <div className="dashboard-container">
         <div className="flex items-center gap-1.5 overflow-x-auto py-2.5 scrollbar-none sm:gap-2">
@@ -104,10 +104,10 @@ export function PageNav({ sections }: PageNavProps) {
                 type="button"
                 aria-current={isActive ? "true" : undefined}
                 onClick={() => handleNavClick(id)}
-                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a13f2d] focus-visible:ring-offset-1 sm:text-sm ${
+                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] sm:text-sm ${
                   isActive
-                    ? "bg-[#29231f] text-white shadow-xs"
-                    : "text-[#685d53] hover:bg-[#f2eade] hover:text-[#29231f]"
+                    ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-xs"
+                    : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
                 }`}
               >
                 {label}

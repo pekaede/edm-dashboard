@@ -1,4 +1,4 @@
-export type ViewType = "report" | "emails" | "calendar";
+export type ViewType = "report" | "emails" | "calendar" | "dashboard";
 
 export interface PageState {
   view: ViewType;
@@ -7,6 +7,28 @@ export interface PageState {
   theme: string | null;
   query: string;
 }
+
+export const KNOWN_MARKETS = new Set([
+  "us",
+  "uk",
+  "au",
+  "fr",
+  "de",
+  "it",
+  "nl",
+  "es",
+  "eu",
+  "other",
+]);
+
+export const KNOWN_THEMES = new Set([
+  "price",
+  "behavior",
+  "new",
+  "lifestyle",
+  "category",
+  "other",
+]);
 
 export const DEFAULT_PAGE_STATE: PageState = {
   view: "report",
@@ -29,7 +51,10 @@ function safeDecode(val: string): string {
  */
 export function buildHash(state: PageState): string {
   const view: ViewType =
-    state.view === "report" || state.view === "emails" || state.view === "calendar"
+    state.view === "report" ||
+    state.view === "emails" ||
+    state.view === "calendar" ||
+    state.view === "dashboard"
       ? state.view
       : "report";
 
@@ -89,18 +114,62 @@ export function parseHash(hash: string): PageState {
 
   const rawView = rawSegments[0] ?? "";
   const view: ViewType =
-    rawView === "report" || rawView === "emails" || rawView === "calendar"
+    rawView === "report" ||
+    rawView === "emails" ||
+    rawView === "calendar" ||
+    rawView === "dashboard"
       ? rawView
       : "report";
 
   const rawMarket = rawSegments[1];
-  const market = rawMarket === undefined || rawMarket.trim() === "" ? null : rawMarket.trim();
-
   const rawBrand = rawSegments[2];
-  const brand = rawBrand === undefined || rawBrand.trim() === "" ? "all" : rawBrand.trim();
-
   const rawTheme = rawSegments[3];
-  const theme = rawTheme === undefined || rawTheme.trim() === "" ? null : rawTheme.trim();
+
+  let market: string | null = null;
+  let brand = "all";
+  let theme: string | null = null;
+
+  // Short format single-argument resolution: #emails/xyz
+  if (rawSegments.length === 2) {
+    const seg = rawSegments[1]?.trim() ?? "";
+    if (seg.toLowerCase().startsWith("theme:")) {
+      const rawVal = seg.slice(6).trim();
+      theme = rawVal || null;
+      market = null;
+    } else {
+      const lower = seg.toLowerCase();
+      if (KNOWN_MARKETS.has(lower)) {
+        // Known market (including 'other') resolves as market
+        market = seg || null;
+        theme = null;
+      } else if (KNOWN_THEMES.has(lower)) {
+        // Known legacy theme (e.g. #emails/price) resolves as theme
+        market = null;
+        theme = seg || null;
+      } else {
+        // Unknown single segment defaults to market
+        market = seg || null;
+        theme = null;
+      }
+    }
+    brand = "all";
+  } else {
+    // Positional round-trip: segment 1 is always prioritized as market
+    market =
+      rawMarket === undefined || rawMarket.trim() === ""
+        ? null
+        : rawMarket.trim();
+
+    brand =
+      rawBrand === undefined || rawBrand.trim() === ""
+        ? "all"
+        : rawBrand.trim();
+
+    theme =
+      rawTheme === undefined || rawTheme.trim() === ""
+        ? null
+        : rawTheme.trim();
+  }
 
   return {
     view,
@@ -109,4 +178,34 @@ export function parseHash(hash: string): PageState {
     theme,
     query,
   };
+}
+
+/**
+ * Event name for synchronized URL state updates across components.
+ */
+export const URL_SYNC_EVENT = "edm_url_state_changed";
+
+/**
+ * Dispatches a notification that the URL hash state has changed externally (via replaceState / pushState).
+ */
+export function notifyUrlChanged(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent(URL_SYNC_EVENT));
+  } catch {
+    // Ignore in environments without CustomEvent
+  }
+}
+
+/**
+ * Compares two PageStates for deep equality.
+ */
+export function isEqualPageState(a: PageState, b: PageState): boolean {
+  return (
+    a.view === b.view &&
+    a.market === b.market &&
+    a.brand === b.brand &&
+    a.theme === b.theme &&
+    a.query === b.query
+  );
 }

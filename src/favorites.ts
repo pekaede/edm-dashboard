@@ -1,4 +1,15 @@
 const FAVORITES_STORAGE_KEY = "edm-favorites-v1";
+const FAVORITES_EVENT = "edm-favorites-changed";
+
+function dispatchFavoritesChange(): void {
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
+    } catch {
+      // Ignore in environments lacking CustomEvent
+    }
+  }
+}
 
 /**
  * Loads favorite email keys from localStorage.
@@ -37,6 +48,7 @@ function saveFavorites(favorites: string[]): void {
       return;
     }
     storage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+    dispatchFavoritesChange();
   } catch {
     // Fail silently when storage quota is exceeded or storage is disabled
   }
@@ -119,4 +131,21 @@ export function createFavoriteKey(params: {
   day_seq: number | string;
 }): string {
   return `${params.market}|${params.brand}|${params.sent_date}|${params.source_index}|${params.day_seq}`;
+}
+
+/**
+ * Subscribes to favorite changes (local and cross-tab storage events).
+ * Returns an unsubscribe cleanup function.
+ */
+export function subscribeFavorites(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+  const handler = () => callback();
+  window.addEventListener(FAVORITES_EVENT, handler);
+  window.addEventListener("storage", handler);
+  return () => {
+    window.removeEventListener(FAVORITES_EVENT, handler);
+    window.removeEventListener("storage", handler);
+  };
 }

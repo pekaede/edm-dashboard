@@ -55,7 +55,11 @@ export function downloadFile(
   }
 
   try {
-    const blob = new Blob([content], { type: mime });
+    const blobContent =
+      mime.includes("csv") && !content.startsWith("\uFEFF")
+        ? "\uFEFF" + content
+        : content;
+    const blob = new Blob([blobContent], { type: mime });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
