@@ -57,14 +57,15 @@ export function KpiGrid() {
   ];
 
   return (
-    <section aria-labelledby="kpi-title" aria-busy={status === "loading"}>
+    <section className="min-w-0" aria-labelledby="kpi-title" aria-busy={status === "loading"}>
       <h2 id="kpi-title" className="sr-only">
         关键指标
       </h2>
       <dl className="grid grid-cols-2 gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] xl:grid-cols-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="dashboard-card h-full flex-row! items-center gap-[calc(var(--card-padding)/2)] sm:gap-[var(--card-padding)]">
+          <div key={kpi.label} className="kpi-card h-full">
             <div
+              aria-hidden="true"
               className="flex size-[calc(var(--card-padding)*2)] shrink-0 items-center justify-center rounded-[var(--card-radius)] sm:size-[calc(var(--card-padding)*3)] [&_svg]:size-[var(--card-padding-sm)] [&_svg]:fill-none [&_svg]:stroke-2 [&_svg]:stroke-current [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round sm:[&_svg]:size-[calc(var(--card-padding)*1.5)]"
               style={{
                 color: `var(--theme-${kpi.theme}-text)`,
@@ -73,9 +74,9 @@ export function KpiGrid() {
             >
               {kpi.icon}
             </div>
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 max-w-full flex-col">
               <dt className="order-2 mt-[calc(var(--card-padding)/4)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)] sm:text-[length:var(--type-body-size)] sm:leading-[var(--type-body-leading)]">{kpi.label}</dt>
-              <dd className="order-1 text-[length:var(--type-h1-size)] font-[number:var(--type-h1-weight)] leading-[var(--type-h1-leading)] tracking-[var(--type-heading-tracking)] text-[var(--text-heading)] tabular-nums sm:text-[length:var(--type-h1-size-lg)]">
+              <dd className="kpi-value order-1 text-[length:var(--type-h1-size)] font-[number:var(--type-h1-weight)] leading-[var(--type-h1-leading)] tracking-[var(--type-heading-tracking)] text-[var(--text-heading)] tabular-nums sm:text-[length:var(--type-h1-size-lg)]">
                 {kpi.num}
               </dd>
             </div>

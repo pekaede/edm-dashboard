@@ -7,16 +7,19 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
   background: var(--surface-page);
   color: var(--text-body);
 }
 
 #root {
+  min-width: 0;
   min-height: 100vh;
 }
 
 .dashboard-shell {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background-color: var(--surface-page);
   background-image:
     radial-gradient(circle at 10% 0%, var(--surface-page-glow-accent), transparent 30rem),
@@ -25,7 +28,39 @@ body {
 
 .dashboard-container {
   width: min(100% - 2rem, 96rem);
+  min-width: 0;
+  max-width: 100%;
   margin-inline: auto;
+}
+
+.dashboard-container > *,
+.dashboard-overview-grid > *,
+.dashboard-shell :where(input, select, textarea, fieldset, .overflow-auto, .overflow-x-auto, .report-table-scroll) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-site-filter {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-site-filter > div {
+  min-width: 0;
+}
+
+.dashboard-site-filter select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 12rem;
+}
+
+.dashboard-header :where(h1, h2, p, li, label),
+.dashboard-card :where(h2, p, dt, dd),
+.kpi-card {
+  overflow-wrap: anywhere;
 }
 
 .view-switcher {
@@ -61,6 +96,7 @@ body {
 .dashboard-card,
 .kpi-card {
   min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
   background: var(--surface-card);
@@ -79,15 +115,31 @@ body {
 .kpi-card {
   display: flex;
   min-height: 6rem;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.625rem;
   padding: var(--kpi-padding);
 }
 
 .dashboard-card:hover,
-.kpi-card:hover {
+.kpi-card:hover,
+.dashboard-card:focus-within,
+.kpi-card:focus-within {
   border-color: var(--card-border-hover);
   box-shadow: var(--card-shadow-hover);
+}
+
+.dashboard-card-content {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.375rem;
+}
+
+.dashboard-card-content,
+.dashboard-shell :where(.overflow-auto, .overflow-x-auto, .report-table-scroll) {
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 0.375rem;
 }
 
 .dashboard-card :is(table, details, [tabindex="0"]),
@@ -97,8 +149,10 @@ body {
   scrollbar-width: thin;
 }
 
+.dashboard-card-content:focus-visible,
 .report-table-scroll:focus-visible {
   border-color: var(--control-focus);
+  outline-offset: -3px;
 }
 
 .brand-dialog {
@@ -144,9 +198,51 @@ body {
   gap: 0.75rem;
 }
 
-.dashboard-shell :focus-visible {
+.dashboard-shell :focus-visible,
+.dashboard-header :focus-visible,
+.dashboard-card :focus-visible,
+.kpi-card :focus-visible {
   outline: 3px solid var(--control-focus);
   outline-offset: 3px;
+}
+
+.dashboard-card .dashboard-card-content:focus-visible,
+.dashboard-shell .report-table-scroll:focus-visible {
+  outline-offset: -3px;
+}
+
+.calendar-view {
+  overflow-wrap: anywhere;
+}
+
+.calendar-view.dashboard-card {
+  max-width: min(100%, 48rem);
+  padding: var(--card-calendar-padding);
+}
+
+.calendar-view :where(a, button, input, li, dd) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.calendar-month-panel {
+  padding: 0.25rem;
+}
+
+.calendar-day-button:focus-visible {
+  z-index: 1;
+  outline-offset: 1px;
+}
+
+.calendar-detail {
+  padding: var(--card-calendar-padding);
+  scroll-margin-block: 5rem;
+}
+
+.calendar-search-result {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
 }
 
 .chart-legend {
@@ -199,6 +295,8 @@ summary,
 
   .kpi-card {
     min-height: 7rem;
+    flex-direction: row;
+    align-items: center;
     gap: 1rem;
     padding: var(--kpi-padding-sm);
   }
@@ -207,11 +305,33 @@ summary,
     width: min(48rem, calc(100vw - 3rem));
     max-height: calc(100dvh - 3rem);
   }
+
+  .calendar-search-result {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.5fr) auto auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
 }
 
 @media (min-width: 64rem) {
+  .dashboard-site-filter {
+    width: min(100%, 34rem);
+  }
+
   .dashboard-title {
     font-size: var(--type-h1-size-lg);
+  }
+
+  .calendar-month-panel {
+    padding: 0.5rem;
+  }
+
+  .calendar-detail {
+    padding: var(--card-calendar-padding-sm);
+  }
+
+  .calendar-view.dashboard-card {
+    padding: var(--card-calendar-padding-sm);
   }
 }
 

@@ -26,7 +26,7 @@ export function DashboardHeader() {
   ];
 
   return (
-    <header className="dashboard-container flex flex-col gap-[var(--card-padding)] py-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] sm:py-[var(--card-padding-sm)]">
+    <header className="dashboard-header dashboard-container flex flex-col gap-[var(--card-padding)] py-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] sm:py-[var(--card-padding-sm)]">
       <div className="flex flex-col gap-[var(--card-padding)] lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="dashboard-title text-[var(--text-heading)]">
@@ -36,7 +36,7 @@ export function DashboardHeader() {
             Email Marketing Intelligence
           </p>
         </div>
-        <div className="shrink-0 border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
+        <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
           <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">研究周期</p>
           <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
         </div>
@@ -52,7 +52,7 @@ export function DashboardHeader() {
               {meta.market}
             </p>
           </div>
-          <div className="min-w-0 [&_select]:min-h-[calc(var(--card-padding)*3)] [&_select]:w-full [&_select]:rounded-[var(--card-radius)] [&_select]:border-[var(--control-filter-active-bg)] [&_select]:text-[length:var(--type-h3-size)] sm:[&_select]:w-auto">
+          <div className="dashboard-site-filter [&_select]:min-h-[calc(var(--card-padding)*3)] [&_select]:rounded-[var(--card-radius)] [&_select]:border-[var(--control-filter-active-bg)] [&_select]:text-[length:var(--type-h3-size)]">
             <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label="全局站点（三个月）" />
           </div>
         </div>
@@ -60,7 +60,7 @@ export function DashboardHeader() {
           {tags.map(({ label, theme }) => (
             <li
               key={label}
-              className="rounded-[var(--card-radius)] border px-[calc(var(--card-padding)/2)] py-[calc(var(--card-padding)/4)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-body)]"
+              className="min-w-0 max-w-full rounded-[var(--card-radius)] border px-[calc(var(--card-padding)/2)] py-[calc(var(--card-padding)/4)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-body)]"
               style={{
                 borderColor: `color-mix(in srgb, ${THEME_COLORS[theme]} 35%, var(--border-default))`,
                 background: THEME_TINTS[theme],
