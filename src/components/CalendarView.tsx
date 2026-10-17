@@ -10,8 +10,12 @@ import {
 } from "../data-calendar";
 import { getEmailMarket } from "../email-data";
 import { useSiteEmails, useSiteSelection } from "../site-data";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
@@ -123,7 +127,7 @@ function getThemeLabel(theme: string): string {
 
 export function CalendarView({ className = "" }: CalendarViewProps) {
   const emailData = useSiteEmails();
-  const { market: selectedMarket } = useSiteSelection();
+  const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, status, total, meta } = emailData;
   const titleId = useId();
   const detailId = useId();
@@ -217,6 +221,16 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   function selectBrand(brand: BrandKey | typeof ALL_BRANDS) {
     setSelectedBrand(brand);
     setSelectedDate(null);
+  }
+
+  function resetCalendarFilters() {
+    selectBrand(ALL_BRANDS);
+    setSearchTerm("");
+    if (selectedMarket !== null) {
+      setMarket(null);
+    } else if (selectedBrand === ALL_BRANDS) {
+      emailData.retry();
+    }
   }
 
   function selectMonth(month: MonthKey) {
@@ -340,11 +354,6 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             <p className="mt-0.5 text-sm text-[var(--text-calendar-secondary)]" aria-live="polite">
               当前范围：{selectedBrand} · {getMarketLabel(selectedMarket)}，共 {filteredEmails.length} 封
             </p>
-            {filteredEmails.length === 0 ? (
-              <p className="mt-1 text-sm font-semibold text-[var(--text-notice)]" role="status">
-                该市场在统计窗口内暂无邮件，请切换市场或清除筛选。
-              </p>
-            ) : null}
           </div>
           <div
             className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-calendar-secondary)]"
@@ -374,83 +383,94 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           aria-labelledby={`${monthPanelId}-${selectedMonth}-tab`}
           className="mt-2 rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar)] p-1.5 shadow-[var(--shadow-calendar-panel)] sm:p-2"
         >
-          <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
-            <caption className="sr-only">
-              {activeMonth.fullLabel}邮件日历，颜色深浅使用2026年7月16日至10月15日的全局刻度
-            </caption>
-            <thead>
-              <tr>
-                {DAY_LABELS.map((dayLabel) => (
-                  <th
-                    scope="col"
-                    key={dayLabel}
-                    className="h-5 text-xs font-semibold text-[var(--text-calendar-muted)]"
-                  >
-                    {dayLabel}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {calendarWeeks.map((week) => (
-                <tr key={week[0].date}>
-                  {week.map((day) => {
-                    if (!day.inMonth) {
-                      return (
-                        <td key={day.date} className="p-0" aria-hidden="true">
-                          <span className="block h-12 rounded-md" />
-                        </td>
-                      );
-                    }
+          {filteredEmails.length === 0 ? (
+            <div className={EMPTY_STATE_CLASS_NAME}>
+              <EmptyState
+                title="当前筛选暂无邮件"
+                description={`${selectedBrand} · ${getMarketLabel(selectedMarket)}在统计窗口 ${meta.range} 内暂无邮件（0 封），请切换市场或清除筛选。日历按日期统计邮件收录数。`}
+                actionLabel={selectedBrand === ALL_BRANDS && selectedMarket === null ? "重新拉取" : "重置品牌与市场筛选"}
+                onAction={resetCalendarFilters}
+              />
+            </div>
+          ) : (
+            <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
+              <caption className="sr-only">
+                {activeMonth.fullLabel}邮件日历，颜色深浅使用2026年7月16日至10月15日的全局刻度
+              </caption>
+              <thead>
+                <tr>
+                  {DAY_LABELS.map((dayLabel) => (
+                    <th
+                      scope="col"
+                      key={dayLabel}
+                      className="h-5 text-xs font-semibold text-[var(--text-calendar-muted)]"
+                    >
+                      {dayLabel}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {calendarWeeks.map((week) => (
+                  <tr key={week[0].date}>
+                    {week.map((day) => {
+                      if (!day.inMonth) {
+                        return (
+                          <td key={day.date} className="p-0" aria-hidden="true">
+                            <span className="block h-12 rounded-md" />
+                          </td>
+                        );
+                      }
 
-                    const dayNumber = parseDate(day.date).getUTCDate();
-                    if (!day.inWindow) {
+                      const dayNumber = parseDate(day.date).getUTCDate();
+                      if (!day.inWindow) {
+                        return (
+                          <td key={day.date} className="p-0">
+                            <div
+                              className="h-12 rounded-md border border-[var(--border-calendar-outside)] bg-[var(--surface-calendar-outside)] p-1 text-left text-xs font-medium leading-4 text-[var(--text-calendar-outside)]"
+                              aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
+                            >
+                              {dayNumber}
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      const count = dailyCounts[day.date] ?? 0;
+                      const isSelected = selectedDate === day.date;
+                      const heatColor = getHeatColor(count, heatRange.minimum, heatRange.maximum);
+                      const usesWhiteText = heatColor === HEAT_COLORS[3] || heatColor === HEAT_COLORS[4];
                       return (
                         <td key={day.date} className="p-0">
-                          <div
-                            className="h-12 rounded-md border border-[var(--border-calendar-outside)] bg-[var(--surface-calendar-outside)] p-1 text-left text-xs font-medium leading-4 text-[var(--text-calendar-outside)]"
-                            aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
+                          <button
+                            type="button"
+                            onClick={() => toggleDate(day.date)}
+                            aria-label={`${formatDate(day.date, true)}，${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
+                            aria-expanded={isSelected}
+                            aria-controls={detailId}
+                            title={`${formatDate(day.date, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
+                            className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
+                              usesWhiteText ? "text-white" : "text-[var(--text-calendar-heading)]"
+                            } ${
+                              isSelected ? "ring-2 ring-[var(--text-calendar-heading)] ring-offset-1 ring-offset-[var(--surface-calendar)]" : ""
+                            }`}
+                            style={{ backgroundColor: heatColor }}
                           >
-                            {dayNumber}
-                          </div>
+                            <span className="text-xs font-semibold leading-4">
+                              {dayNumber}
+                            </span>
+                            <span className="whitespace-nowrap text-xs font-bold leading-4">
+                              {count} 封
+                            </span>
+                          </button>
                         </td>
                       );
-                    }
-
-                    const count = dailyCounts[day.date] ?? 0;
-                    const isSelected = selectedDate === day.date;
-                    const heatColor = getHeatColor(count, heatRange.minimum, heatRange.maximum);
-                    const usesWhiteText = heatColor === HEAT_COLORS[3] || heatColor === HEAT_COLORS[4];
-                    return (
-                      <td key={day.date} className="p-0">
-                        <button
-                          type="button"
-                          onClick={() => toggleDate(day.date)}
-                          aria-label={`${formatDate(day.date, true)}，${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
-                          aria-expanded={isSelected}
-                          aria-controls={detailId}
-                          title={`${formatDate(day.date, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
-                          className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
-                            usesWhiteText ? "text-white" : "text-[var(--text-calendar-heading)]"
-                          } ${
-                            isSelected ? "ring-2 ring-[var(--text-calendar-heading)] ring-offset-1 ring-offset-[var(--surface-calendar)]" : ""
-                          }`}
-                          style={{ backgroundColor: heatColor }}
-                        >
-                          <span className="text-xs font-semibold leading-4">
-                            {dayNumber}
-                          </span>
-                          <span className="whitespace-nowrap text-xs font-bold leading-4">
-                            {count} 封
-                          </span>
-                        </button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div id={detailId} className={selectedDate ? "mt-3" : ""} aria-live="polite">
@@ -493,7 +513,14 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-[var(--text-calendar-secondary)]">当日无邮件。</p>
+                <div className={`mt-[var(--card-padding)] ${EMPTY_STATE_CLASS_NAME}`}>
+                  <EmptyState
+                    title="当日无邮件"
+                    description={`${formatDate(selectedDate, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)}暂无邮件记录，请返回日历选择其他日期。`}
+                    actionLabel="返回日历"
+                    onAction={() => setSelectedDate(null)}
+                  />
+                </div>
               )}
             </div>
           ) : null}
@@ -540,9 +567,14 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   </ul>
                 </>
               ) : (
-                <p className="rounded-xl border border-dashed border-[var(--border-calendar-input)] bg-[var(--surface-calendar-detail)] px-4 py-5 text-sm text-[var(--text-calendar-secondary)]">
-                  无匹配
-                </p>
+                <div className={EMPTY_STATE_CLASS_NAME}>
+                  <EmptyState
+                    title="无匹配"
+                    description={`当前品牌与市场筛选内，没有包含关键词“${searchTerm.trim()}”的邮件。支持完整词或部分词，可清除关键词后重新搜索。`}
+                    actionLabel="清除关键词"
+                    onAction={() => setSearchTerm("")}
+                  />
+                </div>
               )}
             </div>
           ) : null}

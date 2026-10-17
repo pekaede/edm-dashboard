@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Brand } from "../data";
-import { useSiteEmails } from "../site-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
   aggregateThreeWeek,
   buildAggregatedBrand,
@@ -10,8 +10,12 @@ import {
   THREE_WEEK_WINDOW,
 } from "../three-week-aggregation";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 interface BrandThemeBreakdownProps {
   onSelectBrand: (brand: Brand) => void;
@@ -20,6 +24,7 @@ interface BrandThemeBreakdownProps {
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
   const [highlightedTheme, setHighlightedTheme] = useState<string | null>(null);
   const { status, emails, total, error, retry, meta } = useSiteEmails();
+  const { market, setMarket } = useSiteSelection();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
@@ -38,7 +43,18 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
   }
 
   if (data.total === 0) {
-    return <Card title="各品牌内容结构" hint={hint}><p className="py-6 text-center text-sm text-slate-600" role="status">该站点在三周窗口内暂无邮件（0 封）。</p></Card>;
+    return (
+      <Card title="各品牌内容结构" hint={hint}>
+        <div className={EMPTY_STATE_CLASS_NAME}>
+          <EmptyState
+            title="三周窗口暂无品牌主题记录"
+            description="该站点在三周窗口内暂无邮件（0 封），不生成品牌主题占比与封数分布。可切换市场或重新拉取数据。"
+            actionLabel={market === null ? "重新拉取" : "切换至全部市场"}
+            onAction={market === null ? retry : () => setMarket(null)}
+          />
+        </div>
+      </Card>
+    );
   }
 
   return (

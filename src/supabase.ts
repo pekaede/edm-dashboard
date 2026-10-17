@@ -17,6 +17,28 @@ export interface EmailDataset {
   exactTotal: number;
 }
 
+/**
+ * 数据完整性失败（分页未取齐、总数变化、标识不一致等）。
+ * 与网络失败 / 配置错误区分：上游应映射为 `incomplete` 状态，而非 `error`（网络失败）。
+ * `code` 供通用 hook（如 snapshot.ts）做鸭子类型判断，避免通用层依赖本模块。
+ */
+export class IncompleteDataError extends Error {
+  readonly code = "incomplete" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "IncompleteDataError";
+  }
+}
+
+export function isIncompleteDataError(error: unknown): boolean {
+  return (
+    error instanceof IncompleteDataError ||
+    (typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === "incomplete")
+  );
+}
+
 function getSupabaseConfig(): { baseUrl: string; publishableKey: string } {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -57,7 +79,7 @@ function readExactTotal(response: Response): number {
   const totalMatch = response.headers.get("Content-Range")?.match(/\/(\d+)$/);
   const total = totalMatch ? Number(totalMatch[1]) : NaN;
   if (!Number.isSafeInteger(total) || total < 0) {
-    throw new Error("邮件响应缺少精确总数，无法确认数据完整性。");
+    throw new IncompleteDataError("邮件响应缺少精确总数，无法确认数据完整性。");
   }
   return total;
 }
@@ -68,7 +90,7 @@ function rowIdentity(row: SupabaseEmailRow, columns: string[]): string {
     !(typeof value === "string" && value.length > 0) &&
     !(typeof value === "number" && Number.isSafeInteger(value)),
   )) {
-    throw new Error("邮件唯一标识无效，无法确认数据完整性。");
+    throw new IncompleteDataError("邮件唯一标识无效，无法确认数据完整性。");
   }
   return JSON.stringify(values);
 }
@@ -135,26 +157,26 @@ export async function fetchEmailDataset(): Promise<EmailDataset> {
       while (rows.length < exactTotal) {
         endpoint.searchParams.set("offset", String(rows.length));
         const response = await requestPage();
-        if (readExactTotal(response) !== exactTotal) throw new Error("邮件总数在加载期间发生变化，请重试。");
+        if (readExactTotal(response) !== exactTotal) throw new IncompleteDataError("邮件总数在加载期间发生变化，请重试。");
         const page: unknown = await response.json();
-        if (!Array.isArray(page) || !page.every(isEmailRow)) throw new Error("邮件记录格式无效。");
-        if (page.length === 0) throw new Error(`邮件分页未取齐（已取 ${rows.length} / ${exactTotal} 封）。`);
+        if (!Array.isArray(page) || !page.every(isEmailRow)) throw new IncompleteDataError("邮件记录格式无效。");
+        if (page.length === 0) throw new IncompleteDataError(`邮件分页未取齐（已取 ${rows.length} / ${exactTotal} 封）。`);
         for (const row of page) {
           const identity = rowIdentity(row, keyColumns);
           const sourceIdentity = rowIdentity(row, SOURCE_KEY);
           if (identities.has(identity) || sourceIdentities.has(sourceIdentity)) {
-            throw new Error("邮件分页存在重复标识，已拒绝本次结果并重新加载。");
+            throw new IncompleteDataError("邮件分页存在重复标识，已拒绝本次结果并重新加载。");
           }
           identities.add(identity);
           sourceIdentities.add(sourceIdentity);
           rows.push(row);
         }
-        if (rows.length > exactTotal) throw new Error("邮件返回条数超过精确总数，请重试。");
+        if (rows.length > exactTotal) throw new IncompleteDataError("邮件返回条数超过精确总数，请重试。");
       }
       endpoint.searchParams.set("offset", "0");
-      if (readExactTotal(await requestPage("HEAD")) !== exactTotal) throw new Error("邮件总数在加载期间发生变化，请重试。");
+      if (readExactTotal(await requestPage("HEAD")) !== exactTotal) throw new IncompleteDataError("邮件总数在加载期间发生变化，请重试。");
       if (rows.length !== exactTotal || identities.size !== rows.length || sourceIdentities.size !== rows.length) {
-        throw new Error("邮件条数或唯一标识数与精确总数不一致。");
+        throw new IncompleteDataError("邮件条数或唯一标识数与精确总数不一致。");
       }
       return { rows, exactTotal };
     } catch (error) {

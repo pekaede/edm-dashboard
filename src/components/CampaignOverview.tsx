@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Brand } from "../data";
-import { useSiteEmails } from "../site-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
   aggregateThreeWeek,
   buildAggregatedBrand,
@@ -8,8 +8,12 @@ import {
   THREE_WEEK_WINDOW,
 } from "../three-week-aggregation";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 // 周定义（标签 / 日期范围）由窗口起止推导；数字（每周计数、合计）来自 emails 表实时聚合。
 // 品牌明细弹窗的周标签用聚合 weeks（经 buildAggregatedBrand 传入），不再用静态 DATA.weeks。
@@ -37,6 +41,7 @@ interface CampaignOverviewProps {
 
 export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
   const { status, emails, total, error, retry, meta } = useSiteEmails();
+  const { market, setMarket } = useSiteSelection();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
@@ -55,7 +60,18 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
   }
 
   if (data.total === 0) {
-    return <Card title="品牌 × 周 × 发送频次" hint={hint}><p className="py-6 text-center text-sm text-slate-600" role="status">该站点在三周窗口内暂无邮件（0 封）。</p></Card>;
+    return (
+      <Card title="品牌 × 周 × 发送频次" hint={hint}>
+        <div className={EMPTY_STATE_CLASS_NAME}>
+          <EmptyState
+            title="三周窗口暂无发送记录"
+            description="该站点在三周窗口内暂无邮件（0 封），不生成品牌周发送频次。可切换市场或重新拉取数据。"
+            actionLabel={market === null ? "重新拉取" : "切换至全部市场"}
+            onAction={market === null ? retry : () => setMarket(null)}
+          />
+        </div>
+      </Card>
+    );
   }
 
   const maxWeekly = Math.max(...data.brands.flatMap((b) => b.weekly));

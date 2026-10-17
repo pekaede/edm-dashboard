@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from "react";
 import { BRAND_ORDER, getEmailMarket } from "../email-data";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
 
@@ -54,7 +55,7 @@ export function ExtendedEmailFilter({
   initialTheme?: string | null;
 }) {
   const emailData = useSiteEmails();
-  const { market: selectedMarket } = useSiteSelection();
+  const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, meta, status } = emailData;
   const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(() =>
     FILTER_THEMES.some((theme) => theme.key === initialTheme)
@@ -101,6 +102,21 @@ export function ExtendedEmailFilter({
     return (
       <Card title="3 个月邮件筛选" hint={hint}>
         <ExtendedEmailsState {...emailData} />
+      </Card>
+    );
+  }
+
+  if (emails.length === 0) {
+    return (
+      <Card title="3 个月邮件筛选" hint={hint}>
+        <div className="py-6">
+          <EmptyState
+            title={`${selectedMarketLabel}暂无收录邮件`}
+            description={`该市场在当前统计窗口（${meta.range}）内暂无公开邮件收录记录。看板统计总量均为 Milled 公开收录样本，非品牌私域全量投递。`}
+            actionLabel={selectedMarket ? "切换至全部市场" : "重新拉取"}
+            onAction={selectedMarket ? () => setMarket(null) : emailData.retry}
+          />
+        </div>
       </Card>
     );
   }
@@ -239,14 +255,17 @@ export function ExtendedEmailFilter({
         </div>
 
         {filteredEmails.length === 0 ? (
-          <div
-            className="border-y border-[var(--border-strong)] bg-[var(--surface-card)] px-4 py-10 text-center sm:px-6"
-            role="status"
-          >
-            <p className="text-sm font-bold text-[var(--text-control)]">无符合当前筛选的邮件</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-description)]">
-              {filterSummary}。请切换市场、品牌或主题，或清除筛选。
-            </p>
+          <div className="border-y border-[var(--border-strong)] bg-[var(--surface-card)] p-4 sm:p-6">
+            <EmptyState
+              title="无符合当前筛选的邮件"
+              description={`${filterSummary}。当前统计窗口（${meta.range}）内暂无符合该组合条件的公开邮件样本。看板收录量均为 Milled 公开收录样本，非品牌私域全量投递。`}
+              actionLabel="重置品牌与主题筛选"
+              onAction={() => {
+                setSelectedBrand(null);
+                setSelectedTheme(null);
+                setVisibleCount(PAGE_SIZE);
+              }}
+            />
           </div>
         ) : (
         <div
@@ -316,26 +335,28 @@ export function ExtendedEmailFilter({
         </div>
         )}
 
-        <div className="flex flex-col gap-4 bg-[var(--surface-page)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p className="text-xs leading-5 text-[var(--text-caption)]" aria-live="polite">
-            已显示 <strong className="text-[var(--text-control)]">{visibleEmails.length}</strong> / {filteredEmails.length} 封
-            <span className="mx-2" aria-hidden="true">·</span>
-            按日期倒序
-          </p>
+        {filteredEmails.length > 0 ? (
+          <div className="flex flex-col gap-4 bg-[var(--surface-page)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <p className="text-xs leading-5 text-[var(--text-caption)]" aria-live="polite">
+              已显示 <strong className="text-[var(--text-control)]">{visibleEmails.length}</strong> / {filteredEmails.length} 封
+              <span className="mx-2" aria-hidden="true">·</span>
+              按日期倒序
+            </p>
 
-          {hasMore ? (
-            <button
-              type="button"
-              onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
-              aria-controls={listId}
-              className="min-h-11 rounded-full border border-[var(--text-control)] bg-[var(--text-control)] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
-            >
-              加载更多（剩余 {filteredEmails.length - visibleEmails.length} 封）
-            </button>
-          ) : (
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">已加载全部</p>
-          )}
-        </div>
+            {hasMore ? (
+              <button
+                type="button"
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+                aria-controls={listId}
+                className="min-h-11 rounded-full border border-[var(--text-control)] bg-[var(--text-control)] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
+              >
+                加载更多（剩余 {filteredEmails.length - visibleEmails.length} 封）
+              </button>
+            ) : (
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">已加载全部</p>
+            )}
+          </div>
+        ) : null}
       </div>
     </Card>
   );

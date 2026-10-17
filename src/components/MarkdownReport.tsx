@@ -1,7 +1,11 @@
 import { useMemo, type ReactNode } from "react";
 import { buildLiveOnePage } from "../onepage-report";
-import { useSiteEmails } from "../site-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
@@ -135,7 +139,8 @@ function renderInline(content: string): ReactNode[] {
 
 export function MarkdownReport() {
   const emailData = useSiteEmails();
-  const { status, emails, meta } = emailData;
+  const { status, emails, meta, retry } = emailData;
+  const { market, setMarket } = useSiteSelection();
   const blocks = useMemo(
     () =>
       status === "ready" && emails.length > 0
@@ -150,11 +155,17 @@ export function MarkdownReport() {
         <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
         <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
           {status !== "ready" ? <ExtendedEmailsState {...emailData} /> : (
-            <div role="status">
-              <h2 className="text-xl font-bold text-slate-950">{meta.market} · OnePage 报告</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-700">{meta.range} 内暂无邮件（0 封），不生成主题或发送频次结论。请切换顶部站点。</p>
-              <p className="mt-2 text-xs text-slate-600">{meta.source} · {meta.provenance}</p>
-            </div>
+            <>
+              <div className={EMPTY_STATE_CLASS_NAME}>
+                <EmptyState
+                  title={`${meta.market} · OnePage 报告暂无记录`}
+                  description={`${meta.range} 内暂无邮件（0 封），不生成主题或发送频次结论。可切换市场或重新拉取数据。`}
+                  actionLabel={market === null ? "重新拉取" : "切换至全部市场"}
+                  onAction={market === null ? retry : () => setMarket(null)}
+                />
+              </div>
+              <p className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{meta.source} · {meta.provenance}</p>
+            </>
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSiteEmails } from "../site-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
   aggregateThreeWeek,
   formatWindowRange,
@@ -8,7 +8,11 @@ import {
   THREE_WEEK_WINDOW,
 } from "../three-week-aggregation";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 // SVG arc generator helper
 function describeArc(
@@ -47,6 +51,7 @@ function describeArc(
 export function ThemeDistribution() {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const { status, emails, total: emailTotal, error, retry, meta } = useSiteEmails();
+  const { market, setMarket } = useSiteSelection();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
@@ -70,7 +75,14 @@ export function ThemeDistribution() {
   if (total === 0) {
     return (
       <Card title="内容结构分布" hint={hint}>
-        <p className="py-6 text-center text-sm text-slate-500">该窗口内暂无邮件。</p>
+        <div className={EMPTY_STATE_CLASS_NAME}>
+          <EmptyState
+            title="三周窗口暂无主题分布"
+            description="该站点在三周窗口内暂无邮件（0 封），不计算主题占比或绘制环形图。可切换市场或重新拉取数据。"
+            actionLabel={market === null ? "重新拉取" : "切换至全部市场"}
+            onAction={market === null ? retry : () => setMarket(null)}
+          />
+        </div>
       </Card>
     );
   }

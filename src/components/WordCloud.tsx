@@ -12,8 +12,12 @@ import {
 } from "../word-cloud-groups";
 import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
+
+const EMPTY_STATE_CLASS_NAME =
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 type TimeRange = "threeWeeks" | "threeMonths";
 
@@ -118,9 +122,9 @@ function getWordSize(count: number, words: Word[]): string {
 
 export function WordCloud() {
   const emailData = useSiteEmails();
-  const { emails, meta, status } = emailData;
+  const { emails, meta, status, retry } = emailData;
   const [timeRange, setTimeRange] = useState<TimeRange>("threeWeeks");
-  const { market: selectedMarket } = useSiteSelection();
+  const { market: selectedMarket, setMarket } = useSiteSelection();
   const isThreeWeeks = timeRange === "threeWeeks";
   const marketLabel = getMarketLabel(selectedMarket);
   const marketFilteredEmails = emails;
@@ -189,24 +193,28 @@ export function WordCloud() {
             <ExtendedEmailsState {...emailData} />
           </div>
         ) : marketFilteredEmails.length === 0 ? (
-          <div className="p-4 sm:p-5" role="status">
-            <p className="text-sm font-bold text-[var(--text-control)]">该市场暂无邮件</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-description)]">
-              {marketLabel}在统计窗口内暂无邮件，请切换市场。
-            </p>
+          <div className={`p-[var(--card-padding)] sm:p-[var(--card-padding-sm)] ${EMPTY_STATE_CLASS_NAME}`}>
+            <EmptyState
+              title="该市场暂无邮件"
+              description={`${marketLabel}在统计窗口内暂无邮件，请切换市场或重新拉取数据。`}
+              actionLabel={selectedMarket === null ? "重新拉取" : "切换至全部市场"}
+              onAction={selectedMarket === null ? retry : () => setMarket(null)}
+            />
           </div>
         ) : groupedWords.length === 0 ? (
-          <div className="p-4 sm:p-5" role="status">
-            <p className="text-sm font-bold text-[var(--text-control)]">
-              {isThreeWeeks && threeWeekEmails.length === 0
+          <div className={`p-[var(--card-padding)] sm:p-[var(--card-padding-sm)] ${EMPTY_STATE_CLASS_NAME}`}>
+            <EmptyState
+              title={isThreeWeeks && threeWeekEmails.length === 0
                 ? "该市场在三周窗口内暂无邮件"
                 : "无有效词"}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-description)]">
-              {isThreeWeeks && threeWeekEmails.length === 0
+              description={isThreeWeeks && threeWeekEmails.length === 0
                 ? "该市场在三周窗口内暂无邮件，请切换市场或时间范围。"
                 : "该市场邮件的关键词均为空或为噪音词，无法生成词云。"}
-            </p>
+              actionLabel={isThreeWeeks ? "切换至三个月" : selectedMarket === null ? "重新拉取" : "切换至全部市场"}
+              onAction={isThreeWeeks
+                ? () => setTimeRange("threeMonths")
+                : selectedMarket === null ? retry : () => setMarket(null)}
+            />
           </div>
         ) : (
           <div className="divide-y divide-[var(--divider-wordcloud)] px-4 sm:px-5" aria-live="polite" aria-atomic="true">

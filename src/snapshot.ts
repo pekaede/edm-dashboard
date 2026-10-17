@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type SnapshotStatus = "loading" | "ready" | "error";
+export type SnapshotStatus = "loading" | "ready" | "error" | "incomplete";
 
 export interface SnapshotResult<T> {
   status: SnapshotStatus;
@@ -35,8 +35,15 @@ export function useSnapshotData<T>(key: string, fetcher: () => Promise<T>): Snap
         // 否则卸载后失败的请求会留在缓存中，重挂载时直接复用旧 rejection 而不重拉。
         if (promiseCache.get(key) === request) promiseCache.delete(key);
         if (cancelled) return;
+        // 完整性失败映射为 incomplete（与网络失败 error 区分）。
+        // 鸭子类型判断 code === "incomplete"（对应 supabase.ts 的 IncompleteDataError），
+        // 保持通用 hook 不直接依赖 supabase 模块。
+        const isIncomplete =
+          typeof fetchError === "object" &&
+          fetchError !== null &&
+          (fetchError as { code?: unknown }).code === "incomplete";
         setError(fetchError instanceof Error ? fetchError.message : "快照加载失败，请重试。");
-        setStatus("error");
+        setStatus(isIncomplete ? "incomplete" : "error");
       },
     );
     return () => {

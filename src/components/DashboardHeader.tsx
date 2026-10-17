@@ -20,46 +20,61 @@ export function DashboardHeader() {
     { label: meta.source, theme: "behavior" },
     { label: `${data ? data.total : "—"} 封样本（3 周）`, theme: "new" },
     {
-      label: `3 个月有记录品牌 ${meta.brandCount} · 研究周期 ${meta.weekCount} 周`,
+      label: `3 个月有记录品牌 ${data ? meta.brandCount : "—"} · 研究周期 ${meta.weekCount} 周`,
       theme: "lifestyle",
     },
   ];
 
   return (
-    <header className="dashboard-container py-5 sm:py-7">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <header className="dashboard-container flex flex-col gap-[var(--card-padding)] py-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] sm:py-[var(--card-padding-sm)]">
+      <div className="flex flex-col gap-[var(--card-padding)] lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">Email Marketing Intelligence</p>
-          <h1 className="mt-1 dashboard-title text-slate-950">
+          <h1 className="dashboard-title text-[var(--text-heading)]">
             {DATA.meta.title}
           </h1>
-          <ul className="mt-4 flex flex-wrap gap-2" aria-label="数据范围摘要">
-            {tags.map(({ label, theme }) => (
-              <li
-                key={label}
-                className="rounded-full border px-3 py-1.5 text-sm font-semibold text-slate-800"
-                style={{
-                  borderColor: `color-mix(in srgb, ${THEME_COLORS[theme]} 35%, var(--color-slate-200))`,
-                  background: THEME_TINTS[theme],
-                }}
-              >
-                {label}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-body-size)] leading-[var(--type-body-leading)] text-[var(--text-secondary)]">
+            Email Marketing Intelligence
+          </p>
         </div>
-        <div className="shrink-0 border-l-2 border-[var(--accent)] pl-3 lg:text-right">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">研究周期</p>
-          <p className="mt-1 text-sm font-semibold tabular-nums text-slate-800">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
+        <div className="shrink-0 border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
+          <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">研究周期</p>
+          <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
         </div>
       </div>
-      <div className="mt-5 space-y-2 border-t border-slate-200 pt-4">
-        <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label="全局站点（三个月）" />
-        <p className="text-xs leading-5 text-slate-600">
+      <section
+        aria-labelledby="global-site-title"
+        className="space-y-[var(--card-padding)] rounded-[var(--card-radius)] border border-[var(--border-strong)] bg-[var(--surface-raised)] p-[var(--card-padding)] shadow-[var(--card-shadow)] sm:p-[var(--card-padding-sm)]"
+      >
+        <div className="flex flex-col gap-[var(--card-padding)] lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <h2 id="global-site-title" className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">当前全局站点</h2>
+            <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-h2-size)] font-[number:var(--type-h2-weight)] leading-[var(--type-h2-leading)] text-[var(--text-heading)] sm:text-[length:var(--type-h2-size-sm)]">
+              {meta.market}
+            </p>
+          </div>
+          <div className="min-w-0 [&_select]:min-h-[calc(var(--card-padding)*3)] [&_select]:w-full [&_select]:rounded-[var(--card-radius)] [&_select]:border-[var(--control-filter-active-bg)] [&_select]:text-[length:var(--type-h3-size)] sm:[&_select]:w-auto">
+            <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label="全局站点（三个月）" />
+          </div>
+        </div>
+        <ul className="flex flex-wrap gap-[calc(var(--card-padding)/2)]" aria-label="数据范围摘要">
+          {tags.map(({ label, theme }) => (
+            <li
+              key={label}
+              className="rounded-[var(--card-radius)] border px-[calc(var(--card-padding)/2)] py-[calc(var(--card-padding)/4)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-body)]"
+              style={{
+                borderColor: `color-mix(in srgb, ${THEME_COLORS[theme]} 35%, var(--border-default))`,
+                background: THEME_TINTS[theme],
+              }}
+            >
+              {label}
+            </li>
+          ))}
+        </ul>
+        <p className="text-[length:var(--type-helper-size)] leading-[var(--type-body-leading)] text-[var(--text-secondary)]">
           {meta.source} · 查询固定至 {meta.windowEnd}。站点联动看板、OnePage、邮件、日历和词云；跨市场对比独立选择。
           {status === "loading" ? " 计数加载中。" : null}
         </p>
-      </div>
+      </section>
     </header>
   );
 }

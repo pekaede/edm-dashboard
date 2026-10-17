@@ -71,54 +71,64 @@ function Dashboard() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  const viewNavigation = (
+    <nav aria-label="页面视图" className="flex min-w-0 justify-center sm:justify-end">
+      <div className="view-switcher">
+        <a
+          href="#dashboard"
+          aria-current={view === "dashboard" ? "page" : undefined}
+          className={`view-switcher-link ${
+            view === "dashboard"
+              ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-switcher)]"
+              : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
+          }`}
+        >
+          数据看板
+        </a>
+        <a
+          href="#report"
+          aria-current={view === "report" ? "page" : undefined}
+          className={`view-switcher-link ${
+            view === "report"
+              ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-switcher)]"
+              : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
+          }`}
+        >
+          OnePage 报告
+        </a>
+        <a
+          href="#emails"
+          aria-current={view === "emails" ? "page" : undefined}
+          className={`view-switcher-link ${
+            view === "emails"
+              ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-switcher)]"
+              : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
+          }`}
+        >
+          邮件视图
+        </a>
+      </div>
+    </nav>
+  );
+
   return (
-    <div className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased">
+    <div className="dashboard-shell min-h-screen font-sans text-[var(--text-body)] antialiased">
       <DashboardHeader />
 
-      <main className="dashboard-container space-y-4 pb-6 sm:space-y-5 sm:pb-8">
-        <nav aria-label="页面视图" className="flex justify-center sm:justify-end">
-          <div className="view-switcher">
-            <a
-              href="#dashboard"
-              aria-current={view === "dashboard" ? "page" : undefined}
-              className={`view-switcher-link ${
-                view === "dashboard"
-                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
-                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
-              }`}
-            >
-              数据看板
-            </a>
-            <a
-              href="#report"
-              aria-current={view === "report" ? "page" : undefined}
-              className={`view-switcher-link ${
-                view === "report"
-                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
-                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
-              }`}
-            >
-              OnePage 报告
-            </a>
-            <a
-              href="#emails"
-              aria-current={view === "emails" ? "page" : undefined}
-              className={`view-switcher-link ${
-                view === "emails"
-                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
-                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
-              }`}
-            >
-              邮件视图
-            </a>
-          </div>
-        </nav>
-
+      <main className="dashboard-container space-y-[var(--card-padding)] pb-[calc(var(--card-padding)*2)] sm:space-y-[var(--card-padding-sm)] sm:pb-[calc(var(--card-padding-sm)*2)]">
         {view === "dashboard" ? (
           <>
             <KpiGrid />
 
-            <div className="dashboard-overview-grid grid items-stretch gap-4 xl:grid-cols-[1.1fr_0.85fr_1.1fr] xl:gap-5">
+            <section aria-label="OnePage 摘要" className="min-w-0 space-y-[calc(var(--card-padding)/2)] xl:[&_ol]:grid-cols-2">
+              <div className="flex flex-col gap-[calc(var(--card-padding)/2)] sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[length:var(--type-h3-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-h3-leading)] text-[var(--text-heading)]">OnePage 摘要</p>
+                {viewNavigation}
+              </div>
+              <Insights />
+            </section>
+
+            <div className="dashboard-overview-grid grid items-stretch gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] xl:grid-cols-[1.1fr_0.85fr_1.1fr]">
               <div className="min-w-0">
                 <CampaignOverview onSelectBrand={setSelectedBrand} />
               </div>
@@ -130,13 +140,8 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="grid items-stretch gap-4 xl:grid-cols-2 xl:gap-5">
-              <div className="min-w-0">
-                <WordCloud />
-              </div>
-              <div className="min-w-0">
-                <Insights />
-              </div>
+            <div className="min-w-0">
+              <WordCloud />
             </div>
 
             <MarketComparison />
@@ -144,17 +149,21 @@ function Dashboard() {
             <DashboardFooter />
           </>
         ) : view === "report" ? (
-          <MarkdownReport />
+          <>
+            {viewNavigation}
+            <MarkdownReport />
+          </>
         ) : (
           <section
-            className="space-y-4 sm:space-y-5"
+            className="space-y-[var(--card-padding)] sm:space-y-[var(--card-padding-sm)]"
             data-email-theme={emailTheme ?? undefined}
             aria-label="邮件视图"
           >
+            {viewNavigation}
             <div>
               <a
                 href="#dashboard"
-                className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2"
+                className="inline-flex min-h-[calc(var(--card-padding)*3)] items-center rounded-[var(--card-radius)] px-[var(--card-padding)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--control-text)] transition-colors hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)]"
                 aria-label="返回数据看板"
               >
                 ← 回到看板

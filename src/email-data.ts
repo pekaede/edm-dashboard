@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { fetchEmailDataset } from "./supabase";
+import { fetchEmailDataset, isIncompleteDataError } from "./supabase";
 
 export interface EmailRecord {
   brand: string;
@@ -39,7 +39,7 @@ export const EXTENDED_EMAIL_META = {
   windowStart: "2026-07-16",
   windowEnd: "2026-10-15",
   range: "2026-07-16 – 2026-10-15",
-  market: "美国 / 英国 / 澳洲 / 法国 / 德国；意大利 / 荷兰 / 西班牙待收录",
+  market: "美国 / 英国 / 澳洲 / 法国 / 德国 / 意大利 / 荷兰；西班牙 0 封",
   source: "Milled",
   brandCount: BRAND_ORDER.length,
   weekCount: 3,
@@ -191,9 +191,11 @@ function loadExtendedEmails() {
     },
     (error: unknown) => {
       if (activeRequest !== request) return;
+      // 完整性失败（分页未取齐/总数变化/标识不一致）映射为 incomplete，
+      // 与网络失败（error）区分，避免分页不完整被展示为网络失败。
       setState({
         ...loadingState,
-        status: "error",
+        status: isIncompleteDataError(error) ? "incomplete" : "error",
         error: error instanceof Error ? error.message : "邮件加载失败，请重试。",
       });
     },
