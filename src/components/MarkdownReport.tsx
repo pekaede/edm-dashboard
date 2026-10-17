@@ -170,7 +170,7 @@ export function MarkdownReport() {
                   onAction={market === null ? retry : () => setMarket(null)}
                 />
               </div>
-              <p className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{meta.source} · {meta.provenance}</p>
+              <p className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{meta.source}</p>
             </>
           )}
         </div>

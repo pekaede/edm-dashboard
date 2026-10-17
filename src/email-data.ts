@@ -89,8 +89,8 @@ const jsonAdapter = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
         meta: {
           ...EXTENDED_EMAIL_META,
           total: expectedTotal,
-          market: "美国（历史 US 回滚快照）",
-          source: "Milled · 历史 US JSON 回滚快照",
+          market: "美国（离线快照）",
+          source: "Milled 公开归档收录（离线快照，历史 US 样本）",
           dataSource: "json",
           provenance: "六份历史 US 文件完整加载；保留服务/法务通知，仅排除 Temu 商家侧 other。不是 live 多市场全量。",
         },
