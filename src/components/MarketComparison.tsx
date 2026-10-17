@@ -21,7 +21,7 @@ import { ExtendedEmailsState } from "./ExtendedEmailsState";
  * 数据：复用 useExtendedEmails() 的共享缓存（Supabase emails 表），
  * 本组件只做聚合，不造数据、不硬编码计数。0 封的市场显示 0。
  * 窗口：由 emails 的最小/最大发送日期推导（7 天一桶），不依赖固定窗口常量，
- * 因此 10-16 补数后周桶自动延伸。
+ * 当前上游查询固定为 2026-07-16 至 2026-10-15；仅在查询窗口经确认后扩展时，聚合周桶才随数据扩展。
  */
 
 // 对比市场（固定 8 个，任务指定）。EU 不在固定列表内：
@@ -222,6 +222,14 @@ export function MarketComparison() {
   const hint = data
     ? `实时聚合（全期数据，窗口 ${data.windowStart} – ${data.windowEnd}，共 ${data.grandTotal} 封）。选 2 个及以上市场并排对比：同品牌在不同市场的邮件数、主题分布、周频率。0 封的市场显示 0。`
     : `实时聚合（全期数据）。选 2 个及以上市场并排对比：同品牌在不同市场的邮件数、主题分布、周频率。0 封的市场显示 0。`;
+
+  if (status === "ready" && !data) {
+    return (
+      <Card title="跨市场对比" hint={hint}>
+        <p className="py-6 text-center text-sm text-slate-600" role="status">暂无邮件</p>
+      </Card>
+    );
+  }
 
   if (status === "loading" || status === "error" || !data) {
     return (

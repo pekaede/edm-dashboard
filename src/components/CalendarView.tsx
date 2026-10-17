@@ -8,9 +8,10 @@ import {
   validateCalendarData,
   type BrandKey,
 } from "../data-calendar";
-import { useExtendedEmails, countEmailsByMarket, getEmailMarket, matchesMarket } from "../email-data";
+import { getEmailMarket } from "../email-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
-import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
+import { getMarketLabel } from "./MarketFilter";
 
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
@@ -121,7 +122,8 @@ function getThemeLabel(theme: string): string {
 }
 
 export function CalendarView({ className = "" }: CalendarViewProps) {
-  const emailData = useExtendedEmails();
+  const emailData = useSiteEmails();
+  const { market: selectedMarket } = useSiteSelection();
   const { emails, status, total, meta } = emailData;
   const titleId = useId();
   const detailId = useId();
@@ -131,34 +133,28 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const [selectedMonth, setSelectedMonth] = useState<MonthKey>("2026-08");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
 
   const built = useMemo(
     () => status === "ready" ? buildCalendarData(emails) : null,
     [emails, status],
   );
   const validation = useMemo(
-    () => built ? validateCalendarData(emails, built) : null,
-    [built, emails],
+    () => built && meta.total !== null ? validateCalendarData(emails, built, meta.total) : null,
+    [built, emails, meta.total],
   );
 
   const calendarWeeks = useMemo(() => createMonthWeeks(selectedMonth), [selectedMonth]);
   const activeMonth = MONTHS.find((month) => month.key === selectedMonth) ?? MONTHS[1];
 
-  const marketCounts = useMemo(() => countEmailsByMarket(emails), [emails]);
-
   const filteredEmails = useMemo(
     () =>
       emails.filter(
         (email) =>
-          (selectedBrand === ALL_BRANDS || email.brand === selectedBrand) &&
-          matchesMarket(email, selectedMarket),
+          selectedBrand === ALL_BRANDS || email.brand === selectedBrand,
       ),
-    [emails, selectedBrand, selectedMarket],
+    [emails, selectedBrand],
   );
 
-  // 日历格子与热力刻度按（品牌 + 市场）过滤后的邮件逐日计数，不走 built 的品牌预聚合
-  //（built 仍用于全量校验，不随市场筛选变化；data-calendar.ts 不在此任务改动范围内）。
   const dailyCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const date of WINDOW_DATES) {
@@ -223,11 +219,6 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
     setSelectedDate(null);
   }
 
-  function selectMarket(market: MarketFilterValue) {
-    setSelectedMarket(market);
-    setSelectedDate(null);
-  }
-
   function selectMonth(month: MonthKey) {
     setSelectedMonth(month);
     setSelectedDate(null);
@@ -287,17 +278,8 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           日历热力图与关键词搜索
         </h2>
         <p className="mt-1 text-sm leading-5 text-[#6f655e]">
-          2026年7月16日至10月15日 · 6 个品牌 · 共 {total} 封邮件
+          {meta.range} · {meta.market} · {meta.brandCount} 个有记录品牌 · 共 {total} 封邮件
         </p>
-      </div>
-
-      <div className="mt-3">
-        <MarketFilter
-          value={selectedMarket}
-          onChange={selectMarket}
-          counts={marketCounts}
-          total={emails.length}
-        />
       </div>
 
       <div className="mt-3">
@@ -402,7 +384,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   <th
                     scope="col"
                     key={dayLabel}
-                    className="h-5 text-[11px] font-semibold text-[#7f7167]"
+                    className="h-5 text-xs font-semibold text-[#7f7167]"
                   >
                     {dayLabel}
                   </th>
@@ -426,7 +408,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                       return (
                         <td key={day.date} className="p-0">
                           <div
-                            className="h-12 rounded-md border border-[#eee5da] bg-[#f7f1e9] p-1 text-left text-[11px] font-medium leading-4 text-[#776b63]"
+                            className="h-12 rounded-md border border-[#eee5da] bg-[#f7f1e9] p-1 text-left text-xs font-medium leading-4 text-[#776b63]"
                             aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
                           >
                             {dayNumber}
@@ -455,10 +437,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           }`}
                           style={{ backgroundColor: heatColor }}
                         >
-                          <span className="text-[11px] font-semibold leading-4">
+                          <span className="text-xs font-semibold leading-4">
                             {dayNumber}
                           </span>
-                          <span className="whitespace-nowrap text-[11px] font-bold leading-4">
+                          <span className="whitespace-nowrap text-xs font-bold leading-4">
                             {count} 封
                           </span>
                         </button>

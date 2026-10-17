@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import { useExtendedEmails } from "../email-data";
+import { useSiteEmails } from "../site-data";
 import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 
 export function DashboardFooter() {
-  // 页脚样本不再用冻结快照 DATA.meta.total = 196（B2）：取 3 周实时聚合 total（默认窗口全市场 211），
-  // 市场取逐封数据的 meta.market（"美国 + 英国"）。未就绪时显示 "—"，不回落冻结值。
-  const { status, emails, meta } = useExtendedEmails();
+  const { status, emails, meta } = useSiteEmails();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],

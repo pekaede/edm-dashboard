@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { fetchAllEmails } from "./supabase";
+import { fetchEmailDataset } from "./supabase";
 
 export interface EmailRecord {
   brand: string;
@@ -9,8 +9,6 @@ export interface EmailRecord {
   url?: string;
   day_seq: number;
   source_index: number;
-  // 市场代码（US/UK/AU/FR/DE/EU）。Supabase 行由 supabase.ts SELECT market 并经 isEmailRow 校验，
-  // 此处直接透传；JSON 回滚行无 market 时由 getEmailMarket() 兜底为 "US"。
   market?: string;
 }
 
@@ -41,21 +39,30 @@ export const EXTENDED_EMAIL_META = {
   windowStart: "2026-07-16",
   windowEnd: "2026-10-15",
   range: "2026-07-16 – 2026-10-15",
-  // 数据集已含多市场（US 770 + UK 89 = 859）。新增市场导入后需同步更新 total 与 market，
-  // 否则 ready 判定（emails.length === meta.total）与日历校验（validateCalendarData）会误判为未取齐。
-  market: "美国 + 英国",
+  market: "美国 / 英国 / 澳洲 / 法国 / 德国；意大利 / 荷兰 / 西班牙待收录",
   source: "Milled",
   brandCount: BRAND_ORDER.length,
-  // 3 周视图的周数（结构常量，非冻结计数；KPI/页眉用聚合 weeks.length 亦可）。
   weekCount: 3,
-  total: 859,
 } as const;
 
 export type EmailDataSource = "supabase" | "json";
 
+export interface ExtendedEmailMeta {
+  windowStart: string;
+  windowEnd: string;
+  range: string;
+  market: string;
+  source: string;
+  brandCount: number;
+  weekCount: number;
+  total: number | null;
+  dataSource: EmailDataSource;
+  provenance: string;
+}
+
 interface ExtendedEmailsData {
   emails: EmailRecord[];
-  meta: typeof EXTENDED_EMAIL_META;
+  meta: ExtendedEmailMeta;
 }
 
 interface ExtendedEmailsState extends ExtendedEmailsData {
@@ -73,15 +80,26 @@ const DEFAULT_SOURCE: EmailDataSource = import.meta.env.VITE_EDM_DATA_SOURCE ===
   : "supabase";
 
 const jsonAdapter = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
-  ? async (): Promise<EmailRecord[]> => {
+  ? async (): Promise<ExtendedEmailsData> => {
     try {
       const adapter = await import("./email-data-json");
-      return await adapter.jsonAdapter();
+      const { emails, expectedTotal } = await adapter.loadJsonEmailDataset();
+      return {
+        emails: sortEmails(emails),
+        meta: {
+          ...EXTENDED_EMAIL_META,
+          total: expectedTotal,
+          market: "美国（历史 US 回滚快照）",
+          source: "Milled · 历史 US JSON 回滚快照",
+          dataSource: "json",
+          provenance: "六份历史 US 文件完整加载；保留服务/法务通知，仅排除 Temu 商家侧 other。不是 live 多市场全量。",
+        },
+      };
     } catch {
       throw new Error("本地回滚数据加载失败。");
     }
   }
-  : async (): Promise<EmailRecord[]> => {
+  : async (): Promise<ExtendedEmailsData> => {
     throw new Error("JSON 回滚需配置 VITE_EDM_DATA_SOURCE=json 后重新启动或构建。");
   };
 
@@ -90,13 +108,14 @@ function sortEmails(emails: EmailRecord[]): EmailRecord[] {
   return emails.sort((left, right) =>
     right.date.localeCompare(left.date) ||
     (brandRanks.get(left.brand) ?? BRAND_ORDER.length) - (brandRanks.get(right.brand) ?? BRAND_ORDER.length) ||
-    left.source_index - right.source_index,
+    getEmailMarket(left).localeCompare(getEmailMarket(right)) ||
+    left.source_index - right.source_index || left.day_seq - right.day_seq,
   );
 }
 
-async function supabaseAdapter(): Promise<EmailRecord[]> {
-  const rows = await fetchAllEmails();
-  return sortEmails(rows.map((row) => ({
+async function supabaseAdapter(): Promise<ExtendedEmailsData> {
+  const { rows, exactTotal } = await fetchEmailDataset();
+  const emails = sortEmails(rows.map((row) => ({
     brand: row.brand,
     date: row.sent_date,
     theme: row.theme,
@@ -106,6 +125,15 @@ async function supabaseAdapter(): Promise<EmailRecord[]> {
     source_index: row.source_index,
     market: row.market,
   })));
+  return {
+    emails,
+    meta: {
+      ...EXTENDED_EMAIL_META,
+      total: exactTotal,
+      dataSource: "supabase",
+      provenance: "Supabase emails 实时只读；完整性按固定查询窗口的精确总数与唯一标识校验。",
+    },
+  };
 }
 
 const promiseCache = new Map<EmailDataSource, Promise<ExtendedEmailsData>>();
@@ -114,8 +142,7 @@ export function getExtendedEmails(source: EmailDataSource = DEFAULT_SOURCE): Pro
   const cached = promiseCache.get(source);
   if (cached) return cached;
 
-  const request = (source === "json" ? jsonAdapter().then(sortEmails) : supabaseAdapter())
-    .then((emails) => ({ emails, meta: EXTENDED_EMAIL_META }));
+  const request = source === "json" ? jsonAdapter() : supabaseAdapter();
   promiseCache.set(source, request);
   return request;
 }
@@ -123,7 +150,7 @@ export function getExtendedEmails(source: EmailDataSource = DEFAULT_SOURCE): Pro
 const loadingState: ExtendedEmailsState = {
   status: "loading",
   emails: [],
-  meta: EXTENDED_EMAIL_META,
+  meta: { ...EXTENDED_EMAIL_META, total: null, dataSource: DEFAULT_SOURCE, provenance: "数据加载中" },
   total: 0,
   error: null,
 };
@@ -155,7 +182,7 @@ function loadExtendedEmails() {
     ({ emails, meta }) => {
       if (activeRequest !== request) return;
       setState({
-        status: emails.length === meta.total ? "ready" : "incomplete",
+        status: meta.total !== null && emails.length === meta.total ? "ready" : "incomplete",
         emails,
         meta,
         total: emails.length,

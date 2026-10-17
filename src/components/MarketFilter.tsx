@@ -6,7 +6,9 @@ export const MARKET_OPTIONS = [
   { code: "AU", label: "澳洲" },
   { code: "FR", label: "法国" },
   { code: "DE", label: "德国" },
-  { code: "EU", label: "欧洲" },
+  { code: "IT", label: "意大利" },
+  { code: "NL", label: "荷兰" },
+  { code: "ES", label: "西班牙" },
 ] as const;
 
 /**

@@ -1,8 +1,9 @@
 import { useId, useMemo, useState } from "react";
-import { BRAND_ORDER, countEmailsByMarket, getEmailMarket, matchesMarket, useExtendedEmails } from "../email-data";
+import { BRAND_ORDER, getEmailMarket } from "../email-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
-import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
+import { getMarketLabel } from "./MarketFilter";
 
 const PAGE_SIZE = 50;
 
@@ -52,7 +53,8 @@ export function ExtendedEmailFilter({
 }: {
   initialTheme?: string | null;
 }) {
-  const emailData = useExtendedEmails();
+  const emailData = useSiteEmails();
+  const { market: selectedMarket } = useSiteSelection();
   const { emails, meta, status } = emailData;
   const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(() =>
     FILTER_THEMES.some((theme) => theme.key === initialTheme)
@@ -61,20 +63,16 @@ export function ExtendedEmailFilter({
   );
   const [selectedBrand, setSelectedBrand] = useState<FilterBrand | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
   const listId = useId();
-
-  const marketCounts = useMemo(() => countEmailsByMarket(emails), [emails]);
 
   const filteredEmails = useMemo(
     () =>
       emails.filter(
         (email) =>
           (!selectedBrand || email.brand === selectedBrand) &&
-          (!selectedTheme || email.theme === selectedTheme) &&
-          matchesMarket(email, selectedMarket),
+          (!selectedTheme || email.theme === selectedTheme),
       ),
-    [emails, selectedBrand, selectedTheme, selectedMarket],
+    [emails, selectedBrand, selectedTheme],
   );
 
   const visibleEmails = filteredEmails.slice(0, visibleCount);
@@ -95,11 +93,6 @@ export function ExtendedEmailFilter({
     setSelectedTheme((currentTheme) =>
       theme !== null && currentTheme === theme ? null : theme,
     );
-    setVisibleCount(PAGE_SIZE);
-  };
-
-  const selectMarket = (market: MarketFilterValue) => {
-    setSelectedMarket(market);
     setVisibleCount(PAGE_SIZE);
   };
 
@@ -125,7 +118,7 @@ export function ExtendedEmailFilter({
                 Editorial email index
               </p>
               <p className="mt-2 text-sm leading-7 text-[#302c28] sm:text-base">
-                从品牌与主题切入三个月营销触达，快速定位品牌的沟通重心与发送节奏。
+                从品牌与主题切入三个月邮件触达（含服务/法务通知），快速定位品牌的沟通重心与发送节奏。
               </p>
             </div>
             <div className="flex shrink-0 items-baseline gap-2 text-[#1f1c19]">
@@ -137,15 +130,6 @@ export function ExtendedEmailFilter({
           </div>
 
           <div className="space-y-5">
-            <div>
-              <MarketFilter
-                value={selectedMarket}
-                onChange={selectMarket}
-                counts={marketCounts}
-                total={emails.length}
-              />
-            </div>
-
             <div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
@@ -288,7 +272,7 @@ export function ExtendedEmailFilter({
             <tbody>
               {visibleEmails.map((email, index) => (
                 <tr
-                  key={`${getEmailMarket(email)}-${email.brand}-${email.date}-${email.source_index}`}
+                  key={JSON.stringify([getEmailMarket(email), email.brand, email.date, email.source_index, email.day_seq])}
                   className={`transition-colors hover:bg-[#fff1e9] ${index % 2 === 0 ? "bg-[#fffdf9]" : "bg-[#f8f2e9]"}`}
                 >
                   <td className="border-b border-[#e5ddd2] px-5 py-4 font-mono text-xs font-medium tabular-nums text-[#6f665c]">
@@ -335,7 +319,7 @@ export function ExtendedEmailFilter({
         <div className="flex flex-col gap-4 bg-[#f7f1e8] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p className="text-xs leading-5 text-[#746a60]" aria-live="polite">
             已显示 <strong className="text-[#292521]">{visibleEmails.length}</strong> / {filteredEmails.length} 封
-            <span className="mx-2 text-[#b4aa9e]" aria-hidden="true">·</span>
+            <span className="mx-2" aria-hidden="true">·</span>
             按日期倒序
           </p>
 

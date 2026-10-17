@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useExtendedEmails } from "../email-data";
+import { useSiteEmails } from "../site-data";
 import {
   aggregateThreeWeek,
   formatWindowRange,
@@ -46,20 +46,20 @@ function describeArc(
 
 export function ThemeDistribution() {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const { status, emails, total: emailTotal, error, retry, meta } = useExtendedEmails();
+  const { status, emails, total: emailTotal, error, retry, meta } = useSiteEmails();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
   );
 
   const hint = data
-    ? `实时聚合（窗口 ${formatWindowRange(data.window)}，全期 ${data.total} 封），与 3 个月 ${meta.total} 封为不同口径。每封严格归入唯一主题。`
-    : `实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}），与 3 个月 ${meta.total} 封为不同口径。每封严格归入唯一主题。`;
+    ? `${meta.market} · 实时聚合（窗口 ${formatWindowRange(data.window)}，全期 ${data.total} 封），与 3 个月 ${meta.total} 封为不同口径。每封严格归入唯一主题。`
+    : `${meta.market} · 实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}）。每封严格归入唯一主题。`;
 
   if (status !== "ready" || !data) {
     return (
       <Card title="内容结构分布" hint={hint}>
-        <ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} />
+        <ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} meta={meta} />
       </Card>
     );
   }
@@ -253,7 +253,7 @@ export function ThemeDistribution() {
                 </span>
                 <span className="shrink-0 font-mono text-xs tabular-nums text-slate-900">
                   <span className="font-semibold">{theme.count}</span>
-                  <span className="ml-1 text-slate-600 text-[11px]">({pct}%)</span>
+                  <span className="ml-1 text-xs text-slate-600">({pct}%)</span>
                 </span>
               </a>
             );

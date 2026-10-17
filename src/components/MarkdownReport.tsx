@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
-import { useSnapshotData } from "../snapshot";
-import { fetchOnePageMarkdown } from "../supabase";
-import { SnapshotState } from "./SnapshotState";
+import { buildLiveOnePage } from "../onepage-report";
+import { useSiteEmails } from "../site-data";
+import { ExtendedEmailsState } from "./ExtendedEmailsState";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
@@ -134,26 +134,28 @@ function renderInline(content: string): ReactNode[] {
 }
 
 export function MarkdownReport() {
-  const onepageSnapshot = useSnapshotData("onepage", fetchOnePageMarkdown);
+  const emailData = useSiteEmails();
+  const { status, emails, meta } = emailData;
   const blocks = useMemo(
     () =>
-      onepageSnapshot.status === "ready" && onepageSnapshot.data
-        ? parseMarkdown(onepageSnapshot.data)
+      status === "ready" && emails.length > 0
+        ? parseMarkdown(buildLiveOnePage(emails, meta))
         : [],
-    [onepageSnapshot.status, onepageSnapshot.data],
+    [status, emails, meta],
   );
 
-  if (onepageSnapshot.status !== "ready") {
+  if (status !== "ready" || emails.length === 0) {
     return (
       <div className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
         <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />
         <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
-          <SnapshotState
-            status={onepageSnapshot.status}
-            error={onepageSnapshot.error}
-            retry={onepageSnapshot.retry}
-            loadingText="正在加载 OnePage 报告快照…"
-          />
+          {status !== "ready" ? <ExtendedEmailsState {...emailData} /> : (
+            <div role="status">
+              <h2 className="text-xl font-bold text-slate-950">{meta.market} · OnePage 报告</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-700">{meta.range} 内暂无邮件（0 封），不生成主题或发送频次结论。请切换顶部站点。</p>
+              <p className="mt-2 text-xs text-slate-600">{meta.source} · {meta.provenance}</p>
+            </div>
+          )}
         </div>
       </div>
     );

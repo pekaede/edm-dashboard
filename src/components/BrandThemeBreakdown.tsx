@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Brand } from "../data";
-import { useExtendedEmails } from "../email-data";
+import { useSiteEmails } from "../site-data";
 import {
   aggregateThreeWeek,
   buildAggregatedBrand,
@@ -11,6 +11,7 @@ import {
 } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { Tooltip } from "./Tooltip";
 
 interface BrandThemeBreakdownProps {
   onSelectBrand: (brand: Brand) => void;
@@ -18,22 +19,26 @@ interface BrandThemeBreakdownProps {
 
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
   const [highlightedTheme, setHighlightedTheme] = useState<string | null>(null);
-  const { status, emails, total, error, retry, meta } = useExtendedEmails();
+  const { status, emails, total, error, retry, meta } = useSiteEmails();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
   );
 
   const hint = data
-    ? `各品牌 3 周实时聚合（窗口 ${formatWindowRange(data.window)}，共 ${data.total} 封）邮件主题占比与封数分布，与 3 个月 ${meta.total} 封为不同口径。`
-    : `各品牌 3 周实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}）邮件主题占比与封数分布，与 3 个月 ${meta.total} 封为不同口径。`;
+    ? `${meta.market} · 各品牌 3 周实时聚合（窗口 ${formatWindowRange(data.window)}，共 ${data.total} 封）邮件主题占比与封数分布，与 3 个月 ${meta.total} 封为不同口径。`
+    : `${meta.market} · 各品牌 3 周实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}）邮件主题占比与封数分布。`;
 
   if (status !== "ready" || !data) {
     return (
       <Card title="各品牌内容结构" hint={hint}>
-        <ExtendedEmailsState status={status} total={total} error={error} retry={retry} />
+        <ExtendedEmailsState status={status} total={total} error={error} retry={retry} meta={meta} />
       </Card>
     );
+  }
+
+  if (data.total === 0) {
+    return <Card title="各品牌内容结构" hint={hint}><p className="py-6 text-center text-sm text-slate-600" role="status">该站点在三周窗口内暂无邮件（0 封）。</p></Card>;
   }
 
   return (
@@ -89,9 +94,6 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
             }))
             .sort((a, b) => b.themeCount - a.themeCount);
 
-          // Track cumulative percentage to safely align tooltips within card bounds
-          let cumPct = 0;
-
           return (
             <div key={b.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 sm:flex sm:gap-3">
               {/* Brand button with keyboard navigation */}
@@ -106,10 +108,6 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               {/* Segmented Bar */}
               <div className="relative order-3 col-span-2 flex h-8 min-w-0 flex-1 rounded-lg bg-slate-100 sm:order-none">
                 {segs.map((t, index) => {
-                  const startPct = cumPct;
-                  cumPct += t.widthPct;
-                  const midPct = startPct + t.widthPct / 2;
-
                   const isSingle = segs.length === 1;
                   const isFirst = index === 0;
                   const isLast = index === segs.length - 1;
@@ -123,34 +121,20 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                         ? "rounded-r-lg"
                         : "rounded-none";
 
-                  // Safe tooltip placement avoiding edge clipping:
-                  // <22% -> left-anchored, >78% -> right-anchored, center otherwise
-                  const tooltipHorizClass =
-                    midPct < 22
-                      ? "left-0 translate-x-0"
-                      : midPct > 78
-                        ? "right-0 translate-x-0"
-                        : "left-1/2 -translate-x-1/2";
-
-                  const arrowHorizClass =
-                    midPct < 22
-                      ? "left-4"
-                      : midPct > 78
-                        ? "right-4"
-                        : "left-1/2 -translate-x-1/2";
-
                   const isThemeDimmed =
                     highlightedTheme !== null && highlightedTheme !== t.key;
                   const textColor = isThemeDimmed ? "#171411" : themeLabelColor(t.key);
 
                   return (
-                    <div
+                    <Tooltip
                       key={t.key}
-                      className={`group/seg relative h-full focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${roundingClass}`}
+                      className={`relative h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${roundingClass}`}
                       style={{ width: `${t.widthPct}%` }}
-                      tabIndex={0}
-                      role="img"
-                      aria-label={`${b.name} · ${t.labelZh}: ${t.themeCount} 封 (${t.pct}%)`}
+                      label={`${b.name} · ${t.labelZh}: ${t.themeCount} 封 (${t.pct}%)`}
+                      content={<>
+                        <div className="font-semibold">{b.name} · {t.labelZh}</div>
+                        <div className="mt-0.5 font-mono text-slate-200">{t.themeCount} 封 · 占比 {t.pct}%</div>
+                      </>}
                     >
                       <div
                         className={`flex h-full w-full items-center justify-center border-r border-white/60 transition-shadow hover:ring-1 hover:ring-inset hover:ring-slate-950/30 ${roundingClass} ${
@@ -165,7 +149,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                         {/* Only show percentage when wide enough to prevent overlap/clipping */}
                         {t.widthPct >= 14 ? (
                           <span
-                            className="select-none px-1 font-mono text-[11px] font-bold sm:text-xs"
+                            className="select-none px-1 font-mono text-xs font-bold"
                             style={{ color: textColor }}
                           >
                             {t.pct}%
@@ -173,30 +157,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                         ) : null}
                       </div>
 
-                      {/* Tooltip with focus-within & hover support */}
-                      <div
-                        role="tooltip"
-                        className={`pointer-events-none absolute bottom-full z-30 mb-2 hidden flex-col ${tooltipHorizClass} group-hover/seg:flex group-focus-within/seg:flex`}
-                      >
-                        <div className="whitespace-nowrap rounded-lg bg-slate-950 px-3 py-1.5 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
-                          <div className="flex items-center gap-1.5 font-semibold text-white">
-                            <span
-                              className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: themeColor(t.key) }}
-                            />
-                            <span>
-                              {b.name} · {t.labelZh}
-                            </span>
-                          </div>
-                          <div className="mt-0.5 font-mono text-[11px] text-slate-300">
-                            {t.themeCount} 封 · 占比 {t.pct}%
-                          </div>
-                        </div>
-                        <div
-                          className={`absolute -bottom-1 h-2 w-2 rotate-45 border-b border-r border-slate-800 bg-slate-950 ${arrowHorizClass}`}
-                        />
-                      </div>
-                    </div>
+                    </Tooltip>
                   );
                 })}
               </div>

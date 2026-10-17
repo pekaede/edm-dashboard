@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useExtendedEmails } from "../email-data";
+import { useSiteEmails } from "../site-data";
 import { aggregateThreeWeek } from "../three-week-aggregation";
 import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 
@@ -37,10 +37,7 @@ function ChartIcon() {
 }
 
 export function KpiGrid() {
-  // KPI 取 3 周实时聚合（B2），不再用冻结快照 DATA.meta.total = 196：
-  // 邮件总数 = 聚合 total（默认窗口全市场 211），日均 = total / 窗口天数（211 / 22 = 9.6）。
-  // 未就绪时显示 "—"，不回落到冻结值，避免与 3 周表矛盾。
-  const { status, emails, meta } = useExtendedEmails();
+  const { status, emails, meta } = useSiteEmails();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
@@ -49,7 +46,7 @@ export function KpiGrid() {
   const perDay = data ? (data.total / data.windowDays).toFixed(1) : "—";
   const kpis = [
     { num: total, label: "3 周邮件总数", icon: <MailIcon />, theme: "price" },
-    { num: String(meta.brandCount), label: "品牌", icon: <TagIcon />, theme: "behavior" },
+    { num: data ? String(meta.brandCount) : "—", label: "3 个月有记录品牌", icon: <TagIcon />, theme: "behavior" },
     { num: String(meta.weekCount), label: "周", icon: <CalendarIcon />, theme: "new" },
     { num: perDay, label: "日均邮件", icon: <ChartIcon />, theme: "category" },
   ];

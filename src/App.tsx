@@ -14,6 +14,7 @@ import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
 import { DASHBOARD_THEME_STYLE } from "./components/dashboard";
 import type { Brand } from "./data";
+import { SiteProvider, useSiteSelection } from "./site-data";
 
 type View = "dashboard" | "report" | "emails";
 
@@ -46,7 +47,8 @@ function getEmailThemeFromHash(): string | null {
   }
 }
 
-export default function App() {
+function Dashboard() {
+  const { market } = useSiteSelection();
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [view, setView] = useState<View>(getViewFromHash);
   // emailTheme 必须是独立 state：同页 hash 变化时 view 可能仍为 "emails"，
@@ -54,6 +56,8 @@ export default function App() {
   const [emailTheme, setEmailTheme] = useState<string | null>(() =>
     getViewFromHash() === "emails" ? getEmailThemeFromHash() : null,
   );
+
+  useEffect(() => setSelectedBrand(null), [market]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -140,7 +144,7 @@ export default function App() {
             </div>
 
             <MarketComparison />
-            <CalendarView />
+            <CalendarView key={market ?? "all"} />
             <DashboardFooter />
           </>
         ) : view === "report" ? (
@@ -162,7 +166,7 @@ export default function App() {
             </div>
 
             <ExtendedEmailFilter
-              key={emailTheme ?? "all"}
+              key={`${market ?? "all"}-${emailTheme ?? "all"}`}
               initialTheme={emailTheme}
             />
           </section>
@@ -174,4 +178,8 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+export default function App() {
+  return <SiteProvider><Dashboard /></SiteProvider>;
 }

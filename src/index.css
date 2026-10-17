@@ -207,6 +207,14 @@ summary,
 }
 
 @media (min-width: 80rem) {
+  .dashboard-overview-grid {
+    align-items: start;
+  }
+
+  .dashboard-overview-grid .dashboard-card {
+    height: auto;
+  }
+
   .dashboard-overview-grid .dashboard-card > :first-child > p {
     min-height: 2.5rem;
   }

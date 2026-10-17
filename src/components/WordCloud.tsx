@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useExtendedEmails, countEmailsByMarket, matchesMarket, type EmailRecord } from "../email-data";
+import type { EmailRecord } from "../email-data";
+import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
   MAX_WORDS_PER_CATEGORY,
   NOISE_WORDS,
@@ -12,7 +13,7 @@ import {
 import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
-import { getMarketLabel, MarketFilter, type MarketFilterValue } from "./MarketFilter";
+import { getMarketLabel } from "./MarketFilter";
 
 type TimeRange = "threeWeeks" | "threeMonths";
 
@@ -116,24 +117,13 @@ function getWordSize(count: number, words: Word[]): string {
 }
 
 export function WordCloud() {
-  const emailData = useExtendedEmails();
+  const emailData = useSiteEmails();
   const { emails, meta, status } = emailData;
   const [timeRange, setTimeRange] = useState<TimeRange>("threeWeeks");
-  const [selectedMarket, setSelectedMarket] = useState<MarketFilterValue>(null);
+  const { market: selectedMarket } = useSiteSelection();
   const isThreeWeeks = timeRange === "threeWeeks";
   const marketLabel = getMarketLabel(selectedMarket);
-  // 下拉计数（m4）：按当前窗口、未按市场筛选的集合计算，随窗口变、不随选中市场变
-  // （若用选中市场过滤后的集合算计数，下拉选项会随自身选择循环变化；若用 3 个月全量，
-  // 则与三周标题计数口径不一致）。三周 = 窗口内邮件，三个月 = 全部邮件。
-  const windowEmails = useMemo(
-    () => (status === "ready" ? (isThreeWeeks ? filterEmailsByWindow(emails) : emails) : []),
-    [emails, isThreeWeeks, status],
-  );
-  const marketCounts = useMemo(() => countEmailsByMarket(windowEmails), [windowEmails]);
-  const marketFilteredEmails = useMemo(
-    () => (status === "ready" ? emails.filter((email) => matchesMarket(email, selectedMarket)) : []),
-    [emails, selectedMarket, status],
-  );
+  const marketFilteredEmails = emails;
   const threeWeekEmails = useMemo(
     () => (status === "ready" ? filterEmailsByWindow(marketFilteredEmails) : []),
     [marketFilteredEmails, status],
@@ -160,16 +150,6 @@ export function WordCloud() {
   return (
     <Card title={title} hint={hint}>
       <div className="overflow-hidden rounded-2xl border border-[#ded2c3] bg-[#fffaf3]">
-        {status === "ready" ? (
-          <div className="flex flex-col gap-3 border-b border-[#ded2c3] bg-[#f7f1e8] px-4 py-4 sm:px-5">
-            <MarketFilter
-              value={selectedMarket}
-              onChange={setSelectedMarket}
-              counts={marketCounts}
-              total={windowEmails.length}
-            />
-          </div>
-        ) : null}
         <div className="flex flex-col gap-3 border-b border-[#ded2c3] bg-[#f7f1e8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <span className="text-sm font-bold text-[#292521]">时间范围</span>
           <div

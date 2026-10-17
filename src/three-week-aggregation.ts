@@ -6,14 +6,6 @@ import type { EmailRecord } from "./email-data";
 // 默认 2026-09-24 至 2026-10-15（含首尾）共 22 天；周按窗口起算：
 // W1 = 起始日起 7 天，W2 = 接下来 7 天，W3 = 剩余天数至窗口末。
 //
-// 口径（不要把下面任何数字硬编码为常量或声称值，均由实时聚合算出）：
-// - 实时聚合 = 全市场窗口内逐封计数。默认窗口下共 211 封 = US 194 + UK 17，
-//   周合计 W1 68 / W2 65 / W3 78，日均 211 / 22 = 9.6。
-// - US 194 = 剔除 Temu 8 封商家 listing（主题 other）后的口径；US 原始采集为 202 封
-//   （含该 8 封，导入时已排除）。DB 实测：US 窗口内 Temu 共 36 封 = behavior 33 + price 3，
-//   即旧冻结快照的 Temu 44 减去 8 封 other。
-// - 全部 3 个月数据集 = 859 封（US 770 + UK 89），与 3 周窗口口径不同，hint 中引用
-//   meta.total，不要硬编码 859 / 770 / 194。
 export interface ThreeWeekWindow {
   start: string;
   end: string;
@@ -223,12 +215,21 @@ export function aggregateThreeWeek(
   };
 }
 
-// 为品牌明细弹窗构造 Brand：数字（每周、合计、日均、主题）来自实时聚合，
-// 编辑性文案（策略、活动）仍取静态 DATA，弹窗文案与之前一致。
-// 日均 = 总数 / 窗口天数（默认窗口 22 天，与之前一致）。
+export function buildSiteInsights(data: ThreeWeekAggregatedData): string[] {
+  if (data.total === 0) return ["该站点在三周窗口内暂无邮件，不推断主题偏好或触达策略。"];
+  const leadingBrand = [...data.brands].sort((left, right) => right.total - left.total)[0];
+  const leadingTheme = [...data.themes].sort((left, right) => right.count - left.count)[0];
+  const peakIndex = data.weekTotals.indexOf(Math.max(...data.weekTotals));
+  return [
+    `当前站点三周收录 ${data.total} 封，覆盖 ${data.windowDays} 天，日均 ${(data.total / data.windowDays).toFixed(1)} 封；这是可见收录量，不是实际全量发送。`,
+    `${leadingBrand.name} 收录最多：${leadingBrand.total} 封，占当前站点三周样本 ${(leadingBrand.total / data.total * 100).toFixed(1)}%。`,
+    `${leadingTheme.labelZh}是当前主要主题：${leadingTheme.count} 封，占 ${(leadingTheme.count / data.total * 100).toFixed(1)}%；含服务/法务通知的其他主题不等于营销。`,
+    `${data.weeks[peakIndex].label}（${data.weeks[peakIndex].range}）收录 ${data.weekTotals[peakIndex]} 封；各桶覆盖天数可能不同，不能仅凭总量判断营销效果。`,
+  ];
+}
+
 export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: string): Brand {
   const aggregatedBrand = data.brands.find((brand) => brand.name === brandName);
-  const staticBrand = DATA.brands.find((brand) => brand.name === brandName);
   if (!aggregatedBrand) {
     throw new Error(`聚合结果中缺少品牌 ${brandName}。`);
   }
@@ -240,9 +241,11 @@ export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: s
       data.windowDays > 0
         ? Math.round((aggregatedBrand.total / data.windowDays) * 10) / 10
         : 0,
-    strategy: staticBrand?.strategy ?? "",
+    strategy: aggregatedBrand.total > 0
+      ? `${brandName} 在当前站点三周窗口收录 ${aggregatedBrand.total} 封；下列主题和周分布均为实时聚合，不代表营销效果。`
+      : `${brandName} 在当前站点三周窗口暂无邮件。`,
     themes: { ...aggregatedBrand.themes },
-    campaigns: staticBrand ? [...staticBrand.campaigns] : [],
+    campaigns: data.weeks.map((week, index) => `当前站点 ${week.range} 收录 ${aggregatedBrand.weekly[index]} 封邮件。`),
     // 聚合周标签（m1）：弹窗周标签用此处 weeks，不再用静态 DATA.weeks。
     weeks: data.weeks.map((week) => ({ id: week.id, label: week.label, range: week.range })),
   };

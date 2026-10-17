@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Brand } from "../data";
-import { useExtendedEmails } from "../email-data";
+import { useSiteEmails } from "../site-data";
 import {
   aggregateThreeWeek,
   buildAggregatedBrand,
@@ -9,6 +9,7 @@ import {
 } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { Tooltip } from "./Tooltip";
 
 // 周定义（标签 / 日期范围）由窗口起止推导；数字（每周计数、合计）来自 emails 表实时聚合。
 // 品牌明细弹窗的周标签用聚合 weeks（经 buildAggregatedBrand 传入），不再用静态 DATA.weeks。
@@ -35,22 +36,26 @@ interface CampaignOverviewProps {
 }
 
 export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
-  const { status, emails, total, error, retry, meta } = useExtendedEmails();
+  const { status, emails, total, error, retry, meta } = useSiteEmails();
   const data = useMemo(
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
   );
 
   const hint = data
-    ? `实时聚合（窗口 ${formatWindowRange(data.window)}，共 ${data.total} 封），与 3 个月 ${meta.total} 封为不同口径。单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。`
-    : `实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}），与 3 个月 ${meta.total} 封为不同口径。单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。`;
+    ? `${meta.market} · 实时聚合（窗口 ${formatWindowRange(data.window)}，共 ${data.total} 封），与 3 个月 ${meta.total} 封为不同口径。单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。`
+    : `${meta.market} · 实时聚合（窗口 ${formatWindowRange(THREE_WEEK_WINDOW)}）。单元格数字为该品牌当周邮件收录数；颜色深浅对应邮件量高低。`;
 
   if (status !== "ready" || !data) {
     return (
       <Card title="品牌 × 周 × 发送频次" hint={hint}>
-        <ExtendedEmailsState status={status} total={total} error={error} retry={retry} />
+        <ExtendedEmailsState status={status} total={total} error={error} retry={retry} meta={meta} />
       </Card>
     );
+  }
+
+  if (data.total === 0) {
+    return <Card title="品牌 × 周 × 发送频次" hint={hint}><p className="py-6 text-center text-sm text-slate-600" role="status">该站点在三周窗口内暂无邮件（0 封）。</p></Card>;
   }
 
   const maxWeekly = Math.max(...data.brands.flatMap((b) => b.weekly));
@@ -76,7 +81,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
               {data.weeks.map((w) => (
                 <th key={w.id} className="px-2 py-2 text-center font-semibold">
                   <div>{w.label}</div>
-                  <div className="text-[11px] font-normal text-slate-600">{w.range}</div>
+                  <div className="text-xs font-normal text-slate-600">{w.range}</div>
                 </th>
               ))}
               <th className="border-l border-slate-200/80 px-2 py-2 text-center font-semibold text-slate-800">
@@ -85,7 +90,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
             </tr>
           </thead>
           <tbody>
-            {data.brands.map((b, rowIndex) => (
+            {data.brands.map((b) => (
               <tr
                 key={b.name}
                 className="border-b border-slate-100 transition-colors hover:bg-slate-50/50"
@@ -106,38 +111,16 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   // 空窗口（grandTotal = 0）时 0/0 为 NaN，守分母显 0.0%。
                   const pct = grandTotal > 0 ? ((n / grandTotal) * 100).toFixed(1) : "0.0";
 
-                  // Position tooltip safely so it never clips outside card edges:
-                  // Top rows pop downwards, other rows pop upwards
-                  const isTopRow = rowIndex <= 1;
-                  const verticalPos = isTopRow
-                    ? "top-full mt-2"
-                    : "bottom-full mb-2";
-                  const arrowPos = isTopRow
-                    ? "-top-1 border-t border-l border-slate-800 bg-slate-950"
-                    : "-bottom-1 border-b border-r border-slate-800 bg-slate-950";
-
-                  // Horizontal alignment: col 0 left-anchored, col 2 right-anchored, col 1 centered
-                  const horizPos =
-                    colIndex === 0
-                      ? "left-0 translate-x-0"
-                      : colIndex === data.weeks.length - 1
-                        ? "right-0 translate-x-0"
-                        : "left-1/2 -translate-x-1/2";
-
-                  const arrowHoriz =
-                    colIndex === 0
-                      ? "left-5"
-                      : colIndex === data.weeks.length - 1
-                        ? "right-5"
-                        : "left-1/2 -translate-x-1/2";
-
                   return (
                     <td key={colIndex} className="p-1 text-center">
-                      <div
-                        className="group/cell relative flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:z-20 hover:ring-2 hover:ring-[var(--accent-ink)] focus-visible:z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
-                        tabIndex={0}
-                        role="cell"
-                        aria-label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
+                      <Tooltip
+                        className="flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:ring-2 hover:ring-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
+                        label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
+                        content={<>
+                          <div className="font-semibold">{b.name} · {week.label}（{week.range}）</div>
+                          <div className="mt-1 font-mono text-[#f8ddb2]">{n} 封邮件</div>
+                          <div className="mt-0.5 text-slate-200">占全期总量 {pct}%（{n}/{grandTotal}）</div>
+                        </>}
                       >
                         <span
                           className="flex h-full w-full items-center justify-center rounded-md font-mono text-xs font-semibold tabular-nums sm:text-sm"
@@ -149,27 +132,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                           {n}
                         </span>
 
-                        {/* Interactive Tooltip with focus-within & hover */}
-                        <div
-                          role="tooltip"
-                          className={`pointer-events-none absolute z-30 hidden flex-col ${verticalPos} ${horizPos} group-hover/cell:flex group-focus-within/cell:flex`}
-                        >
-                          <div className="whitespace-nowrap rounded-lg bg-slate-950 px-3 py-2 text-center text-xs text-white shadow-xl ring-1 ring-white/10">
-                            <div className="font-semibold text-white">
-                              {b.name} · {week.label} ({week.range})
-                            </div>
-                            <div className="mt-1 font-mono font-medium text-[#f8ddb2]">
-                              {n} 封邮件
-                            </div>
-                            <div className="mt-0.5 text-[11px] text-slate-300">
-                              占全期总量 {pct}% ({n}/{grandTotal})
-                            </div>
-                          </div>
-                          <div
-                            className={`absolute h-2 w-2 rotate-45 ${arrowPos} ${arrowHoriz}`}
-                          />
-                        </div>
-                      </div>
+                      </Tooltip>
                     </td>
                   );
                 })}
