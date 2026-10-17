@@ -15,6 +15,7 @@ import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
+import { Tooltip } from "./Tooltip";
 
 const EMPTY_STATE_CLASS_NAME =
   "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
@@ -144,6 +145,7 @@ export function WordCloud() {
   );
   const groupedWords = isThreeWeeks ? threeWeekGroups : threeMonthGroups;
   const displayedWords = groupedWords.flatMap((category) => category.words);
+  const sampleTotal = isThreeWeeks ? threeWeekEmails.length : marketFilteredEmails.length;
   const title = isThreeWeeks
     ? `分类高频词 Top 10 · 三周窗口${status === "ready" ? `（${marketLabel} · ${threeWeekEmails.length} 封 · 实时聚合）` : ""}`
     : `分类高频词 Top 10 · 三个月窗口${status === "ready" ? `（${marketLabel} · ${marketFilteredEmails.length} 封）` : ""}`;
@@ -175,9 +177,7 @@ export function WordCloud() {
                   onClick={() => setTimeRange(value)}
                   className={`min-h-10 rounded-full px-5 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                     isSelected
-                      ? value === "threeWeeks"
-                        ? "bg-[var(--text-control)] text-[var(--surface-raised)] shadow-sm"
-                        : "bg-[var(--accent-wordcloud)] text-white shadow-sm"
+                      ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
                       : "text-[var(--text-label)] hover:bg-[var(--surface-wordcloud-hover)] hover:text-[var(--text-control)]"
                   }`}
                 >
@@ -218,6 +218,7 @@ export function WordCloud() {
           </div>
         ) : (
           <div className="divide-y divide-[var(--divider-wordcloud)] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
+            <p className="py-3 text-xs leading-5 text-[var(--text-secondary)]">字号表示含该词的邮件数，右上角为封数；分类色标不代表效果。聚焦词条查看样本占比，Esc 关闭提示。</p>
             {groupedWords.map((category) => {
               const headingId = `word-category-${timeRange}-${category.key}`;
 
@@ -249,9 +250,14 @@ export function WordCloud() {
                   <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-3 sm:gap-x-6 sm:gap-y-4">
                     {category.words.map((word) => (
                       <li key={word.text} className="min-w-0">
-                        <span
-                          aria-label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}`}
-                          className="inline-block max-w-full whitespace-nowrap font-semibold tracking-tight transition-opacity hover:opacity-70"
+                        <Tooltip
+                          label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}，占当前样本 ${(word.count / sampleTotal * 100).toFixed(1)}%`}
+                          content={<>
+                            <div className="font-semibold">{word.text} · {category.label}</div>
+                            <div className="mt-1 font-mono font-bold">{word.count} 封 · 样本占比 {(word.count / sampleTotal * 100).toFixed(1)}%</div>
+                            <div className="mt-1">{marketLabel} · {isThreeWeeks ? THREE_WEEK_RANGE : meta.range} · 分母 {sampleTotal} 封</div>
+                          </>}
+                          className="inline-block max-w-full break-words rounded px-1 py-1 font-semibold tracking-tight hover:bg-[var(--surface-wordcloud-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                           style={{
                             color: "var(--text-calendar-heading)",
                             fontSize: getWordSize(word.count, displayedWords),
@@ -267,7 +273,7 @@ export function WordCloud() {
                           >
                             {word.count}
                           </sup>
-                        </span>
+                        </Tooltip>
                       </li>
                     ))}
                   </ul>

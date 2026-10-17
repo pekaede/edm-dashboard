@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { buildLiveOnePage } from "../onepage-report";
+import { buildLiveOnePage, buildOnePageSummary } from "../onepage-report";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
@@ -141,11 +141,17 @@ export function MarkdownReport() {
   const emailData = useSiteEmails();
   const { status, emails, meta, retry } = emailData;
   const { market, setMarket } = useSiteSelection();
-  const blocks = useMemo(
-    () =>
-      status === "ready" && emails.length > 0
-        ? parseMarkdown(buildLiveOnePage(emails, meta))
-        : [],
+  const { blocks, summary } = useMemo(
+    () => {
+      if (status !== "ready" || emails.length === 0) return { blocks: [], summary: null };
+      const parsed = parseMarkdown(buildLiveOnePage(emails, meta));
+      const appendixIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === "完整报告附录");
+      const summaryIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === "决策摘要");
+      return {
+        blocks: [...parsed.slice(1, summaryIndex), ...parsed.slice(appendixIndex + 1)],
+        summary: buildOnePageSummary(emails, meta),
+      };
+    },
     [status, emails, meta],
   );
 
@@ -176,6 +182,36 @@ export function MarkdownReport() {
     <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
       <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+        <header className="mb-6">
+          <p className="text-xs font-bold tracking-wide text-[var(--text-secondary)]">先决策，再查证 · {meta.market}</p>
+          <h2 className="mt-2 text-2xl font-extrabold leading-snug text-[var(--text-heading)]">EDM 竞品 OnePage</h2>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{meta.range} · 固定截止 {meta.windowEnd}。可见收录不等于实际全量发送，也不代表营销效果。</p>
+        </header>
+        {summary ? (
+          <section aria-label="决策摘要" className="space-y-5">
+            <h3 className="text-xl font-bold text-[var(--text-heading)]">决策摘要</h3>
+            <div className="grid gap-4">
+              {summary.decisions.map((decision) => (
+                <section key={decision.title} className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5">
+                  <h4 className="font-bold text-[var(--text-heading)]">{decision.title}</h4>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-body)]">{decision.conclusion}</p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">证据：{decision.evidence}</p>
+                  <p className="mt-3 border-l-2 border-[var(--accent-ink)] pl-3 text-sm leading-6 text-[var(--text-body)]"><strong>建议：</strong>{decision.action}</p>
+                </section>
+              ))}
+            </div>
+            <section className="rounded-xl border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] p-4 sm:p-5">
+              <h4 className="font-bold text-[var(--status-warning)]">值得关注</h4>
+              <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--text-body)]">
+                {summary.watchpoints.map((point) => <li key={point}>{point}</li>)}
+              </ul>
+            </section>
+            <p className="rounded-xl bg-[var(--surface-subtle)] p-4 text-sm leading-6 text-[var(--text-body)]"><strong>下一步：</strong>{summary.nextStep}</p>
+          </section>
+        ) : null}
+        <details className="mt-8 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5">
+          <summary className="min-h-11 cursor-pointer rounded py-2 font-bold text-[var(--text-heading)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"><h3 className="inline">完整报告附录<span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">统计口径、完整数据表与验证建议 · 点击展开</span></h3></summary>
+          <div className="min-w-0">
         {blocks.map((block, blockIndex) => {
           if (block.type === "heading") {
             if (block.level === 1) {
@@ -191,24 +227,24 @@ export function MarkdownReport() {
               );
             }
 
-            if (block.level >= 3) {
+            if (block.level >= 4) {
               return (
-                <h4
+                <h5
                   key={blockIndex}
                   className="mb-3 mt-8 text-lg font-bold leading-snug text-slate-950"
                 >
                   {renderInline(block.content)}
-                </h4>
+                </h5>
               );
             }
 
             return (
-              <h3
+              <h4
                 key={blockIndex}
                 className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--accent)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-slate-950 sm:mt-12 sm:text-2xl"
               >
                 {renderInline(block.content)}
-              </h3>
+              </h4>
             );
           }
 
@@ -247,9 +283,9 @@ export function MarkdownReport() {
             return (
               <div
                 key={blockIndex}
-                className="report-table-scroll my-7 overflow-x-auto rounded-xl border border-slate-200"
+                className="report-table-scroll my-7 overflow-x-auto rounded-xl border border-[var(--border-default)] p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                 role="region"
-                aria-label={`报告数据表 ${blockIndex + 1}`}
+                aria-label={`报告数据表：${block.headers.join("、")}，可横向滚动`}
                 tabIndex={0}
               >
                 <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-6">
@@ -294,6 +330,8 @@ export function MarkdownReport() {
             </p>
           );
         })}
+          </div>
+        </details>
       </div>
     </article>
   );

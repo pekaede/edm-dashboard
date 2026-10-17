@@ -15,23 +15,20 @@ import { Tooltip } from "./Tooltip";
 const EMPTY_STATE_CLASS_NAME =
   "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
-// 周定义（标签 / 日期范围）由窗口起止推导；数字（每周计数、合计）来自 emails 表实时聚合。
-// 品牌明细弹窗的周标签用聚合 weeks（经 buildAggregatedBrand 传入），不再用静态 DATA.weeks。
-function getHeatmapStyle(count: number, maxWeekly: number, minWeekly: number) {
-  if (count >= 15) {
-    const ratio = (count - 15) / Math.max(1, maxWeekly - 15);
-    const lightness = 44 - ratio * 12;
-    return {
-      background: `hsl(var(--heatmap-high-hue) var(--heatmap-high-saturation) ${lightness.toFixed(1)}%)`,
-      color: "var(--text-inverse)",
-    };
-  }
+const HEATMAP_LEVELS = [
+  { label: "0", background: "var(--calendar-heat-empty)", color: "var(--theme-label-dark)" },
+  { label: "1–4", background: "var(--calendar-heat-1)", color: "var(--theme-label-dark)" },
+  { label: "5–9", background: "var(--calendar-heat-2)", color: "var(--theme-label-dark)" },
+  { label: "10–14", background: "var(--calendar-heat-3)", color: "var(--theme-label-dark)" },
+  { label: "15–19", background: "var(--calendar-heat-4)", color: "var(--text-inverse)" },
+  { label: "20+", background: "var(--calendar-heat-5)", color: "var(--text-inverse)" },
+];
 
-  const ratio = (count - minWeekly) / Math.max(1, 14 - minWeekly);
-  const lightness = 96 - ratio * 26;
+function getHeatmapStyle(count: number) {
+  const level = HEATMAP_LEVELS[Math.min(5, count === 0 ? 0 : Math.floor(count / 5) + 1)];
   return {
-    background: `hsl(${(32 - ratio * 18).toFixed(1)} var(--heatmap-low-saturation) ${lightness.toFixed(1)}%)`,
-    color: "var(--text-primary)",
+    background: level.background,
+    color: level.color,
   };
 }
 
@@ -74,8 +71,6 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
     );
   }
 
-  const maxWeekly = Math.max(...data.brands.flatMap((b) => b.weekly));
-  const minWeekly = Math.min(...data.brands.flatMap((b) => b.weekly));
   const grandTotal = data.grandTotal;
 
   return (
@@ -83,24 +78,27 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
       title="品牌 × 周 × 发送频次"
       hint={hint}
     >
-      {/* Responsive table wrapper with smooth horizontal scroll on mobile */}
+      <p className="mb-3 text-xs leading-5 text-[var(--text-secondary)]">
+        色阶固定，跨品牌使用同一尺度；描边表示当前查看，不代表效果优劣。聚焦单元格可查看明细，Esc 关闭提示。
+      </p>
       <div
-        className="-mx-1 overflow-x-auto px-1 pb-1 scrollbar-thin"
+        className="overflow-x-auto rounded-lg p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
         role="region"
         aria-label="品牌每周发送频次，可横向滚动"
         tabIndex={0}
       >
         <table className="w-full min-w-[23rem] border-collapse text-xs sm:text-sm">
+          <caption className="sr-only">{meta.market}，{formatWindowRange(data.window)}，品牌每周可见收录邮件数，单位：封</caption>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-700">
-              <th className="py-2.5 pl-3 pr-2 text-left font-semibold">品牌</th>
+              <th scope="col" className="py-2.5 pl-3 pr-2 text-left font-semibold">品牌</th>
               {data.weeks.map((w) => (
-                <th key={w.id} className="px-2 py-2 text-center font-semibold">
+                <th key={w.id} scope="col" className="px-2 py-2 text-center font-semibold">
                   <div>{w.label}</div>
                   <div className="text-xs font-normal text-slate-600">{w.range}</div>
                 </th>
               ))}
-              <th className="border-l border-slate-200/80 px-2 py-2 text-center font-semibold text-slate-800">
+              <th scope="col" className="border-l border-slate-200 px-2 py-2 text-center font-semibold text-slate-800">
                 合计
               </th>
             </tr>
@@ -111,7 +109,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                 key={b.name}
                 className="border-b border-slate-100 transition-colors hover:bg-slate-50/50"
               >
-                <td className="py-2 pl-3 pr-2 font-medium">
+                <th scope="row" className="py-2 pl-3 pr-2 font-medium">
                   <button
                     type="button"
                     className="inline-flex min-h-9 items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
@@ -119,10 +117,10 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   >
                     {b.name}
                   </button>
-                </td>
+                </th>
 
                 {b.weekly.map((n, colIndex) => {
-                  const style = getHeatmapStyle(n, maxWeekly, minWeekly);
+                  const style = getHeatmapStyle(n);
                   const week = data.weeks[colIndex];
                   // 空窗口（grandTotal = 0）时 0/0 为 NaN，守分母显 0.0%。
                   const pct = grandTotal > 0 ? ((n / grandTotal) * 100).toFixed(1) : "0.0";
@@ -130,12 +128,12 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   return (
                     <td key={colIndex} className="p-1 text-center">
                       <Tooltip
-                        className="flex h-10 w-full cursor-pointer items-center justify-center rounded-md transition-all hover:ring-2 hover:ring-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
-                        label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
+                        className="flex h-11 w-full items-center justify-center rounded-md transition-shadow hover:ring-2 hover:ring-[var(--control-focus)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
+                        label={`${b.name}，${week.label}，${week.range}：${n} 封邮件，占三周样本 ${pct}%`}
                         content={<>
                           <div className="font-semibold">{b.name} · {week.label}（{week.range}）</div>
-                          <div className="mt-1 font-mono text-[var(--calendar-heat-1)]">{n} 封邮件</div>
-                          <div className="mt-0.5 text-slate-200">占全期总量 {pct}%（{n}/{grandTotal}）</div>
+                          <div className="mt-1 font-mono font-bold">{n} 封 · 三周样本占比 {pct}%</div>
+                          <div className="mt-1">{meta.market} · 分母 {grandTotal} 封 · 可见收录</div>
                         </>}
                       >
                         <span
@@ -163,7 +161,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
 
             {/* Bottom Total Row */}
             <tr className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
-              <td className="py-2.5 pl-3 pr-2 text-left font-bold">合计</td>
+              <th scope="row" className="py-2.5 pl-3 pr-2 text-left font-bold">合计</th>
               {data.weekTotals.map((n, i) => (
                 <td
                   key={i}
@@ -180,21 +178,16 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
         </table>
       </div>
 
-      {/* Heatmap Legend */}
-      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-600">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: getHeatmapStyle(minWeekly, maxWeekly, minWeekly).background }} />
-          <span>低 ({minWeekly} 封)</span>
-        </span>
-        <div
-          className="mx-2 h-2 max-w-[140px] flex-1 rounded-full"
-          style={{ background: `linear-gradient(to right, ${getHeatmapStyle(minWeekly, maxWeekly, minWeekly).background}, ${getHeatmapStyle(14, maxWeekly, minWeekly).background}, ${getHeatmapStyle(maxWeekly, maxWeekly, minWeekly).background})` }}
-        />
-        <span className="flex items-center gap-1.5">
-          <span>高 ({maxWeekly} 封)</span>
-          <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: getHeatmapStyle(maxWeekly, maxWeekly, minWeekly).background }} />
-        </span>
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[var(--divider)] pt-3 text-xs text-[var(--text-secondary)]" aria-label="固定邮件量色阶，单位：封">
+        <span>邮件量（封）</span>
+        {HEATMAP_LEVELS.map((level) => (
+          <span key={level.label} className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className="h-3 w-4 rounded-sm" style={{ background: level.background }} />
+            {level.label}
+          </span>
+        ))}
       </div>
+      <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">各周桶覆盖天数可能不同；0 表示未收录，不代表实际未发送。</p>
     </Card>
   );
 }

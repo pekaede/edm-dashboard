@@ -66,7 +66,7 @@ export function MarketFilter({
           onChange(next === "" || !isKnown ? null : next);
         }}
         aria-label={label}
-        className="min-h-11 rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2"
+        className="min-h-11 max-w-full rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:border-[var(--control-filter-hover-border)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
       >
         <option value="">全部市场（{total} 封）</option>
         {MARKET_OPTIONS.map((option) => (

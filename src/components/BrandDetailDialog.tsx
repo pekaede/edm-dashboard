@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import type { Brand } from "../data";
 import { DATA } from "../data";
-import { themeColor } from "../three-week-aggregation";
-import { THEME_TINTS } from "./dashboard";
+import { themeColor, themeTint } from "../three-week-aggregation";
 
 interface BrandDetailDialogProps {
   brand: Brand;
@@ -11,6 +10,8 @@ interface BrandDetailDialogProps {
 
 export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
   const maxWeekly = Math.max(...brand.weekly, 1);
   // 周标签（m1）：优先用实时聚合 weeks（buildAggregatedBrand 传入），缺失时回落静态 DATA.weeks。
   const weeks = brand.weeks ?? DATA.weeks;
@@ -34,6 +35,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
 
   useEffect(() => {
     const dialog = dialogRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     if (dialog && !dialog.open) {
       dialog.showModal();
@@ -43,14 +45,15 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
       if (dialog?.open) {
         dialog.close();
       }
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
     };
   }, []);
 
   return (
     <dialog
       ref={dialogRef}
-      aria-labelledby="brand-detail-title"
-      aria-describedby="brand-detail-description"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       className="brand-dialog m-auto overflow-y-auto rounded-2xl border border-slate-200 bg-[var(--surface-card)] p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/55 backdrop:backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
@@ -64,11 +67,11 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
             品牌明细
           </p>
-          <h2 id="brand-detail-title" className="mt-1 truncate text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+          <h2 id={titleId} className="mt-1 break-words text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
             {brand.name}
           </h2>
-          <p id="brand-detail-description" className="mt-1 text-sm text-slate-600">
-            发送频率、主题结构与近期活动摘要
+          <p id={descriptionId} className="mt-1 text-sm text-slate-600">
+            可见收录频率、主题结构与近期活动摘要；Esc 关闭并返回原位置。
           </p>
         </div>
         <button
@@ -117,9 +120,10 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           <h3 id="brand-weekly-title" className="dialog-section-title">
             每周趋势
           </h3>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">横柱共用 0–{maxWeekly} 封刻度；各周覆盖天数可能不同，不能将周总量直接当作发送效率。</p>
           <div className="mt-4 space-y-4">
             {brand.weekly.map((count, index) => (
-              <div key={weeks[index].id} className="brand-week-row">
+              <div key={weeks[index].id} className="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)_4rem] items-center gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{weeks[index].label}</p>
                   <p className="text-xs text-slate-600">{weeks[index].range}</p>
@@ -129,12 +133,12 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                     className="h-full rounded-full transition-[width] duration-300"
                     style={{
                       width: `${(count / maxWeekly) * 100}%`,
-                      backgroundColor: themeColor("category"),
+                      backgroundColor: "var(--control-active-bg)",
                     }}
                   />
                 </div>
                 <span className="text-right font-mono text-sm font-bold tabular-nums text-slate-900">
-                  {count}
+                  {count} 封
                 </span>
               </div>
             ))}
@@ -150,7 +154,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
               const count = theme.count;
               const percentage = brand.total > 0 ? Math.round((count / brand.total) * 100) : 0;
               const color = themeColor(theme.key);
-              const tint = THEME_TINTS[theme.key] ?? "var(--theme-other-tint)";
+              const tint = themeTint(theme.key);
 
               return (
                 <div
@@ -175,7 +179,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-3">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/80" aria-hidden="true">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--surface-card)]" aria-hidden="true">
                       <div
                         className="h-full rounded-full"
                         style={{
@@ -205,7 +209,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                   className="flex size-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold"
                   style={{
                     color: "var(--theme-category-text)",
-                    backgroundColor: THEME_TINTS.category,
+                    backgroundColor: themeTint("category"),
                   }}
                 >
                   {index + 1}

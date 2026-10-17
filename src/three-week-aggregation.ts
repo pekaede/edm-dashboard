@@ -1,4 +1,4 @@
-import { THEME_COLORS, THEME_LABEL_COLORS } from "./components/dashboard";
+import { THEME_COLORS, THEME_LABEL_COLORS, THEME_TINTS } from "./components/dashboard";
 import { DATA, type Brand } from "./data";
 import type { EmailRecord } from "./email-data";
 
@@ -121,6 +121,12 @@ export function themeLabelColor(key: string): string {
   return Object.prototype.hasOwnProperty.call(THEME_LABEL_COLORS, key)
     ? THEME_LABEL_COLORS[key]
     : "var(--theme-other-label)";
+}
+
+export function themeTint(key: string): string {
+  return Object.prototype.hasOwnProperty.call(THEME_TINTS, key)
+    ? THEME_TINTS[key]
+    : "var(--theme-other-tint)";
 }
 
 // 实时聚合：对 emails 表逐封过滤窗口 + 分组计数，不读快照表。

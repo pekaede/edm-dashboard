@@ -22,7 +22,9 @@ interface BrandThemeBreakdownProps {
 }
 
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
-  const [highlightedTheme, setHighlightedTheme] = useState<string | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null);
+  const [pinnedTheme, setPinnedTheme] = useState<string | null>(null);
+  const highlightedTheme = previewTheme ?? pinnedTheme;
   const { status, emails, total, error, retry, meta } = useSiteEmails();
   const { market, setMarket } = useSiteSelection();
   const data = useMemo(
@@ -62,11 +64,17 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
       title="各品牌内容结构"
       hint={hint}
     >
-      {/* Top Legend with interactive focus & hover states */}
+      <p className="mb-3 text-xs leading-5 text-[var(--text-secondary)]">每条柱总长为该品牌的 100%，不代表邮件量。聚焦查看明细；点击图例锁定主题，再次点击或按 Esc 清除。</p>
+      <div onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setPinnedTheme(null);
+          setPreviewTheme(null);
+        }
+      }}>
       <div
         className="-mt-1 mb-4 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs text-slate-600"
         role="group"
-        aria-label="主题筛选图例"
+        aria-label="主题高亮图例，不改变统计范围"
       >
         {data.themes
           .filter((t) => t.count > 0)
@@ -76,27 +84,34 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
             <button
               type="button"
               key={t.key}
-              onMouseEnter={() => setHighlightedTheme(t.key)}
-              onMouseLeave={() => setHighlightedTheme(null)}
-              onFocus={() => setHighlightedTheme(t.key)}
-              onBlur={() => setHighlightedTheme(null)}
-              className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-2 py-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${
+              aria-pressed={pinnedTheme === t.key}
+              onClick={() => {
+                setPinnedTheme((previous) => previous === t.key ? null : t.key);
+                setPreviewTheme(null);
+              }}
+              onMouseEnter={() => setPreviewTheme(t.key)}
+              onMouseLeave={() => setPreviewTheme(null)}
+              onFocus={() => setPreviewTheme(t.key)}
+              onBlur={() => setPreviewTheme(null)}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] ${
                 isHighlighted
-                  ? "bg-slate-200/90 font-semibold text-slate-900 ring-1 ring-slate-300"
-                  : "hover:bg-slate-100 text-slate-700"
+                  ? "border-[var(--control-focus)] bg-[var(--surface-subtle)] font-semibold text-[var(--text-heading)]"
+                  : "border-[var(--border-default)] text-[var(--text-body)] hover:bg-[var(--surface-subtle)]"
               }`}
             >
               <span
+                aria-hidden="true"
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: themeColor(t.key) }}
               />
               <span>{t.labelZh}</span>
+              {pinnedTheme === t.key ? <span className="text-xs">已锁定</span> : null}
             </button>
           );
         })}
       </div>
 
-      {/* Brand rows */}
+      <div className="mb-2 flex justify-between text-xs text-[var(--text-secondary)]" aria-hidden="true"><span>品牌 / 主题占比</span><span>100% · 总封数</span></div>
       <div className="space-y-3.5">
         {data.brands.map((b) => {
           // Sort brand's themes by count descending to match visual layout
@@ -115,7 +130,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               {/* Brand button with keyboard navigation */}
               <button
                 type="button"
-                className="min-h-8 w-fit shrink-0 rounded-md px-1 py-0.5 text-left text-xs font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] sm:w-22 sm:text-sm"
+                className="min-h-11 w-fit shrink-0 rounded-md px-1 py-0.5 text-left text-xs font-semibold text-[var(--text-body)] transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] sm:w-22 sm:text-sm"
                 onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name))}
               >
                 {b.name}
@@ -144,21 +159,22 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                   return (
                     <Tooltip
                       key={t.key}
-                      className={`relative h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] ${roundingClass}`}
+                      className={`relative h-full hover:z-10 hover:ring-2 hover:ring-[var(--control-focus)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] ${roundingClass}`}
                       style={{ width: `${t.widthPct}%` }}
-                      label={`${b.name} · ${t.labelZh}: ${t.themeCount} 封 (${t.pct}%)`}
+                      label={`${b.name} · ${t.labelZh}：${t.themeCount} 封，占该品牌 ${t.pct}%，分母 ${b.total} 封`}
                       content={<>
                         <div className="font-semibold">{b.name} · {t.labelZh}</div>
-                        <div className="mt-0.5 font-mono text-slate-200">{t.themeCount} 封 · 占比 {t.pct}%</div>
+                        <div className="mt-1 font-mono font-bold">{t.themeCount} 封 · 品牌内占比 {t.pct}%</div>
+                        <div className="mt-1">{meta.market} · {formatWindowRange(data.window)} · 分母 {b.total} 封</div>
                       </>}
                     >
                       <div
-                        className={`flex h-full w-full items-center justify-center border-r border-white/60 transition-shadow hover:ring-1 hover:ring-inset hover:ring-slate-950/30 ${roundingClass} ${
+                        className={`flex h-full w-full items-center justify-center border-r border-[var(--surface-card)] transition-colors ${roundingClass} ${
                           isLast ? "border-r-0" : ""
                         }`}
                         style={{
                           backgroundColor: isThemeDimmed
-                            ? `color-mix(in srgb, ${themeColor(t.key)} 30%, var(--surface-card))`
+                            ? `color-mix(in srgb, ${themeColor(t.key)} 25%, var(--surface-card))`
                             : themeColor(t.key),
                         }}
                       >
@@ -182,9 +198,12 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               <div className="w-11 shrink-0 text-right font-mono text-xs font-semibold text-slate-600 tabular-nums sm:w-12">
                 {b.total} 封
               </div>
+
+              {b.total === 0 ? <p className="order-4 col-span-2 text-xs text-[var(--text-secondary)] sm:sr-only">该品牌三周窗口未收录邮件，不计算占比。</p> : null}
             </div>
           );
         })}
+      </div>
       </div>
     </Card>
   );
