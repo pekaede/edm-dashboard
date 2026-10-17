@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { DATA } from "../data";
 import {
   BRAND_ORDER,
@@ -351,9 +351,45 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
   );
 }
 
-export function MarketComparison() {
+export function MarketComparison({
+  markets,
+  onMarketsChange,
+}: {
+  markets?: string[];
+  onMarketsChange?: (markets: string[]) => void;
+} = {}) {
   const { status, emails, total: emailTotal, error, retry, meta } = useExtendedEmails();
-  const [selected, setSelected] = useState<string[]>(["US", "UK"]);
+  const [internalSelected, setInternalSelected] = useState<string[]>(["US", "UK"]);
+  // 受控时由调用方（SiteProvider）持有对比多选，切视图/切站点不丢失、不被全局站点覆盖；
+  // 未传 props 时保持原内部状态，行为不变。
+  const selected = markets ?? internalSelected;
+  // 受控模式下用 ref 跟踪最新值：同批次连续更新时，后一次基于前一次的求值结果，
+  // 而不是旧 render 闭包里的 selected；父组件未更新（拒绝本次更新）时，下一次
+  // 渲染后把 ref 同步回 props，丢弃未被接受的乐观值——无 deps 的 effect 在每次
+  // 渲染后运行，因此切换内部 tab 这类仅触发重渲染的操作也会触发回同步。
+  const selectedRef = useRef(selected);
+  useEffect(() => {
+    selectedRef.current = selected;
+  });
+  const setSelected = useCallback(
+    (updater: string[] | ((prev: string[]) => string[])) => {
+      if (onMarketsChange) {
+        const resolved =
+          typeof updater === "function"
+            ? (updater as (prev: string[]) => string[])(selectedRef.current)
+            : updater;
+        // 先记下本次求值结果，供同批次下一次调用基于最新值计算。
+        selectedRef.current = resolved;
+        onMarketsChange(resolved);
+      } else {
+        // 非受控：直接把 updater 传给 useState setter，保持函数式更新的排队语义。
+        setInternalSelected(
+          updater as React.SetStateAction<string[]>,
+        );
+      }
+    },
+    [onMarketsChange],
+  );
   const [view, setView] = useState<ComparisonView>("brand");
   const [focusedBrand, setFocusedBrand] = useState<string>(BRAND_ORDER[0]);
   const id = useId();

@@ -261,6 +261,12 @@ export interface UseUrlSyncResult {
   setQuery: (query: string, options?: { replace?: boolean }) => void;
   saveScrollPosition: (view?: string, pos?: number) => void;
   restoreScrollPosition: (view?: string) => boolean;
+  /**
+   * 原始 URL hash（window.location.hash）。解析状态相同时也随 hash 变化而更新：
+   * 如 #unknown/UK 与 #report/UK 都解析为 report/UK，但原始视图不同（未知→看板），
+   * App 必须靠它知道视图变了，否则视图、站点对齐和滚动逻辑都不会执行。
+   */
+  hash: string;
 }
 
 /**
@@ -291,6 +297,13 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
   }, [initialState]);
 
   const [state, setStateInternal] = useState<PageState>(getHashState);
+
+  // 原始 hash 状态：任何导航事件（hashchange/popstate/URL_SYNC_EVENT）都更新，
+  // 即使解析后的 PageState 相同（见 UseUrlSyncResult.hash 注释）。
+  const [rawHash, setRawHash] = useState<string>(() =>
+    typeof window !== "undefined" ? window.location.hash : "",
+  );
+  const rawHashRef = useRef(rawHash);
 
   // Keep refs to avoid stale closures in event listeners
   const stateRef = useRef<PageState>(state);
@@ -418,7 +431,9 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
 
   const setMarket = useCallback(
     (market: string | null, setOpts?: { replace?: boolean }) => {
-      setState((prev) => ({ ...prev, market }), setOpts);
+      // 任何程序化市场设置都是显式指定：写回 URL 时带市场段
+      // （null → "all"），使前进后退能恢复该市场/全部市场。
+      setState((prev) => ({ ...prev, market, marketSpecified: true }), setOpts);
     },
     [setState],
   );
@@ -451,7 +466,12 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
     if (typeof window === "undefined") return;
 
     const handleNavigation = () => {
-      const parsed = parseHash(window.location.hash);
+      const nextHash = window.location.hash;
+      if (rawHashRef.current !== nextHash) {
+        rawHashRef.current = nextHash;
+        setRawHash(nextHash);
+      }
+      const parsed = parseHash(nextHash);
       const current = stateRef.current;
 
       if (!isEqualPageState(current, parsed)) {
@@ -744,6 +764,7 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
     setQuery,
     saveScrollPosition: saveScroll,
     restoreScrollPosition: restoreScroll,
+    hash: rawHash,
   };
 }
 

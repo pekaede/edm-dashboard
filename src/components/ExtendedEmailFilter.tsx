@@ -540,11 +540,20 @@ export function ExtendedEmailFilter({
     if (typeof window === "undefined") return;
     const current = parseHash(window.location.hash);
     if (current.query === query) return;
-    const nextState = { ...current, query };
+    // 打字搜索只改 query，但重建 hash 会物化市场：当前 URL 未写市场段时
+    // （如旧链接 #emails/price），用当前站点补齐并标记显式指定，避免把市场
+    // 写成 "all" 而误切全局站点到全部市场；显式 /all 时 market 已为 null、
+    // marketSpecified 已为 true，保持全部市场。
+    const nextState = {
+      ...current,
+      query,
+      market: current.market ?? selectedMarket,
+      marketSpecified: true,
+    };
     const nextHash = buildHash(nextState);
     window.history.replaceState(null, "", nextHash);
     notifyUrlChanged();
-  }, []);
+  }, [selectedMarket]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);

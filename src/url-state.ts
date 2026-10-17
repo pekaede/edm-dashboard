@@ -3,6 +3,13 @@ export type ViewType = "report" | "emails" | "calendar" | "dashboard";
 export interface PageState {
   view: ViewType;
   market: string | null;
+  /**
+   * 市场是否显式写在 URL 里。#emails 与 #emails/all 解析后的 market 都是 null，
+   * 但语义不同：前者是“未写市场段的旧链接/视图导航”（保留当前站点），
+   * 后者是“显式全部市场”（恢复全部市场）。没有这个字段，两者无法区分，
+   * 前进后退也就无法恢复“全部市场”。
+   */
+  marketSpecified: boolean;
   brand: string;
   theme: string | null;
   query: string;
@@ -18,7 +25,9 @@ export const KNOWN_MARKETS = new Set([
   "nl",
   "es",
   "eu",
-  "other",
+  // 注意：不要加入 "other"——#emails/other 是“其他”主题的旧深链接（主题图例生成），
+  // 而 "other" 不是真实市场；若把 "other" 当市场，主题链接会被误读为市场、邮件列表为空。
+  // 代价：market "other"（无任何界面产生）不再 round-trip，主题 "other"（真实链接）优先。
 ]);
 
 export const KNOWN_THEMES = new Set([
@@ -33,6 +42,7 @@ export const KNOWN_THEMES = new Set([
 export const DEFAULT_PAGE_STATE: PageState = {
   view: "report",
   market: null,
+  marketSpecified: false,
   brand: "all",
   theme: null,
   query: "",
@@ -59,19 +69,39 @@ export function buildHash(state: PageState): string {
       : "report";
 
   const market = state.market && state.market.trim() !== "" ? state.market.trim() : null;
+  const marketSpecified = state.marketSpecified === true;
   const brand = state.brand && state.brand.trim() !== "" ? state.brand.trim() : "all";
   const theme = state.theme && state.theme.trim() !== "" ? state.theme.trim() : null;
   const query = typeof state.query === "string" ? state.query : "";
 
   // Segment layout: [view, market, brand, theme]
-  // Trailing default values can be omitted while preserving exact round-trip
+  // Trailing default values can be omitted while preserving exact round-trip.
+  // market 为 null 时：marketSpecified 为 true（显式全部市场）写 "all" 段；
+  // 为 false（未写市场段）且无主题时省略市场段；有主题时保持旧短链接形式 #emails/<theme>。
+  // 注意："all" 不是真实市场；parseHash 会把 "all" 段还原为 null + marketSpecified=true。
+  const marketSeg =
+    market !== null ? market : marketSpecified ? "all" : "";
   let segments: string[];
-  if (theme !== null) {
-    segments = [view, market ?? "", brand, theme];
+  if (
+    theme !== null &&
+    market === null &&
+    !marketSpecified &&
+    brand === "all" &&
+    KNOWN_THEMES.has(theme.toLowerCase())
+  ) {
+    // 旧主题短链接形式，保持 round-trip（#emails/price → #emails/price）。
+    // 仅当主题段重解析仍为主题时压缩：品牌非 all 时短形式会丢品牌；主题不在
+    // 已知主题集时（如 theme:US 的 US、任意未知主题），短形式重解析会被误读为
+    // 市场。这两种情况必须用完整位置段形式（#emails//Zara/price、#emails//all/US）。
+    segments = [view, theme];
+  } else if (theme !== null) {
+    segments = [view, marketSeg, brand, theme];
   } else if (brand !== "all") {
-    segments = [view, market ?? "", brand];
+    segments = [view, marketSeg, brand];
   } else if (market !== null) {
     segments = [view, market];
+  } else if (marketSpecified) {
+    segments = [view, "all"];
   } else {
     segments = [view];
   }
@@ -126,37 +156,53 @@ export function parseHash(hash: string): PageState {
   const rawTheme = rawSegments[3];
 
   let market: string | null = null;
+  let marketSpecified = false;
   let brand = "all";
   let theme: string | null = null;
 
   // Short format single-argument resolution: #emails/xyz
   if (rawSegments.length === 2) {
     const seg = rawSegments[1]?.trim() ?? "";
-    if (seg.toLowerCase().startsWith("theme:")) {
+    const lower = seg.toLowerCase();
+    if (lower === "all") {
+      // 显式“全部市场”（buildHash 为 null 市场写出的 "all" 段）
+      market = null;
+      theme = null;
+      marketSpecified = true;
+    } else if (seg.toLowerCase().startsWith("theme:")) {
       const rawVal = seg.slice(6).trim();
       theme = rawVal || null;
       market = null;
+      marketSpecified = false;
     } else {
-      const lower = seg.toLowerCase();
       if (KNOWN_MARKETS.has(lower)) {
-        // Known market (including 'other') resolves as market
+        // Known market resolves as market
         market = seg || null;
         theme = null;
+        marketSpecified = true;
       } else if (KNOWN_THEMES.has(lower)) {
-        // Known legacy theme (e.g. #emails/price) resolves as theme
+        // Known legacy theme (e.g. #emails/price, #emails/other) resolves as theme
         market = null;
         theme = seg || null;
+        marketSpecified = false;
       } else {
         // Unknown single segment defaults to market
         market = seg || null;
         theme = null;
+        marketSpecified = true;
       }
     }
     brand = "all";
   } else {
-    // Positional round-trip: segment 1 is always prioritized as market
+    // Positional round-trip: segment 1 is always prioritized as market;
+    // "all" segment means 全部市场 (null).
+    // 空段（#emails//…）视作未指定市场。
+    marketSpecified =
+      rawMarket !== undefined && rawMarket.trim() !== "";
     market =
-      rawMarket === undefined || rawMarket.trim() === ""
+      rawMarket === undefined ||
+      rawMarket.trim() === "" ||
+      rawMarket.trim().toLowerCase() === "all"
         ? null
         : rawMarket.trim();
 
@@ -174,6 +220,7 @@ export function parseHash(hash: string): PageState {
   return {
     view,
     market,
+    marketSpecified,
     brand,
     theme,
     query,
@@ -204,6 +251,7 @@ export function isEqualPageState(a: PageState, b: PageState): boolean {
   return (
     a.view === b.view &&
     a.market === b.market &&
+    a.marketSpecified === b.marketSpecified &&
     a.brand === b.brand &&
     a.theme === b.theme &&
     a.query === b.query
