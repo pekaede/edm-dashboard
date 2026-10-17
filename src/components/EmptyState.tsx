@@ -15,11 +15,11 @@ export function EmptyState({
     <div
       role="status"
       aria-live="polite"
-      className="flex min-h-[16rem] w-full flex-col items-center justify-center rounded-2xl border border-[#e5dbce] bg-[#fffdf9] px-6 py-10 text-center shadow-xs sm:py-14"
+      className="flex min-h-[16rem] w-full flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-10 text-center shadow-xs sm:py-14"
     >
       {/* CSS 圆形占位（不用图片） */}
       <div
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-[#e5dbce] bg-[#faf6ef] text-[#938273] shadow-inner sm:h-16 sm:w-16"
+        className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--color-slate-400)] shadow-inner sm:h-16 sm:w-16"
         aria-hidden="true"
       >
         <svg
@@ -37,12 +37,12 @@ export function EmptyState({
         </svg>
       </div>
 
-      <h3 className="mt-4 text-base font-bold text-[#1f1c19] sm:text-lg">
+      <h3 className="mt-4 text-base font-bold text-[var(--text-heading)] sm:text-lg">
         {title}
       </h3>
 
       {description ? (
-        <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-[#685d53] sm:text-sm">
+        <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
           {description}
         </p>
       ) : null}
@@ -51,7 +51,7 @@ export function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[#29231f] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#342d27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a13f2d] focus-visible:ring-offset-2 sm:text-sm"
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
           {actionLabel}
         </button>

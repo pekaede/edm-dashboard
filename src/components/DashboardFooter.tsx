@@ -17,7 +17,11 @@ export function DashboardFooter() {
   const safeGlobalTotal = allEmails.status === "ready" ? `${allEmails.total} 封` : allEmails.status === "loading" ? "加载中…" : "—";
 
   return (
-    <footer className="mt-12 border-t border-[var(--border-default)] pt-8 pb-12 text-xs leading-relaxed text-[var(--text-secondary)]">
+    <footer
+      role="contentinfo"
+      aria-label="数据说明与口径"
+      className="mt-12 border-t border-[var(--border-default)] pt-8 pb-12 text-xs leading-relaxed text-[var(--text-secondary)]"
+    >
       {/* 顶部数据范围与核心指标摘要 */}
       <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
