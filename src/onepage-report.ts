@@ -106,7 +106,6 @@ export function buildLiveOnePage(emails: EmailRecord[], meta: ExtendedEmailMeta)
   const topKeywords = [...keywordCounts].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 10);
   return [
     `# EDM 竞品 OnePage｜${meta.market}`,
-    `> **数据源**：${meta.source}。`,
     `> **统计口径**：三周 ${formatWindowRange(data.window)}，${data.total} 封；三个月 ${meta.range}，${emails.length} 封。查询固定截止 ${meta.windowEnd}，不是开放日期查询。`,
     "> 计数为 Milled 可见收录，不是实际全量发送。每封只归一个主题；包含服务/法务通知，不能把全部邮件统称营销。没有打开率、点击率或转化率，不据此推断营销效果。",
     "## 决策摘要",

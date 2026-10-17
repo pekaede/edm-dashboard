@@ -26,9 +26,6 @@ export function DashboardFooter() {
       <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-bold text-[var(--text-heading)]">
-              数据来源：{meta.dataSource === "supabase" ? "Milled 公开归档收录" : "离线快照（历史 US 样本）"}
-            </span>
             <span className="inline-flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-body)]">
               统计窗口：2026-07-16 至 2026-10-15（美东时间）
             </span>
@@ -48,7 +45,7 @@ export function DashboardFooter() {
 
       {/* 核心口径三列分栏说明 */}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* 第一列：数据源与总数含义 */}
+        {/* 第一列：总数含义 */}
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-[var(--text-heading)]">
             总数含义
