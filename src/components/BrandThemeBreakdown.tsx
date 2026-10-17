@@ -123,7 +123,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
                   const isThemeDimmed =
                     highlightedTheme !== null && highlightedTheme !== t.key;
-                  const textColor = isThemeDimmed ? "#171411" : themeLabelColor(t.key);
+                  const textColor = isThemeDimmed ? "var(--theme-label-dark)" : themeLabelColor(t.key);
 
                   return (
                     <Tooltip

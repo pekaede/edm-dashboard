@@ -21,11 +21,11 @@ type TimeRange = "threeWeeks" | "threeMonths";
 const THREE_WEEK_RANGE = formatWindowRange(THREE_WEEK_WINDOW);
 
 const THREE_MONTH_CATEGORIES: WordCategory[] = [
-  { key: "category", label: "品类类", color: "#d95d45" },
-  { key: "promotion", label: "促销类", color: "#c77b18" },
-  { key: "style", label: "风格上新类", color: "#e28a57" },
-  { key: "audience", label: "人群类", color: "#c9573f" },
-  { key: "other", label: "其他", color: "#b87912" },
+  { key: "category", label: "品类类", color: "var(--word-category)" },
+  { key: "promotion", label: "促销类", color: "var(--word-promotion)" },
+  { key: "style", label: "风格上新类", color: "var(--word-style)" },
+  { key: "audience", label: "人群类", color: "var(--word-audience)" },
+  { key: "other", label: "其他", color: "var(--word-other)" },
 ];
 
 const THREE_MONTH_CATEGORY_WORDS = new Set([
@@ -149,13 +149,13 @@ export function WordCloud() {
 
   return (
     <Card title={title} hint={hint}>
-      <div className="overflow-hidden rounded-2xl border border-[#ded2c3] bg-[#fffaf3]">
-        <div className="flex flex-col gap-3 border-b border-[#ded2c3] bg-[#f7f1e8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <span className="text-sm font-bold text-[#292521]">时间范围</span>
+      <div className="overflow-hidden rounded-2xl border border-[var(--border-wordcloud)] bg-[var(--surface-raised)]">
+        <div className="flex flex-col gap-3 border-b border-[var(--border-wordcloud)] bg-[var(--surface-page)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <span className="text-sm font-bold text-[var(--text-control)]">时间范围</span>
           <div
             role="group"
             aria-label="选择词云统计时间范围"
-            className="grid w-full grid-cols-2 rounded-full border border-[#cfc1b1] bg-[#fffaf3] p-1 sm:w-auto"
+            className="grid w-full grid-cols-2 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] p-1 sm:w-auto"
           >
             {([
               ["threeWeeks", "三周"],
@@ -169,12 +169,12 @@ export function WordCloud() {
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => setTimeRange(value)}
-                  className={`min-h-10 rounded-full px-5 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#292521] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f1e8] ${
+                  className={`min-h-10 rounded-full px-5 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                     isSelected
                       ? value === "threeWeeks"
-                        ? "bg-[#292521] text-[#fffaf3] shadow-sm"
-                        : "bg-[#b94330] text-white shadow-sm"
-                      : "text-[#6f665c] hover:bg-[#f1e5d8] hover:text-[#292521]"
+                        ? "bg-[var(--text-control)] text-[var(--surface-raised)] shadow-sm"
+                        : "bg-[var(--accent-wordcloud)] text-white shadow-sm"
+                      : "text-[var(--text-label)] hover:bg-[var(--surface-wordcloud-hover)] hover:text-[var(--text-control)]"
                   }`}
                 >
                   {label}
@@ -190,26 +190,26 @@ export function WordCloud() {
           </div>
         ) : marketFilteredEmails.length === 0 ? (
           <div className="p-4 sm:p-5" role="status">
-            <p className="text-sm font-bold text-[#292521]">该市场暂无邮件</p>
-            <p className="mt-2 text-sm leading-6 text-[#6f655b]">
+            <p className="text-sm font-bold text-[var(--text-control)]">该市场暂无邮件</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-description)]">
               {marketLabel}在统计窗口内暂无邮件，请切换市场。
             </p>
           </div>
         ) : groupedWords.length === 0 ? (
           <div className="p-4 sm:p-5" role="status">
-            <p className="text-sm font-bold text-[#292521]">
+            <p className="text-sm font-bold text-[var(--text-control)]">
               {isThreeWeeks && threeWeekEmails.length === 0
                 ? "该市场在三周窗口内暂无邮件"
                 : "无有效词"}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[#6f655b]">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-description)]">
               {isThreeWeeks && threeWeekEmails.length === 0
                 ? "该市场在三周窗口内暂无邮件，请切换市场或时间范围。"
                 : "该市场邮件的关键词均为空或为噪音词，无法生成词云。"}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#e2d7ca] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
+          <div className="divide-y divide-[var(--divider-wordcloud)] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
             {groupedWords.map((category) => {
               const headingId = `word-category-${timeRange}-${category.key}`;
 
@@ -222,7 +222,7 @@ export function WordCloud() {
                   <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                     <h3
                       id={headingId}
-                      className="flex items-center gap-2.5 text-sm font-bold tracking-wide text-[#292521]"
+                      className="flex items-center gap-2.5 text-sm font-bold tracking-wide text-[var(--text-control)]"
                     >
                       <span
                         aria-hidden="true"
@@ -231,7 +231,7 @@ export function WordCloud() {
                       />
                       {category.label}
                     </h3>
-                    <span className="shrink-0 text-xs tabular-nums text-[#746a60]">
+                    <span className="shrink-0 text-xs tabular-nums text-[var(--text-caption)]">
                       {category.total > MAX_WORDS_PER_CATEGORY
                         ? `展示 ${category.words.length} / 共 ${category.total} 个词`
                         : `${category.words.length} 个词`}
@@ -245,7 +245,7 @@ export function WordCloud() {
                           aria-label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}`}
                           className="inline-block max-w-full whitespace-nowrap font-semibold tracking-tight transition-opacity hover:opacity-70"
                           style={{
-                            color: "#1c1917",
+                            color: "var(--text-calendar-heading)",
                             fontSize: getWordSize(word.count, displayedWords),
                             lineHeight: 1.1,
                           }}

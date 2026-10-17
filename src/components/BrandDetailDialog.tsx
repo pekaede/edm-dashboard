@@ -150,7 +150,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
               const count = theme.count;
               const percentage = brand.total > 0 ? Math.round((count / brand.total) * 100) : 0;
               const color = themeColor(theme.key);
-              const tint = THEME_TINTS[theme.key] ?? "#f4f0e9";
+              const tint = THEME_TINTS[theme.key] ?? "var(--theme-other-tint)";
 
               return (
                 <div
@@ -204,7 +204,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold"
                   style={{
-                    color: "#315f69",
+                    color: "var(--theme-category-text)",
                     backgroundColor: THEME_TINTS.category,
                   }}
                 >

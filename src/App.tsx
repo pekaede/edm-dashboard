@@ -12,7 +12,6 @@ import { MarketComparison } from "./components/MarketComparison";
 import { MarkdownReport } from "./components/MarkdownReport";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
-import { DASHBOARD_THEME_STYLE } from "./components/dashboard";
 import type { Brand } from "./data";
 import { SiteProvider, useSiteSelection } from "./site-data";
 
@@ -73,10 +72,7 @@ function Dashboard() {
   }, []);
 
   return (
-    <div
-      className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased"
-      style={DASHBOARD_THEME_STYLE}
-    >
+    <div className="dashboard-shell min-h-screen font-sans text-slate-800 antialiased">
       <DashboardHeader />
 
       <main className="dashboard-container space-y-4 pb-6 sm:space-y-5 sm:pb-8">
@@ -87,8 +83,8 @@ function Dashboard() {
               aria-current={view === "dashboard" ? "page" : undefined}
               className={`view-switcher-link ${
                 view === "dashboard"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
+                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
               }`}
             >
               数据看板
@@ -98,8 +94,8 @@ function Dashboard() {
               aria-current={view === "report" ? "page" : undefined}
               className={`view-switcher-link ${
                 view === "report"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
+                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
               }`}
             >
               OnePage 报告
@@ -109,8 +105,8 @@ function Dashboard() {
               aria-current={view === "emails" ? "page" : undefined}
               className={`view-switcher-link ${
                 view === "emails"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
+                  : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
               }`}
             >
               邮件视图

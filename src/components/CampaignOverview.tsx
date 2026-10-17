@@ -18,16 +18,16 @@ function getHeatmapStyle(count: number, maxWeekly: number, minWeekly: number) {
     const ratio = (count - 15) / Math.max(1, maxWeekly - 15);
     const lightness = 44 - ratio * 12;
     return {
-      background: `hsl(14 65% ${lightness.toFixed(1)}%)`,
-      color: "#ffffff",
+      background: `hsl(var(--heatmap-high-hue) var(--heatmap-high-saturation) ${lightness.toFixed(1)}%)`,
+      color: "var(--text-inverse)",
     };
   }
 
   const ratio = (count - minWeekly) / Math.max(1, 14 - minWeekly);
   const lightness = 96 - ratio * 26;
   return {
-    background: `hsl(${(32 - ratio * 18).toFixed(1)} 80% ${lightness.toFixed(1)}%)`,
-    color: "#29231f",
+    background: `hsl(${(32 - ratio * 18).toFixed(1)} var(--heatmap-low-saturation) ${lightness.toFixed(1)}%)`,
+    color: "var(--text-primary)",
   };
 }
 
@@ -118,7 +118,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                         label={`${b.name} ${week.label}: ${n} 封邮件，占总数 ${pct}%`}
                         content={<>
                           <div className="font-semibold">{b.name} · {week.label}（{week.range}）</div>
-                          <div className="mt-1 font-mono text-[#f8ddb2]">{n} 封邮件</div>
+                          <div className="mt-1 font-mono text-[var(--calendar-heat-1)]">{n} 封邮件</div>
                           <div className="mt-0.5 text-slate-200">占全期总量 {pct}%（{n}/{grandTotal}）</div>
                         </>}
                       >

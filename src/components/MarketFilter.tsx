@@ -48,7 +48,7 @@ export function MarketFilter({
     <div className="flex flex-wrap items-center gap-3">
       <label
         htmlFor={selectId}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]"
+        className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]"
       >
         {label}
       </label>
@@ -66,7 +66,7 @@ export function MarketFilter({
           onChange(next === "" || !isKnown ? null : next);
         }}
         aria-label={label}
-        className="min-h-11 rounded-full border border-[#d4cabd] bg-[#fffaf3] px-4 py-2 text-sm font-bold text-[#292521] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f1c19] focus-visible:ring-offset-2"
+        className="min-h-11 rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2"
       >
         <option value="">全部市场（{total} 封）</option>
         {MARKET_OPTIONS.map((option) => (
@@ -80,7 +80,7 @@ export function MarketFilter({
           </option>
         ))}
       </select>
-      <span className="text-xs text-[#6f655b]" aria-live="polite" aria-atomic="true">
+      <span className="text-xs text-[var(--text-description)]" aria-live="polite" aria-atomic="true">
         当前：{getMarketLabel(value)}
       </span>
     </div>

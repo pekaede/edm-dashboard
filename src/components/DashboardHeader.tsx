@@ -30,7 +30,7 @@ export function DashboardHeader() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">Email Marketing Intelligence</p>
-          <h1 className="mt-1 text-2xl font-extrabold leading-snug tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
+          <h1 className="mt-1 dashboard-title text-slate-950">
             {DATA.meta.title}
           </h1>
           <ul className="mt-4 flex flex-wrap gap-2" aria-label="数据范围摘要">

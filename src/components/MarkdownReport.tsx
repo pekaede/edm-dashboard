@@ -147,7 +147,7 @@ export function MarkdownReport() {
   if (status !== "ready" || emails.length === 0) {
     return (
       <div className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
-        <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />
+        <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
         <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
           {status !== "ready" ? <ExtendedEmailsState {...emailData} /> : (
             <div role="status">
@@ -163,7 +163,7 @@ export function MarkdownReport() {
 
   return (
     <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
-      <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[#c38a24]" />
+      <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         {blocks.map((block, blockIndex) => {
           if (block.type === "heading") {
@@ -219,7 +219,7 @@ export function MarkdownReport() {
             return (
               <List
                 key={blockIndex}
-                className={`my-5 space-y-3 pl-6 text-[15px] leading-7 text-slate-700 marker:font-bold marker:text-slate-700 ${
+                className={`my-5 space-y-3 pl-6 text-[length:var(--type-body-report-size)] leading-7 text-slate-700 marker:font-bold marker:text-slate-700 ${
                   block.type === "ordered-list" ? "list-decimal" : "list-disc"
                 }`}
               >
@@ -255,7 +255,7 @@ export function MarkdownReport() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 text-slate-700">
+                  <tbody className="divide-y divide-[var(--divider)] text-slate-700">
                     {block.rows.map((row, rowIndex) => (
                       <tr key={rowIndex} className="align-top transition-colors even:bg-slate-50/70 hover:bg-slate-100/80">
                         {row.map((cell, cellIndex) =>

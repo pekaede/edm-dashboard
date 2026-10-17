@@ -256,7 +256,7 @@ export function MarketComparison() {
           是有意为之：跨市场对比的价值正在于展示已取的多市场数据，不应因 meta.total 滞后而完全空白。 */}
       {status === "incomplete" ? (
         <p
-          className="mb-4 rounded-lg border border-[#e8c87a] bg-[#fff7e2] px-4 py-2.5 text-sm text-[#5f574f]"
+          className="mb-4 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-2.5 text-sm text-[var(--text-detail)]"
           role="alert"
         >
           数据未取齐（已取 {emailTotal} / 预期 {meta.total} 封），以下对比基于已取数据。
@@ -265,20 +265,20 @@ export function MarketComparison() {
 
       {/* 市场选择：复选框，2 个及以上才对比；0 封市场也列出（可选中看空态）。 */}
       <fieldset className="mb-5">
-        <legend className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#6f665c]">
+        <legend className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
           选择对比市场（至少 2 个）
         </legend>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {data.markets.map((market) => (
             <label
               key={market}
-              className="inline-flex min-h-8 cursor-pointer items-center gap-2 text-sm font-semibold text-[#292521]"
+              className="inline-flex min-h-8 cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--text-control)]"
             >
               <input
                 type="checkbox"
                 checked={selected.includes(market)}
                 onChange={() => toggleMarket(market)}
-                className="h-4 w-4 accent-[#292521]"
+                className="h-4 w-4 accent-[var(--text-control)]"
                 aria-label={`对比市场：${data.marketLabels.get(market) ?? market}`}
               />
               {data.marketLabels.get(market) ?? market}（{data.marketTotals.get(market) ?? 0} 封）
@@ -294,12 +294,12 @@ export function MarketComparison() {
       ) : (
         <>
           {/* 品牌 × 市场：邮件数 + 周均；行内最大值高亮，一眼看出该品牌在哪市场最活跃。 */}
-          <h3 className="text-base font-bold text-slate-900">品牌 × 市场</h3>
+          <h3 className="section-title text-slate-900">品牌 × 市场</h3>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-max border-collapse text-sm">
               <caption className="sr-only">各品牌在选中市场的邮件数与周均</caption>
               <thead>
-                <tr className="border-b border-[#d9d0c3] text-left">
+                <tr className="border-b border-[var(--border-strong)] text-left">
                   <th scope="col" className="px-3 py-2 font-bold text-slate-900">品牌</th>
                   {effectiveSelected.map((market) => (
                     <th key={market} scope="col" className="px-3 py-2 text-right font-bold text-slate-900">
@@ -317,7 +317,7 @@ export function MarketComparison() {
                   const max = rowMax(counts);
                   const brandTotal = data.brandTotals.get(brand) ?? 0;
                   return (
-                    <tr key={brand} className="border-b border-[#efe9e0]">
+                    <tr key={brand} className="border-b border-[var(--divider-table)]">
                       <th scope="row" className="px-3 py-2 text-left font-semibold text-slate-900">
                         {brand}
                       </th>
@@ -328,7 +328,7 @@ export function MarketComparison() {
                           <td
                             key={market}
                             className={`px-3 py-2 text-right tabular-nums ${
-                              isMax ? "bg-[#fff0eb] font-bold text-slate-950" : "text-slate-700"
+                              isMax ? "bg-[var(--theme-price-tint)] font-bold text-slate-950" : "text-slate-700"
                             }`}
                           >
                             <span className="font-mono">{count}</span>
@@ -345,7 +345,7 @@ export function MarketComparison() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-[#d9d0c3] font-bold text-slate-950">
+                <tr className="border-t-2 border-[var(--border-strong)] font-bold text-slate-950">
                   <th scope="row" className="px-3 py-2 text-left">合计</th>
                   {effectiveSelected.map((market) => {
                     const total = data.marketTotals.get(market) ?? 0;
@@ -366,12 +366,12 @@ export function MarketComparison() {
           </div>
 
           {/* 主题对比：封数 + 占该市场份额；行内最高份额高亮，看主题结构差异（份额比绝对数更有意义，市场总量不同）。 */}
-          <h3 className="mt-6 text-base font-bold text-slate-900">主题对比</h3>
+          <h3 className="mt-6 section-title text-slate-900">主题对比</h3>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-max border-collapse text-sm">
               <caption className="sr-only">各主题在选中市场的封数与占该市场份额</caption>
               <thead>
-                <tr className="border-b border-[#d9d0c3] text-left">
+                <tr className="border-b border-[var(--border-strong)] text-left">
                   <th scope="col" className="px-3 py-2 font-bold text-slate-900">主题</th>
                   {effectiveSelected.map((market) => (
                     <th key={market} scope="col" className="px-3 py-2 text-right font-bold text-slate-900">
@@ -392,7 +392,7 @@ export function MarketComparison() {
                   const maxShare = Math.max(...rawShares);
                   const themeTotal = data.themeTotals.get(theme.key) ?? 0;
                   return (
-                    <tr key={theme.key} className="border-b border-[#efe9e0]">
+                    <tr key={theme.key} className="border-b border-[var(--divider-table)]">
                       <th scope="row" className="px-3 py-2 text-left font-semibold text-slate-900">
                         {theme.labelZh}
                       </th>
@@ -404,7 +404,7 @@ export function MarketComparison() {
                           <td
                             key={market}
                             className={`px-3 py-2 text-right tabular-nums ${
-                              isMax ? "bg-[#fff0eb] font-bold text-slate-950" : "text-slate-700"
+                              isMax ? "bg-[var(--theme-price-tint)] font-bold text-slate-950" : "text-slate-700"
                             }`}
                           >
                             <span className="font-mono">{count}</span>
@@ -425,7 +425,7 @@ export function MarketComparison() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-[#d9d0c3] font-bold text-slate-950">
+                <tr className="border-t-2 border-[var(--border-strong)] font-bold text-slate-950">
                   <th scope="row" className="px-3 py-2 text-left">合计</th>
                   {effectiveSelected.map((market) => {
                     const total = data.marketTotals.get(market) ?? 0;
@@ -448,7 +448,7 @@ export function MarketComparison() {
           </div>
 
           {/* 周频率：品牌 × 市场迷你柱状图（7 天一桶），看各品牌在各市场的发送节奏差异。 */}
-          <h3 className="mt-6 text-base font-bold text-slate-900">周频率</h3>
+          <h3 className="mt-6 section-title text-slate-900">周频率</h3>
           <p className="mt-1 text-xs text-slate-500">
             每格为该品牌在该市场的周度分布（{data.weeks.length} 周，7 天一桶；柱高按格内周最大值归一化）。周：{weekFootnote}。
           </p>
@@ -456,7 +456,7 @@ export function MarketComparison() {
             <table className="w-full min-w-max border-collapse text-sm">
               <caption className="sr-only">各品牌在选中市场的周度邮件分布</caption>
               <thead>
-                <tr className="border-b border-[#d9d0c3] text-left">
+                <tr className="border-b border-[var(--border-strong)] text-left">
                   <th scope="col" className="px-3 py-2 font-bold text-slate-900">品牌</th>
                   {effectiveSelected.map((market) => (
                     <th key={market} scope="col" className="px-3 py-2 text-right font-bold text-slate-900">
@@ -467,7 +467,7 @@ export function MarketComparison() {
               </thead>
               <tbody>
                 {data.brands.map((brand) => (
-                  <tr key={brand} className="border-b border-[#efe9e0]">
+                  <tr key={brand} className="border-b border-[var(--divider-table)]">
                     <th scope="row" className="px-3 py-2 text-left font-semibold text-slate-900">
                       {brand}
                     </th>
@@ -486,7 +486,7 @@ export function MarketComparison() {
                               <span
                                 key={data.weeks[i].label}
                                 title={`${data.weeks[i].label} ${data.weeks[i].range}：${count} 封`}
-                                className={`w-1 shrink-0 rounded-t-sm ${count > 0 ? "bg-[#292521]" : "bg-[#e5ddd3]"}`}
+                                className={`w-1 shrink-0 rounded-t-sm ${count > 0 ? "bg-[var(--text-control)]" : "bg-[var(--chart-empty)]"}`}
                                 style={{
                                   height: `${cellMax > 0 && count > 0 ? Math.max(4, Math.round((count / cellMax) * 40)) : 2}px`,
                                 }}

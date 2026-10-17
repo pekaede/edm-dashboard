@@ -145,7 +145,7 @@ export function ThemeDistribution() {
                     className="transition-all duration-200 group-focus-visible:stroke-slate-900"
                     style={{
                       filter: isHovered
-                        ? "drop-shadow(0 4px 8px rgb(0 0 0 / 0.15))"
+                        ? "var(--filter-chart-hover)"
                         : "none",
                     }}
                   />

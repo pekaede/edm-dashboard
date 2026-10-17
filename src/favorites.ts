@@ -1,0 +1,122 @@
+const FAVORITES_STORAGE_KEY = "edm-favorites-v1";
+
+/**
+ * Loads favorite email keys from localStorage.
+ * Returns an empty array if unavailable or parsing fails.
+ */
+export function loadFavorites(): string[] {
+  try {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const storage = window.localStorage;
+    if (!storage) {
+      return [];
+    }
+    const raw = storage.getItem(FAVORITES_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is string => typeof item === "string");
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavorites(favorites: string[]): void {
+  try {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const storage = window.localStorage;
+    if (!storage) {
+      return;
+    }
+    storage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+  } catch {
+    // Fail silently when storage quota is exceeded or storage is disabled
+  }
+}
+
+/**
+ * Checks whether the given email key is in favorites.
+ */
+export function isFavorite(key: string): boolean {
+  try {
+    if (!key) return false;
+    return loadFavorites().includes(key);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Adds an email key to favorites if not already present.
+ */
+export function addFavorite(key: string): void {
+  try {
+    if (!key) return;
+    const favorites = loadFavorites();
+    if (!favorites.includes(key)) {
+      favorites.push(key);
+      saveFavorites(favorites);
+    }
+  } catch {
+    // Fail silently when storage access fails
+  }
+}
+
+/**
+ * Removes an email key from favorites.
+ */
+export function removeFavorite(key: string): void {
+  try {
+    if (!key) return;
+    const favorites = loadFavorites();
+    const next = favorites.filter((k) => k !== key);
+    if (next.length !== favorites.length) {
+      saveFavorites(next);
+    }
+  } catch {
+    // Fail silently when storage access fails
+  }
+}
+
+/**
+ * Toggles favorite state of an email key. Returns new boolean state.
+ */
+export function toggleFavorite(key: string): boolean {
+  try {
+    if (!key) return false;
+    const favorites = loadFavorites();
+    const index = favorites.indexOf(key);
+    if (index >= 0) {
+      favorites.splice(index, 1);
+      saveFavorites(favorites);
+      return false;
+    } else {
+      favorites.push(key);
+      saveFavorites(favorites);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Formats standard email favorite key: market|brand|sent_date|source_index|day_seq
+ */
+export function createFavoriteKey(params: {
+  market: string;
+  brand: string;
+  sent_date: string;
+  source_index: number | string;
+  day_seq: number | string;
+}): string {
+  return `${params.market}|${params.brand}|${params.sent_date}|${params.source_index}|${params.day_seq}`;
+}

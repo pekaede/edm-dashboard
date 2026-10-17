@@ -114,13 +114,13 @@ function getOwnCount(record: Record<string, number>, key: string): number {
 // 时命中 Object.prototype（函数/对象，非 nullish，?? 回退不触发），导致非法 CSS。
 // 只认自有属性，否则回退中性色。
 export function themeColor(key: string): string {
-  return Object.prototype.hasOwnProperty.call(THEME_COLORS, key) ? THEME_COLORS[key] : "#9a8f85";
+  return Object.prototype.hasOwnProperty.call(THEME_COLORS, key) ? THEME_COLORS[key] : "var(--theme-other)";
 }
 
 export function themeLabelColor(key: string): string {
   return Object.prototype.hasOwnProperty.call(THEME_LABEL_COLORS, key)
     ? THEME_LABEL_COLORS[key]
-    : "#171411";
+    : "var(--theme-other-label)";
 }
 
 // 实时聚合：对 emails 表逐封过滤窗口 + 分组计数，不读快照表。

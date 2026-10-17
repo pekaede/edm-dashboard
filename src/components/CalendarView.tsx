@@ -17,8 +17,8 @@ const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
 const ALL_BRANDS = "全部" as const;
 const DAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] as const;
-const EMPTY_DAY_COLOR = "#f2eadf";
-const HEAT_COLORS = ["#f8ddb2", "#f3bc7c", "#e99061", "#b65343", "#7d342f"] as const;
+const EMPTY_DAY_COLOR = "var(--calendar-heat-empty)";
+const HEAT_COLORS = ["var(--calendar-heat-1)", "var(--calendar-heat-2)", "var(--calendar-heat-3)", "var(--calendar-heat-4)", "var(--calendar-heat-5)"] as const;
 const MONTHS = [
   { key: "2026-07", label: "7 月", fullLabel: "2026年7月" },
   { key: "2026-08", label: "8 月", fullLabel: "2026年8月" },
@@ -252,13 +252,13 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   if (status !== "ready" || (validation && !validation.isValid)) {
     return (
       <section
-        className={`dashboard-card mx-auto w-full max-w-3xl p-3! sm:p-4! ${className}`.trim()}
+        className={`dashboard-card mx-auto w-full max-w-3xl p-[var(--card-calendar-padding)]! sm:p-[var(--card-calendar-padding-sm)]! ${className}`.trim()}
         aria-labelledby={titleId}
       >
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-[#1c1917] sm:text-xl">
+        <h2 id={titleId} className="card-title text-[var(--text-calendar-heading)]">
           日历热力图与关键词搜索
         </h2>
-        <p className="mb-4 mt-1 text-sm text-[#6f655e]">{meta.range} · {meta.market}</p>
+        <p className="mb-4 mt-1 text-sm text-[var(--text-calendar-secondary)]">{meta.range} · {meta.market}</p>
         <ExtendedEmailsState
           {...emailData}
           status={status === "ready" ? "error" : status}
@@ -270,14 +270,14 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
   return (
     <section
-      className={`dashboard-card mx-auto w-full max-w-3xl p-3! sm:p-4! ${className}`.trim()}
+      className={`dashboard-card mx-auto w-full max-w-3xl p-[var(--card-calendar-padding)]! sm:p-[var(--card-calendar-padding-sm)]! ${className}`.trim()}
       aria-labelledby={titleId}
     >
       <div>
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-[#1c1917] sm:text-xl">
+        <h2 id={titleId} className="card-title text-[var(--text-calendar-heading)]">
           日历热力图与关键词搜索
         </h2>
-        <p className="mt-1 text-sm leading-5 text-[#6f655e]">
+        <p className="mt-1 text-sm leading-5 text-[var(--text-calendar-secondary)]">
           {meta.range} · {meta.market} · {meta.brandCount} 个有记录品牌 · 共 {total} 封邮件
         </p>
       </div>
@@ -292,10 +292,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 key={brand}
                 aria-pressed={isSelected}
                 onClick={() => selectBrand(brand)}
-                className={`min-h-11 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-2 ${
+                className={`min-h-11 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)] focus-visible:ring-offset-2 ${
                   isSelected
-                    ? "border-[#1c1917] bg-[#1c1917] text-[#fffaf1]"
-                    : "border-[#dfd2c2] bg-[#fffaf1] text-[#514943] hover:border-[#d98262] hover:bg-[#fff3e4] hover:text-[#1c1917]"
+                    ? "border-[var(--text-calendar-heading)] bg-[var(--text-calendar-heading)] text-[var(--surface-calendar)]"
+                    : "border-[var(--border-calendar-control)] bg-[var(--surface-calendar)] text-[var(--text-calendar-label)] hover:border-[var(--border-calendar-hover)] hover:bg-[var(--surface-calendar-hover)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
                 {brand}
@@ -305,7 +305,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
         </div>
 
         <div
-          className="mt-3 flex gap-1 rounded-xl border border-[#e7dccd] bg-[#f7eee2] p-1"
+          className="mt-3 flex gap-1 rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar-tabs)] p-1"
           role="tablist"
           aria-label="选择月份"
         >
@@ -322,10 +322,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 tabIndex={isSelected ? 0 : -1}
                 onClick={() => selectMonth(month.key)}
                 onKeyDown={(event) => handleMonthKeyDown(event, monthIndex)}
-                className={`min-h-11 flex-1 rounded-lg px-2 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#f7eee2] ${
+                className={`min-h-11 flex-1 rounded-lg px-2 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar-tabs)] ${
                   isSelected
-                    ? "bg-[#1c1917] text-[#fffaf1] shadow-sm"
-                    : "text-[#6f655e] hover:bg-[#fffaf1] hover:text-[#1c1917]"
+                    ? "bg-[var(--text-calendar-heading)] text-[var(--surface-calendar)] shadow-sm"
+                    : "text-[var(--text-calendar-secondary)] hover:bg-[var(--surface-calendar)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
                 {month.label}
@@ -336,23 +336,23 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="text-base font-bold text-[#1c1917]">{activeMonth.fullLabel}每日发信量</h3>
-            <p className="mt-0.5 text-sm text-[#6f655e]" aria-live="polite">
+            <h3 className="section-title text-[var(--text-calendar-heading)]">{activeMonth.fullLabel}每日发信量</h3>
+            <p className="mt-0.5 text-sm text-[var(--text-calendar-secondary)]" aria-live="polite">
               当前范围：{selectedBrand} · {getMarketLabel(selectedMarket)}，共 {filteredEmails.length} 封
             </p>
             {filteredEmails.length === 0 ? (
-              <p className="mt-1 text-sm font-semibold text-[#9b4b3c]" role="status">
+              <p className="mt-1 text-sm font-semibold text-[var(--text-notice)]" role="status">
                 该市场在统计窗口内暂无邮件，请切换市场或清除筛选。
               </p>
             ) : null}
           </div>
           <div
-            className="flex flex-wrap items-center gap-1.5 text-xs text-[#6f655e]"
+            className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-calendar-secondary)]"
             aria-label={`热力图颜色图例，无邮件为米白，有邮件时从每日 ${heatRange.minimum} 封到 ${heatRange.maximum} 封由浅至深`}
           >
             <span>少</span>
             <span className="flex items-center gap-1" aria-hidden="true">
-              <span className="size-3 rounded-[3px] border border-[#e4d8c9]" style={{ backgroundColor: EMPTY_DAY_COLOR }} />
+              <span className="size-3 rounded-[3px] border border-[var(--border-calendar-legend)]" style={{ backgroundColor: EMPTY_DAY_COLOR }} />
               {HEAT_COLORS.map((color) => (
                 <span
                   key={color}
@@ -362,7 +362,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               ))}
             </span>
             <span>多</span>
-            <span className="ml-1 text-[#7f7167]">
+            <span className="ml-1 text-[var(--text-calendar-muted)]">
               全窗口非零范围 {heatRange.minimum}–{heatRange.maximum} 封
             </span>
           </div>
@@ -372,7 +372,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           id={monthPanelId}
           role="tabpanel"
           aria-labelledby={`${monthPanelId}-${selectedMonth}-tab`}
-          className="mt-2 rounded-xl border border-[#e7dccd] bg-[#fffaf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:p-2"
+          className="mt-2 rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar)] p-1.5 shadow-[var(--shadow-calendar-panel)] sm:p-2"
         >
           <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
             <caption className="sr-only">
@@ -384,7 +384,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   <th
                     scope="col"
                     key={dayLabel}
-                    className="h-5 text-xs font-semibold text-[#7f7167]"
+                    className="h-5 text-xs font-semibold text-[var(--text-calendar-muted)]"
                   >
                     {dayLabel}
                   </th>
@@ -408,7 +408,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                       return (
                         <td key={day.date} className="p-0">
                           <div
-                            className="h-12 rounded-md border border-[#eee5da] bg-[#f7f1e9] p-1 text-left text-xs font-medium leading-4 text-[#776b63]"
+                            className="h-12 rounded-md border border-[var(--border-calendar-outside)] bg-[var(--surface-calendar-outside)] p-1 text-left text-xs font-medium leading-4 text-[var(--text-calendar-outside)]"
                             aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
                           >
                             {dayNumber}
@@ -430,10 +430,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           aria-expanded={isSelected}
                           aria-controls={detailId}
                           title={`${formatDate(day.date, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
-                          className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c1917] focus-visible:ring-offset-1 focus-visible:ring-offset-[#fffaf1] sm:p-1 ${
-                            usesWhiteText ? "text-white" : "text-[#1c1917]"
+                          className={`group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-black/[0.06] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
+                            usesWhiteText ? "text-white" : "text-[var(--text-calendar-heading)]"
                           } ${
-                            isSelected ? "ring-2 ring-[#1c1917] ring-offset-1 ring-offset-[#fffaf1]" : ""
+                            isSelected ? "ring-2 ring-[var(--text-calendar-heading)] ring-offset-1 ring-offset-[var(--surface-calendar)]" : ""
                           }`}
                           style={{ backgroundColor: heatColor }}
                         >
@@ -455,15 +455,15 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
         <div id={detailId} className={selectedDate ? "mt-3" : ""} aria-live="polite">
           {selectedDate ? (
-            <div className="rounded-2xl border border-[#e3d4c2] bg-[#fff6e9] p-4">
+            <div className="rounded-2xl border border-[var(--border-calendar-detail)] bg-[var(--surface-calendar-detail)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-bold text-[#1c1917]">
+                <h3 className="font-bold text-[var(--text-calendar-heading)]">
                   {formatDate(selectedDate, true)} · {selectedEmails.length} 封
                 </h3>
                 <button
                   type="button"
                   onClick={() => setSelectedDate(null)}
-                  className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[#6f655e] transition hover:bg-white/70 hover:text-[#1c1917] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5674e]"
+                  className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--text-calendar-secondary)] transition hover:bg-white/70 hover:text-[var(--text-calendar-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)]"
                 >
                   收起详情
                 </button>
@@ -473,19 +473,19 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   {selectedEmails.map((email, index) => (
                     <li
                       key={`${email.date}-${email.brand}-${email.theme}-${index}`}
-                      className="rounded-xl border border-[#eadfd1] bg-[#fffdf8] p-3 text-sm"
+                      className="rounded-xl border border-[var(--border-calendar-item)] bg-[var(--surface-calendar-item)] p-3 text-sm"
                     >
                       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-                        <dt className="font-semibold text-[#7f7167]">日期</dt>
-                        <dd className="text-[#29231f]">{email.date}</dd>
-                        <dt className="font-semibold text-[#7f7167]">品牌</dt>
-                        <dd className="font-semibold text-[#29231f]">{email.brand}</dd>
-                        <dt className="font-semibold text-[#7f7167]">市场</dt>
-                        <dd className="text-[#29231f]">{getMarketLabel(getEmailMarket(email))}</dd>
-                        <dt className="font-semibold text-[#7f7167]">主题</dt>
-                        <dd className="text-[#29231f]">{getThemeLabel(email.theme)}</dd>
-                        <dt className="font-semibold text-[#7f7167]">关键词</dt>
-                        <dd className="break-words text-[#29231f]">
+                        <dt className="font-semibold text-[var(--text-calendar-muted)]">日期</dt>
+                        <dd className="text-[var(--text-primary)]">{email.date}</dd>
+                        <dt className="font-semibold text-[var(--text-calendar-muted)]">品牌</dt>
+                        <dd className="font-semibold text-[var(--text-primary)]">{email.brand}</dd>
+                        <dt className="font-semibold text-[var(--text-calendar-muted)]">市场</dt>
+                        <dd className="text-[var(--text-primary)]">{getMarketLabel(getEmailMarket(email))}</dd>
+                        <dt className="font-semibold text-[var(--text-calendar-muted)]">主题</dt>
+                        <dd className="text-[var(--text-primary)]">{getThemeLabel(email.theme)}</dd>
+                        <dt className="font-semibold text-[var(--text-calendar-muted)]">关键词</dt>
+                        <dd className="break-words text-[var(--text-primary)]">
                           {email.keywords.length > 0 ? email.keywords.join("、") : "无关键词"}
                         </dd>
                       </dl>
@@ -493,17 +493,17 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-[#6f655e]">当日无邮件。</p>
+                <p className="mt-3 text-sm text-[var(--text-calendar-secondary)]">当日无邮件。</p>
               )}
             </div>
           ) : null}
         </div>
 
-        <div className="mt-4 border-t border-[#e7dccd] pt-3">
-          <label htmlFor={`${searchHelpId}-input`} className="text-base font-bold text-[#1c1917]">
+        <div className="mt-4 border-t border-[var(--border-calendar)] pt-3">
+          <label htmlFor={`${searchHelpId}-input`} className="text-base font-bold text-[var(--text-calendar-heading)]">
             关键词搜索
           </label>
-          <p id={searchHelpId} className="mt-1 text-sm text-[#6f655e]">
+          <p id={searchHelpId} className="mt-1 text-sm text-[var(--text-calendar-secondary)]">
             搜索范围跟随品牌与市场筛选；支持完整词或部分词，例如 dress、sale、new。
           </p>
           <input
@@ -513,34 +513,34 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             onChange={(event) => setSearchTerm(event.target.value)}
             aria-describedby={searchHelpId}
             placeholder="输入关键词"
-            className="mt-2 min-h-11 w-full rounded-xl border border-[#d9cbbb] bg-[#fffdf8] px-3 py-2 text-base text-[#1c1917] outline-none transition placeholder:text-[#7f7167] focus:border-[#d5674e] focus:ring-2 focus:ring-[#f3c5b5]"
+            className="mt-2 min-h-11 w-full rounded-xl border border-[var(--border-calendar-input)] bg-[var(--surface-calendar-item)] px-3 py-2 text-base text-[var(--text-calendar-heading)] outline-none transition placeholder:text-[var(--text-calendar-muted)] focus:border-[var(--control-calendar-focus)] focus:ring-2 focus:ring-[var(--selection-bg)]"
           />
 
           {normalizedSearchTerm ? (
             <div className="mt-4" aria-live="polite" aria-atomic="true">
               {searchResults.length > 0 ? (
                 <>
-                  <p className="text-sm font-semibold text-[#514943]">
+                  <p className="text-sm font-semibold text-[var(--text-calendar-label)]">
                     找到 {searchResults.length} 个日期与品牌与市场组合
                   </p>
-                  <ul className="mt-2 divide-y divide-[#eee3d6] rounded-xl border border-[#e7dccd] bg-[#fffdf8]">
+                  <ul className="mt-2 divide-y divide-[var(--divider-calendar)] rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar-item)]">
                     {searchResults.map((result) => (
                       <li
                         key={`${result.date}-${result.brand}-${result.market}`}
                         className="grid gap-1 px-4 py-3 text-sm sm:grid-cols-[8rem_1fr_5rem_auto] sm:items-center sm:gap-3"
                       >
-                        <time dateTime={result.date} className="font-medium text-[#6f655e]">
+                        <time dateTime={result.date} className="font-medium text-[var(--text-calendar-secondary)]">
                           {result.date}
                         </time>
-                        <span className="font-semibold text-[#1c1917]">{result.brand}</span>
-                        <span className="text-[#6f655e]">{getMarketLabel(result.market)}</span>
-                        <span className="text-[#6f655e]">{result.count} 封</span>
+                        <span className="font-semibold text-[var(--text-calendar-heading)]">{result.brand}</span>
+                        <span className="text-[var(--text-calendar-secondary)]">{getMarketLabel(result.market)}</span>
+                        <span className="text-[var(--text-calendar-secondary)]">{result.count} 封</span>
                       </li>
                     ))}
                   </ul>
                 </>
               ) : (
-                <p className="rounded-xl border border-dashed border-[#d9cbbb] bg-[#fff6e9] px-4 py-5 text-sm text-[#6f655e]">
+                <p className="rounded-xl border border-dashed border-[var(--border-calendar-input)] bg-[var(--surface-calendar-detail)] px-4 py-5 text-sm text-[var(--text-calendar-secondary)]">
                   无匹配
                 </p>
               )}

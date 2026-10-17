@@ -55,11 +55,11 @@ export const DATA = {
   ] as Week[],
   // 主题分类：price 价格促销 / behavior 行为触发 / new 上新 / lifestyle 生活方式 / category 品类聚焦
   themes: [
-    { key: "price", label: "Price Promotion", labelZh: "价格促销", count: 67, color: "#e85d7a" },
-    { key: "behavior", label: "Behavior-triggered", labelZh: "行为触发", count: 47, color: "#f0a030" },
-    { key: "new", label: "New Arrival", labelZh: "上新", count: 34, color: "#3fa66a" },
-    { key: "lifestyle", label: "Lifestyle Content", labelZh: "生活方式", count: 31, color: "#8e7cc3" },
-    { key: "category", label: "Category Focus", labelZh: "品类聚焦", count: 17, color: "#5b9bd5" },
+    { key: "price", label: "Price Promotion", labelZh: "价格促销", count: 67, color: "var(--theme-snapshot-price)" },
+    { key: "behavior", label: "Behavior-triggered", labelZh: "行为触发", count: 47, color: "var(--theme-snapshot-behavior)" },
+    { key: "new", label: "New Arrival", labelZh: "上新", count: 34, color: "var(--theme-snapshot-new)" },
+    { key: "lifestyle", label: "Lifestyle Content", labelZh: "生活方式", count: 31, color: "var(--theme-snapshot-lifestyle)" },
+    { key: "category", label: "Category Focus", labelZh: "品类聚焦", count: 17, color: "var(--theme-snapshot-category)" },
   ] as Theme[],
   brands: [
     {

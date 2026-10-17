@@ -1,28 +1,5 @@
 @import "tailwindcss";
-
-@theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
-    "Microsoft YaHei", "Segoe UI", sans-serif;
-  --color-slate-50: #faf6ef;
-  --color-slate-100: #f2eade;
-  --color-slate-200: #e5dbce;
-  --color-slate-300: #d0c2b1;
-  --color-slate-400: #938273;
-  --color-slate-500: #75695e;
-  --color-slate-600: #685d53;
-  --color-slate-700: #51483f;
-  --color-slate-800: #342d27;
-  --color-slate-900: #29231f;
-  --color-slate-950: #1f1c19;
-}
-
-:root {
-  --surface-page: #f7f1e8;
-  --surface-card: #fffdf9;
-  --accent: #e55f47;
-  --accent-ink: #a13f2d;
-  --accent-tint: #fff0e9;
-}
+@import "./tokens.css";
 
 html {
   background: var(--surface-page);
@@ -32,7 +9,7 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--surface-page);
-  color: var(--color-slate-800);
+  color: var(--text-body);
 }
 
 #root {
@@ -42,8 +19,8 @@ body {
 .dashboard-shell {
   background-color: var(--surface-page);
   background-image:
-    radial-gradient(circle at 10% 0%, rgb(229 95 71 / 0.05), transparent 30rem),
-    radial-gradient(circle at 95% 8%, rgb(195 138 36 / 0.06), transparent 28rem);
+    radial-gradient(circle at 10% 0%, var(--surface-page-glow-accent), transparent 30rem),
+    radial-gradient(circle at 95% 8%, var(--surface-page-glow-warm), transparent 28rem);
 }
 
 .dashboard-container {
@@ -56,11 +33,11 @@ body {
   width: min(100%, 24rem);
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.25rem;
-  border: 1px solid var(--color-slate-200);
-  border-radius: 1rem;
-  background: var(--surface-card);
+  border: 1px solid var(--control-border);
+  border-radius: var(--card-radius);
+  background: var(--control-bg);
   padding: 0.25rem;
-  box-shadow: 0 2px 6px rgb(52 45 39 / 0.04);
+  box-shadow: var(--shadow-switcher);
 }
 
 .view-switcher-link {
@@ -71,7 +48,7 @@ body {
   min-width: 0;
   border-radius: 0.75rem;
   padding-inline: 0.5rem;
-  font-size: 0.75rem;
+  font-size: var(--type-helper-size);
   font-weight: 700;
   white-space: nowrap;
   text-decoration: none;
@@ -84,10 +61,10 @@ body {
 .dashboard-card,
 .kpi-card {
   min-width: 0;
-  border: 1px solid var(--color-slate-200);
-  border-radius: 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
   background: var(--surface-card);
-  box-shadow: 0 4px 18px rgb(52 45 39 / 0.04);
+  box-shadow: var(--card-shadow);
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
@@ -96,7 +73,7 @@ body {
 .dashboard-card {
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: var(--card-padding);
 }
 
 .kpi-card {
@@ -104,13 +81,13 @@ body {
   min-height: 6rem;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.875rem;
+  padding: var(--kpi-padding);
 }
 
 .dashboard-card:hover,
 .kpi-card:hover {
-  border-color: var(--color-slate-300);
-  box-shadow: 0 6px 22px rgb(52 45 39 / 0.06);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .dashboard-card :is(table, details, [tabindex="0"]),
@@ -121,7 +98,7 @@ body {
 }
 
 .report-table-scroll:focus-visible {
-  border-color: var(--accent-ink);
+  border-color: var(--control-focus);
 }
 
 .brand-dialog {
@@ -135,11 +112,29 @@ body {
   transition: opacity 180ms ease;
 }
 
+.dashboard-title {
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-leading);
+  letter-spacing: var(--type-heading-tracking);
+}
+
+.card-title {
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-leading);
+  letter-spacing: var(--type-heading-tracking);
+}
+
+.dialog-section-title,
+.section-title {
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-leading);
+}
+
 .dialog-section-title {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.5rem;
-  color: var(--color-slate-950);
+  color: var(--text-heading);
 }
 
 .brand-week-row {
@@ -150,7 +145,7 @@ body {
 }
 
 .dashboard-shell :focus-visible {
-  outline: 3px solid var(--accent-ink);
+  outline: 3px solid var(--control-focus);
   outline-offset: 3px;
 }
 
@@ -160,7 +155,7 @@ body {
 
 .markdown-report {
   background: var(--surface-card);
-  box-shadow: 0 6px 24px rgb(52 45 39 / 0.05);
+  box-shadow: var(--card-report-shadow);
   overflow-wrap: anywhere;
 }
 
@@ -171,8 +166,8 @@ summary,
 }
 
 .dashboard-shell ::selection {
-  background: #f3c5b5;
-  color: var(--color-slate-950);
+  background: var(--selection-bg);
+  color: var(--text-heading);
 }
 
 @media (min-width: 40rem) {
@@ -187,22 +182,36 @@ summary,
 
   .view-switcher-link {
     padding-inline: 1rem;
-    font-size: 0.875rem;
+    font-size: var(--type-body-size);
+  }
+
+  .dashboard-title {
+    font-size: var(--type-h1-size-sm);
+  }
+
+  .card-title {
+    font-size: var(--type-h2-size-sm);
   }
 
   .dashboard-card {
-    padding: 1.25rem;
+    padding: var(--card-padding-sm);
   }
 
   .kpi-card {
     min-height: 7rem;
     gap: 1rem;
-    padding: 1.25rem 1.5rem;
+    padding: var(--kpi-padding-sm);
   }
 
   .brand-dialog {
     width: min(48rem, calc(100vw - 3rem));
     max-height: calc(100dvh - 3rem);
+  }
+}
+
+@media (min-width: 64rem) {
+  .dashboard-title {
+    font-size: var(--type-h1-size-lg);
   }
 }
 
