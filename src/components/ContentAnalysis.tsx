@@ -66,7 +66,6 @@ interface WindowEmail {
   market: string;
   brand: string;
   sent_date: string;
-  source_index: number;
   day_seq: number;
   subject: string | null;
   preheader: string | null;
@@ -133,8 +132,8 @@ const CTA_POSITION_LABEL_MAP: Record<string, string> = {
 
 const REQUEST_TIMEOUT_MS = 60_000;
 
-function analysisKey(market: string, brand: string, sent_date: string, source_index: number, day_seq: number): string {
-  return [market, brand, sent_date, String(source_index), String(day_seq)].join("\u0000");
+function analysisKey(market: string, brand: string, sent_date: string, day_seq: number): string {
+  return [market, brand, sent_date, String(day_seq)].join("\u0000");
 }
 
 function asNullableText(value: unknown): string | null {
@@ -521,7 +520,6 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           market: row.market,
           brand: row.brand,
           sent_date: row.sent_date,
-          source_index: row.source_index,
           day_seq: row.day_seq,
           subject: asNullableText(row.subject),
           preheader: asNullableText(row.preheader),
@@ -551,14 +549,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     if (emails === null) return null;
     const byKey = new Map<string, { subject?: EmailContentAnalysisRow; banner?: EmailContentAnalysisRow }>();
     for (const row of analysisRows ?? []) {
-      const key = analysisKey(row.market, row.brand, row.sent_date, row.source_index, row.day_seq);
+      const key = analysisKey(row.market, row.brand, row.sent_date, row.day_seq);
       const slot = byKey.get(key) ?? {};
       if (row.analysis_type === "subject" && !slot.subject) slot.subject = row;
       if (row.analysis_type === "banner" && !slot.banner) slot.banner = row;
       byKey.set(key, slot);
     }
     return emails.map((email) => {
-      const slot = byKey.get(analysisKey(email.market, email.brand, email.sent_date, email.source_index, email.day_seq));
+      const slot = byKey.get(analysisKey(email.market, email.brand, email.sent_date, email.day_seq));
       return {
         email,
         analysis: {

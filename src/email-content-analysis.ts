@@ -11,8 +11,9 @@
  *   COLOR_FAMILIES），不是 #RRGGBB Hex：模型不编 Hex（编造风险），
  *   真实 Hex 由图像算法提取并归一成色族；Hex 结果校验失败 ⇒ 按 failed 处理。
  * - 公开 Key 只放 apikey 头，不放 Bearer。
- * - 邮件身份是完整 5 元组 (market, brand, sent_date, source_index, day_seq)，
- *   与 emails 主键一致；读取/排序/去重键必须带 source_index。
+ * - 邮件身份是真实 4 元组 (market, brand, sent_date, day_seq)，
+ *   与 emails 主键（emails_pkey）一致；读取/排序/去重键用该 4 元组。
+ *   source_index 不是主键的一部分，绝不进邮件关联键。
  * - 三周窗口不由本文件定义；调用方从 src/three-week-aggregation.ts 传入
  *   --start/--end 对应的 start/end（22 天）。
  */
@@ -43,7 +44,6 @@ export interface EmailContentAnalysisRow {
   market: string;
   brand: string;
   sent_date: string;
-  source_index: number;
   day_seq: number;
   analysis_type: "subject" | "banner";
   status: AnalysisStatus;
@@ -206,9 +206,6 @@ function isContentAnalysisRow(value: unknown): value is Record<string, unknown> 
     typeof value.brand === "string" &&
     typeof value.sent_date === "string" &&
     DATE_RE.test(value.sent_date) &&
-    typeof value.source_index === "number" &&
-    Number.isSafeInteger(value.source_index) &&
-    value.source_index >= 0 &&
     typeof value.day_seq === "number" &&
     Number.isSafeInteger(value.day_seq) &&
     value.day_seq >= 0 &&
@@ -255,7 +252,7 @@ export async function fetchContentAnalysis(
   // 显式选列：绝不 select *（视图列变更时不静默吞入脏字段）。
   endpoint.searchParams.set(
     "select",
-    "market,brand,sent_date,source_index,day_seq,analysis_type,status,result,analyzed_at",
+    "market,brand,sent_date,day_seq,analysis_type,status,result,analyzed_at",
   );
   endpoint.searchParams.append("market", `eq.${market}`);
   endpoint.searchParams.append("sent_date", `gte.${start}`);
@@ -263,7 +260,7 @@ export async function fetchContentAnalysis(
   // 稳定唯一键排序：与视图 DISTINCT ON 键一致，保证分页无遗漏/重复。
   endpoint.searchParams.set(
     "order",
-    "market.asc,brand.asc,sent_date.asc,source_index.asc,day_seq.asc,analysis_type.asc",
+    "market.asc,brand.asc,sent_date.asc,day_seq.asc,analysis_type.asc",
   );
   const PAGE_SIZE = 200;
   endpoint.searchParams.set("limit", String(PAGE_SIZE));
@@ -332,7 +329,6 @@ export async function fetchContentAnalysis(
             raw.market,
             raw.brand,
             raw.sent_date,
-            raw.source_index,
             raw.day_seq,
             raw.analysis_type,
           ]);
@@ -363,7 +359,6 @@ export async function fetchContentAnalysis(
                 market: raw.market as string,
                 brand: raw.brand as string,
                 sent_date: raw.sent_date as string,
-                source_index: raw.source_index as number,
                 day_seq: raw.day_seq as number,
                 analysis_type: analysisType,
                 status: "failed",
@@ -377,7 +372,6 @@ export async function fetchContentAnalysis(
             market: raw.market as string,
             brand: raw.brand as string,
             sent_date: raw.sent_date as string,
-            source_index: raw.source_index as number,
             day_seq: raw.day_seq as number,
             analysis_type: analysisType,
             status,

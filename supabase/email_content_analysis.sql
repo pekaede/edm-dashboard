@@ -5,17 +5,17 @@
 --
 -- 前置条件（父代理另行执行，不在本文件内）：
 --   1. emails 表已新增 subject / preheader / banner_url 三列（均可空）。
---   2. 【FK 前提】emails 表的真实主键是完整 5 元组
---      (market, brand, sent_date, source_index, day_seq)
---      （见 src/supabase.ts SOURCE_KEY）。下面的 FK 引用该完整 5 元组。
---      严禁改成“给 emails 加 UNIQUE 四元组”的方案——邮件身份就是 5 元组，
---      4 列在 emails 上没有唯一约束，引用 4 列建 FK 必失败。
+--   2. 【FK 前提】emails 表的真实主键是 4 元组
+--      (market, brand, sent_date, day_seq)（约束名 emails_pkey），
+--      且 emails 上没有任何 UNIQUE 约束。下面的 FK 引用该真实 4 元组主键。
+--      严禁引用含 source_index 的 5 元组——5 元组在 emails 上没有唯一
+--      约束，引用它建 FK 会报 ERROR 42830（上一版 DDL 因此全没生效）。
 -- 执行顺序：先完成前提 1，再执行本文件（本文件只建分析表/视图/策略/授权）。
 --
 -- 语义：
 --   - 每行 = 某封邮件 × 某类分析（subject / banner）的一次尝试结果。
 --     追加式写入，绝不 UPDATE 覆盖旧行；失败重跑不覆盖上次可用结果。
---   - UNIQUE (market, brand, sent_date, source_index, day_seq, analysis_type, input_hash)
+--   - UNIQUE (market, brand, sent_date, day_seq, analysis_type, input_hash)
 --     保证同一输入只保留一个“有效”记录：重跑成功前若已有同 input_hash
 --     的 failed / skipped 行，由离线 pipeline 用 upsert 替换该行；
 --     pipeline 永远不重跑 input_hash 未变的 success 行，因此 success 行
@@ -33,11 +33,10 @@
 create table if not exists public.email_content_analysis (
   id bigint generated always as identity primary key,
 
-  -- 邮件定位键：引用 emails 表的完整 5 元组主键（见文件头 FK 前提）。
+  -- 邮件定位键：引用 emails 表的真实 4 元组主键（见文件头 FK 前提）。
   market text not null,
   brand text not null,
   sent_date date not null,
-  source_index int not null,
   day_seq int not null,
 
   analysis_type text not null
@@ -73,12 +72,12 @@ create table if not exists public.email_content_analysis (
   created_at timestamptz not null default now(),
 
   constraint email_content_analysis_fk_email
-    foreign key (market, brand, sent_date, source_index, day_seq)
-    references public.emails (market, brand, sent_date, source_index, day_seq)
+    foreign key (market, brand, sent_date, day_seq)
+    references public.emails (market, brand, sent_date, day_seq)
     on delete cascade,
 
   constraint email_content_analysis_unique_input
-    unique (market, brand, sent_date, source_index, day_seq, analysis_type, input_hash),
+    unique (market, brand, sent_date, day_seq, analysis_type, input_hash),
 
   constraint email_content_analysis_result_only_on_success
     check ((status = 'success' and result is not null)
@@ -100,7 +99,7 @@ comment on column public.email_content_analysis.result is
 
 create index if not exists email_content_analysis_lookup_idx
   on public.email_content_analysis
-    (market, brand, sent_date, source_index, day_seq, analysis_type, created_at desc);
+    (market, brand, sent_date, day_seq, analysis_type, created_at desc);
 
 create index if not exists email_content_analysis_status_idx
   on public.email_content_analysis (status, analysis_type);
@@ -110,11 +109,10 @@ create index if not exists email_content_analysis_status_idx
 -- ----------------------------------------------------------------------------
 create or replace view public.email_content_analysis_current
 with (security_invoker = true) as
-select distinct on (market, brand, sent_date, source_index, day_seq, analysis_type)
+select distinct on (market, brand, sent_date, day_seq, analysis_type)
   market,
   brand,
   sent_date,
-  source_index,
   day_seq,
   analysis_type,
   status,
@@ -123,7 +121,7 @@ select distinct on (market, brand, sent_date, source_index, day_seq, analysis_ty
   succeeded_at as analyzed_at
 from public.email_content_analysis
 order by
-  market, brand, sent_date, source_index, day_seq, analysis_type,
+  market, brand, sent_date, day_seq, analysis_type,
   created_at desc, id desc;
 
 comment on view public.email_content_analysis_current is

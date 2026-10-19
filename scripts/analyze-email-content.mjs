@@ -440,11 +440,11 @@ class SupabaseAdmin {
     // 先 HEAD 取精确总数，再分页拉全（绝不假设一次响应完整）。
     const buildUrl = (offset) => {
       const u = new URL(`${this.baseUrl}/rest/v1/emails`);
-      u.searchParams.set("select", "market,brand,sent_date,source_index,day_seq,subject,preheader,banner_url");
+      u.searchParams.set("select", "market,brand,sent_date,day_seq,subject,preheader,banner_url");
       if (singleMarket) u.searchParams.append("market", `eq.${singleMarket}`);
       u.searchParams.append("sent_date", `gte.${start}`);
       u.searchParams.append("sent_date", `lte.${end}`);
-      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,source_index.asc,day_seq.asc");
+      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,day_seq.asc");
       u.searchParams.set("limit", String(DEFAULT_PAGE_SIZE));
       u.searchParams.set("offset", String(offset));
       return u;
@@ -472,11 +472,11 @@ class SupabaseAdmin {
     // 先取总数再分页；排序保证同一 key 的最新行先出现。
     const buildUrl = (off) => {
       const u = new URL(`${this.baseUrl}/rest/v1/email_content_analysis`);
-      u.searchParams.set("select", "market,brand,sent_date,source_index,day_seq,analysis_type,status,input_hash");
+      u.searchParams.set("select", "market,brand,sent_date,day_seq,analysis_type,status,input_hash");
       if (markets.length === 1) u.searchParams.append("market", `eq.${markets[0]}`);
       u.searchParams.append("sent_date", `gte.${start}`);
       u.searchParams.append("sent_date", `lte.${end}`);
-      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,source_index.asc,day_seq.asc,analysis_type.asc,created_at.desc,id.desc");
+      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,day_seq.asc,analysis_type.asc,created_at.desc,id.desc");
       u.searchParams.set("limit", String(DEFAULT_PAGE_SIZE));
       u.searchParams.set("offset", String(off));
       return u;
@@ -490,7 +490,7 @@ class SupabaseAdmin {
       const page = await res.json();
       if (!Array.isArray(page) || page.length === 0) throw new Error("分析现状分页未取齐。");
       for (const row of page) {
-        const key = [row.market, row.brand, row.sent_date, row.source_index, row.day_seq, row.analysis_type].join("");
+        const key = [row.market, row.brand, row.sent_date, row.day_seq, row.analysis_type].join("");
         if (!latest.has(key)) latest.set(key, row);
       }
       offset += page.length;
@@ -501,7 +501,7 @@ class SupabaseAdmin {
   /** Upsert：仅用于新行，或用 success 替换同 input_hash 的 failed/skipped 行。调用方已保证不覆盖 success 行。 */
   async upsertRow(row) {
     const u = new URL(`${this.baseUrl}/rest/v1/email_content_analysis`);
-    u.searchParams.set("on_conflict", "market,brand,sent_date,source_index,day_seq,analysis_type,input_hash");
+    u.searchParams.set("on_conflict", "market,brand,sent_date,day_seq,analysis_type,input_hash");
     const res = await fetch(u, {
       method: "POST",
       headers: this.headers({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
@@ -582,8 +582,8 @@ function buildJobs(emails, { start, end, markets, force, retryFailed }) {
     .flatMap((email) => ["subject", "banner"].map((type) => ({ email, type })))
     .map((job) => ({
       ...job,
-      key: [job.email.market, job.email.brand, job.email.sent_date, job.email.source_index, job.email.day_seq, job.type].join(""),
-      display: [job.email.market, job.email.brand, job.email.sent_date, job.email.source_index, job.email.day_seq, job.type].join(" | "),
+      key: [job.email.market, job.email.brand, job.email.sent_date, job.email.day_seq, job.type].join(""),
+      display: [job.email.market, job.email.brand, job.email.sent_date, job.email.day_seq, job.type].join(" | "),
     }));
 }
 
@@ -669,7 +669,6 @@ async function runJob(job, ctx) {
     market: email.market,
     brand: email.brand,
     sent_date: email.sent_date,
-    source_index: email.source_index,
     day_seq: email.day_seq,
     analysis_type: type,
     batch_id: ctx.batchId,
@@ -892,12 +891,12 @@ async function runJob(job, ctx) {
 async function runDryRun({ window, markets, batchId, stats, limit }) {
   console.log(`[dry-run] 窗口 ${window.start}–${window.end}，市场 ${markets.length ? markets.join(",") : "全部"}，batch=${batchId}（合成数据，不联网、不写库）`);
   const synthetic = [
-    { market: "US", brand: "Zara", sent_date: window.start, source_index: 0, day_seq: 0, subject: "Last chance: 40% off ends tonight 🛍️ — Shop now", preheader: "Picked for you, just for you", banner_url: "https://example.invalid/banner-zara.png" },
-    // 与上一封仅 source_index 不同（5 元组区分）：4 元组键会误合并，5 元组必须分成两封。
-    { market: "US", brand: "Zara", sent_date: window.start, source_index: 1, day_seq: 0, subject: "Save 20% on your favorites 👨‍👩‍👧‍👦 🇫🇷", preheader: null, banner_url: null },
-    { market: "US", brand: "lululemon", sent_date: window.start, source_index: 0, day_seq: 0, subject: "New drop ✨ Fresh arrivals are here", preheader: null, banner_url: null },
-    { market: "UK", brand: "ALO Yoga", sent_date: window.start, source_index: 0, day_seq: 0, subject: null, preheader: null, banner_url: null },
-    { market: "US", brand: "SHEIN", sent_date: window.start, source_index: 0, day_seq: 0, subject: "Free shipping + BOGO — discover more", preheader: "Your style awaits", banner_url: "https://example.invalid/banner-shein.png" },
+    { market: "US", brand: "Zara", sent_date: window.start, day_seq: 0, subject: "Last chance: 40% off ends tonight 🛍️ — Shop now", preheader: "Picked for you, just for you", banner_url: "https://example.invalid/banner-zara.png" },
+    // 与上一封同市场同品牌同日、仅 day_seq 不同（4 元组区分）：两封必须分成两个任务，不能误合并。
+    { market: "US", brand: "Zara", sent_date: window.start, day_seq: 1, subject: "Save 20% on your favorites 👨‍👩‍👧‍👦 🇫🇷", preheader: null, banner_url: null },
+    { market: "US", brand: "lululemon", sent_date: window.start, day_seq: 0, subject: "New drop ✨ Fresh arrivals are here", preheader: null, banner_url: null },
+    { market: "UK", brand: "ALO Yoga", sent_date: window.start, day_seq: 0, subject: null, preheader: null, banner_url: null },
+    { market: "US", brand: "SHEIN", sent_date: window.start, day_seq: 0, subject: "Free shipping + BOGO — discover more", preheader: "Your style awaits", banner_url: "https://example.invalid/banner-shein.png" },
   ];
   const jobs = buildJobs(synthetic, { markets }).slice(0, limit ?? Infinity);
   stats.total = jobs.length;
