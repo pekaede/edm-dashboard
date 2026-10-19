@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -105,6 +106,110 @@ function HighlightText({ text, query }: { text: string; query: string }) {
         ),
       )}
     </>
+  );
+}
+
+function ExpandableKeywords({
+  email,
+  isExpanded,
+  onToggle,
+  searchQuery,
+}: {
+  email: EmailRecord;
+  isExpanded: boolean;
+  onToggle: () => void;
+  searchQuery: string;
+}) {
+  const spanRef = useRef<HTMLSpanElement | null>(null);
+  // A row can remount while already expanded (pagination / filter /
+  // sort unmounts the row, expandedRowKeys survives). The only way to
+  // reach expanded is via the overflow button, so a remount with
+  // isExpanded already true must start with the button visible —
+  // otherwise the row could never be collapsed again. Measuring is
+  // impossible while expanded (no clamp), so seed from the prop; the
+  // collapse path re-measures for real.
+  const [isOverflowing, setIsOverflowing] = useState(isExpanded);
+  const keywordsKey = email.keywords.join(" · ");
+
+  // Measured overflow, not a keyword-count heuristic: the span is clamped
+  // to 2 lines when collapsed, so scrollHeight > clientHeight means the
+  // content is actually truncated. While expanded there is no clamp, so
+  // keep the last measured value (the button was shown to get here).
+  const measureOverflow = useCallback(() => {
+    const el = spanRef.current;
+    if (!el || isExpanded) return;
+    setIsOverflowing(el.scrollHeight > el.clientHeight + 1);
+  }, [isExpanded]);
+
+  useLayoutEffect(() => {
+    measureOverflow();
+    // Highlighting (font-semibold + padding on matches) can change line
+    // wrapping without changing the span's box size, so re-measure when
+    // the query changes too — ResizeObserver alone would miss it.
+  }, [measureOverflow, keywordsKey, searchQuery]);
+
+  useEffect(() => {
+    const el = spanRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => measureOverflow());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureOverflow]);
+
+  // Font swaps can change line wrapping (scrollHeight) without changing
+  // the span's box size, which ResizeObserver would not report.
+  // Re-measure once webfonts settle; no-op when expanded or on the server.
+  useEffect(() => {
+    if (typeof document === "undefined" || !document.fonts) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (!cancelled) measureOverflow();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [measureOverflow]);
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <span
+        ref={spanRef}
+        className={`transition-all ${
+          isExpanded ? "line-clamp-none" : "line-clamp-2"
+        }`}
+      >
+        {email.keywords.map((kw, i) => (
+          <span key={i}>
+            {i > 0 && (
+              <span className="text-[var(--text-muted)]" aria-hidden="true">
+                {" "}
+                ·{" "}
+              </span>
+            )}
+            <HighlightText text={kw} query={searchQuery} />
+          </span>
+        ))}
+      </span>
+      {/* Always offer 收起 while expanded: bulk “展开全部内容” can
+          expand a row that measured as fitting (isOverflowing false),
+          and overflow cannot be measured while unclamped. Collapsing
+          such a row is a no-op visually, but the row must stay
+          collapsible per-row. In the collapsed state the button still
+          appears only on measured overflow, which is the original fix. */}
+      {isOverflowing || isExpanded ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+          aria-label={`${
+            isExpanded ? "收起" : "展开"
+          } ${email.brand} ${email.date} 的全部关键词`}
+          className="inline-flex rounded-xs text-xs font-semibold text-[var(--accent-ink)] underline underline-offset-2 hover:underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
+        >
+          {isExpanded ? "收起" : "展开全部"}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -1039,12 +1144,6 @@ export function ExtendedEmailFilter({
                   const isFav = favoriteKeys.has(emailKey);
                   const isExpanded = expandedRowKeys.has(emailKey);
                   const hasKeywords = email.keywords.length > 0;
-                  const keywordsText = hasKeywords
-                    ? email.keywords.join(" · ")
-                    : "";
-                  const canExpand =
-                    hasKeywords &&
-                    (email.keywords.length > 2 || keywordsText.length > 30);
 
                   return (
                     <tr
@@ -1126,44 +1225,12 @@ export function ExtendedEmailFilter({
                       {/* Keywords cell with highlight and expandable truncation */}
                       <td className="max-w-xl border-b border-[var(--divider-email)] px-5 py-4 leading-6 text-[var(--text-detail)]">
                         {hasKeywords ? (
-                          <div className="flex flex-col items-start gap-1">
-                            <span
-                              className={`transition-all ${
-                                isExpanded ? "line-clamp-none" : "line-clamp-2"
-                              }`}
-                            >
-                              {email.keywords.map((kw, i) => (
-                                <span key={i}>
-                                  {i > 0 && (
-                                    <span
-                                      className="text-[var(--text-muted)]"
-                                      aria-hidden="true"
-                                    >
-                                      {" "}
-                                      ·{" "}
-                                    </span>
-                                  )}
-                                  <HighlightText
-                                    text={kw}
-                                    query={searchQuery}
-                                  />
-                                </span>
-                              ))}
-                            </span>
-                            {canExpand ? (
-                              <button
-                                type="button"
-                                onClick={() => toggleRowExpand(emailKey)}
-                                aria-expanded={isExpanded}
-                                aria-label={`${
-                                  isExpanded ? "收起" : "展开"
-                                } ${email.brand} ${email.date} 的全部关键词`}
-                                className="inline-flex rounded-xs text-xs font-semibold text-[var(--accent-ink)] underline underline-offset-2 hover:underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
-                              >
-                                {isExpanded ? "收起" : "展开全部"}
-                              </button>
-                            ) : null}
-                          </div>
+                          <ExpandableKeywords
+                            email={email}
+                            isExpanded={isExpanded}
+                            onToggle={() => toggleRowExpand(emailKey)}
+                            searchQuery={searchQuery}
+                          />
                         ) : (
                           <span className="text-[var(--text-muted)]">—</span>
                         )}
