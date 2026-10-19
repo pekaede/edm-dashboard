@@ -12,6 +12,10 @@ export function DashboardFooter() {
 
   const safeThreeWeekTotal = data ? `${data.total} 封` : status === "loading" ? "加载中…" : "—";
   const safeSiteTotal = status === "ready" ? `${emails.length} 封` : status === "loading" ? "加载中…" : "—";
+  // 窗口天数由 meta 起止推导（live 93 天；JSON 历史快照 92 天），不硬编码。
+  const windowDays = Math.round(
+    (Date.parse(meta.windowEnd) - Date.parse(meta.windowStart)) / 86_400_000,
+  ) + 1;
 
   return (
     <footer
@@ -24,10 +28,10 @@ export function DashboardFooter() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-body)]">
-              统计窗口：2026-07-16 至 2026-10-16（各市场当地日期）
+              统计窗口：{meta.range}（各市场当地日期）
             </span>
             <span className="inline-flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-body)]">
-              固定截止日：2026-10-16
+              固定截止日：{meta.windowEnd}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-[var(--text-body)]">
@@ -56,7 +60,11 @@ export function DashboardFooter() {
             固定截止日与时间口径
           </h3>
           <p>
-            <strong className="font-semibold text-[var(--text-body)]">固定截止日：</strong>本期研究设定固定截止日为 <strong className="font-semibold text-[var(--text-body)]">2026-10-16</strong>，整体分析覆盖 <strong className="font-semibold text-[var(--text-body)]">2026-07-16 至 2026-10-16</strong> 的三个月固定历史基线窗口。固定截止日确保各品牌与站点在恒定时间区间内具备横向对比的可比性与复现性，历史窗口不随访问自然日动态滑动。
+            <strong className="font-semibold text-[var(--text-body)]">固定截止日：</strong>{meta.dataSource === "json" ? (
+              <>本期研究为历史快照，截止日为 <strong className="font-semibold text-[var(--text-body)]">{meta.windowEnd}</strong>，整体分析覆盖 <strong className="font-semibold text-[var(--text-body)]">{meta.range}</strong> 的 {windowDays} 天历史窗口。快照窗口固定，不随每日任务或访问自然日滑动。</>
+            ) : (
+              <>本期研究设定固定截止日为 <strong className="font-semibold text-[var(--text-body)]">{meta.windowEnd}</strong>，整体分析覆盖 <strong className="font-semibold text-[var(--text-body)]">{meta.range}</strong> 的 {windowDays} 天滑动窗口。截止日由每日更新任务在成功后推进，窗口随之滑动并保持 {windowDays} 天，确保各品牌与站点在恒定长度时间区间内具备横向对比的可比性与复现性；窗口不随访问自然日自动推进。</>
+            )}
           </p>
           <p>
             <strong className="font-semibold text-[var(--text-body)]">时间口径：</strong>所有发送日期均按邮件发出时 <strong className="font-semibold text-[var(--text-body)]">各市场当地日历日期</strong> 归档与对齐。

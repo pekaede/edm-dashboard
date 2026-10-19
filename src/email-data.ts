@@ -35,17 +35,24 @@ export function countEmailsByMarket(emails: EmailRecord[]): Record<string, numbe
 
 export const BRAND_ORDER = ["Zara", "lululemon", "ALO Yoga", "Halara", "Temu", "SHEIN"] as const;
 
+export type EmailDataSource = "supabase" | "json";
+
+const DEFAULT_SOURCE: EmailDataSource = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
+  ? "json"
+  : "supabase";
+
 export const EXTENDED_EMAIL_META = {
-  windowStart: "2026-07-16",
-  windowEnd: "2026-10-16",
-  range: "2026-07-16 – 2026-10-16",
+  // 按数据源区分窗口：live Supabase 分支随每日任务滑动；JSON 回滚模式保留历史快照窗口。
+  // 必须在此处区分：email-data-json.ts 与 data-calendar.ts 都直接读这个共享常量做校验/派生，
+  // 只在返回的 meta 里覆盖历史日期是不够的——校验在覆盖之前就已用 live 边界拒绝了历史邮件。
+  windowStart: DEFAULT_SOURCE === "json" ? "2026-07-16" : "2026-07-17",
+  windowEnd: DEFAULT_SOURCE === "json" ? "2026-10-15" : "2026-10-17",
+  range: DEFAULT_SOURCE === "json" ? "2026-07-16 – 2026-10-15" : "2026-07-17 – 2026-10-17",
   market: "美国 / 英国 / 澳洲 / 法国 / 德国 / 意大利 / 荷兰；西班牙 0 封",
   source: "Milled",
   brandCount: BRAND_ORDER.length,
   weekCount: 3,
 } as const;
-
-export type EmailDataSource = "supabase" | "json";
 
 export interface ExtendedEmailMeta {
   windowStart: string;
@@ -74,10 +81,6 @@ interface ExtendedEmailsState extends ExtendedEmailsData {
 export interface ExtendedEmailsResult extends ExtendedEmailsState {
   retry: () => void;
 }
-
-const DEFAULT_SOURCE: EmailDataSource = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
-  ? "json"
-  : "supabase";
 
 const jsonAdapter = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
   ? async (): Promise<ExtendedEmailsData> => {

@@ -128,8 +128,8 @@ export async function fetchEmailDataset(): Promise<EmailDataset> {
   const keyColumns = await getEmailKeyColumns(baseUrl, publishableKey);
   const columns = new Set(["brand", "sent_date", "day_seq", "source_index", "theme", "keywords", "original_url", "market", ...keyColumns]);
   endpoint.searchParams.set("select", [...columns].join(","));
-  endpoint.searchParams.append("sent_date", "gte.2026-07-16");
-  endpoint.searchParams.append("sent_date", "lte.2026-10-16");
+  endpoint.searchParams.append("sent_date", "gte.2026-07-17");
+  endpoint.searchParams.append("sent_date", "lte.2026-10-17");
   const orderColumns = [...new Set(["sent_date", "brand", "day_seq", ...keyColumns])];
   endpoint.searchParams.set("order", orderColumns.map((column) => `${column}.${column === "sent_date" ? "desc" : "asc"}`).join(","));
   endpoint.searchParams.set("limit", String(PAGE_SIZE));

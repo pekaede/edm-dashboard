@@ -19,17 +19,27 @@ const EMPTY_STATE_CLASS_NAME =
 
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
+// 月份选项由当前窗口推导（不硬编码月份列表），窗口滑动后自动跟随。
+function deriveMonths(start: string, end: string): Array<{ key: string; label: string; fullLabel: string }> {
+  const months: Array<{ key: string; label: string; fullLabel: string }> = [];
+  const cursor = new Date(`${start.slice(0, 7)}-01T00:00:00Z`);
+  const endMonth = end.slice(0, 7);
+  while (toDateString(cursor).slice(0, 7) <= endMonth) {
+    const year = cursor.getUTCFullYear();
+    const month = cursor.getUTCMonth() + 1;
+    const key = `${year}-${String(month).padStart(2, "0")}`;
+    months.push({ key, label: `${month} 月`, fullLabel: `${year}年${month}月` });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return months;
+}
+const MONTHS = deriveMonths(WINDOW_START, WINDOW_END);
+// 初始/回退选中月份：窗口第二个月（与此前默认 8 月一致），窗口不足两个月时取首月。
+const DEFAULT_MONTH = MONTHS[1] ?? MONTHS[0];
 const ALL_BRANDS = "全部" as const;
 const DAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] as const;
 const EMPTY_DAY_COLOR = "var(--calendar-heat-empty)";
 const HEAT_COLORS = ["var(--calendar-heat-1)", "var(--calendar-heat-2)", "var(--calendar-heat-3)", "var(--calendar-heat-4)", "var(--calendar-heat-5)"] as const;
-const MONTHS = [
-  { key: "2026-07", label: "7 月", fullLabel: "2026年7月" },
-  { key: "2026-08", label: "8 月", fullLabel: "2026年8月" },
-  { key: "2026-09", label: "9 月", fullLabel: "2026年9月" },
-  { key: "2026-10", label: "10 月", fullLabel: "2026年10月" },
-] as const;
-
 type MonthKey = (typeof MONTHS)[number]["key"];
 
 const THEME_LABELS: Record<string, string> = {
@@ -151,7 +161,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusDetailRef = useRef(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandKey | typeof ALL_BRANDS>(ALL_BRANDS);
-  const [selectedMonth, setSelectedMonth] = useState<MonthKey>("2026-08");
+  const [selectedMonth, setSelectedMonth] = useState<MonthKey>(DEFAULT_MONTH.key);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -172,7 +182,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   );
 
   const calendarWeeks = useMemo(() => createMonthWeeks(selectedMonth), [selectedMonth]);
-  const activeMonth = MONTHS.find((month) => month.key === selectedMonth) ?? MONTHS[1];
+  const activeMonth = MONTHS.find((month) => month.key === selectedMonth) ?? DEFAULT_MONTH;
 
   const filteredEmails = useMemo(
     () =>
@@ -444,7 +454,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           ) : (
             <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
               <caption className="sr-only">
-                {activeMonth.fullLabel}邮件日历，颜色深浅使用2026年7月16日至10月15日的全局刻度
+                {activeMonth.fullLabel}邮件日历，颜色深浅使用{formatDate(WINDOW_START, true)}至{formatDate(WINDOW_END, true)}的全局刻度
               </caption>
               <thead>
                 <tr>

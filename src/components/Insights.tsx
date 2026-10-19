@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useSiteEmails, useSiteSelection } from "../site-data";
-import { aggregateThreeWeek, buildSiteInsights, formatWindowRange } from "../three-week-aggregation";
+import { aggregateThreeWeek, buildSiteInsights, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
@@ -33,7 +33,7 @@ export function Insights() {
 
   if (!aggregated || aggregated.total === 0) {
     const marketLabel = getMarketLabel(market);
-    const windowText = aggregated ? formatWindowRange(aggregated.window) : "2026-09-25 – 2026-10-16";
+    const windowText = aggregated ? formatWindowRange(aggregated.window) : formatWindowRange(THREE_WEEK_WINDOW);
     return (
       <Card title="关键洞察" hint={`${emailData.meta.market} · 三周实时聚合`}>
         <div className="py-4">
