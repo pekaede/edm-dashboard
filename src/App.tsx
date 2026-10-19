@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { initAnalytics, trackView } from "./analytics";
 import { BrandDetailDialog } from "./components/BrandDetailDialog";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CalendarView } from "./components/CalendarView";
@@ -91,6 +92,34 @@ function Dashboard() {
     rawView === null || rawView === "calendar" ? "dashboard" : rawView;
   // emailTheme 必须是独立派生：离开邮件视图时视为 null（P0-01），不沿用上次主题。
   const emailTheme = urlState.view === "emails" ? urlState.theme : null;
+
+  const [analyticsReady, setAnalyticsReady] = useState(false);
+  const lastTrackedViewRef = useRef<View | null>(null);
+  const analyticsView =
+    rawView === null && rawHash !== "" && rawHash !== "#" ? null : view;
+
+  useEffect(() => {
+    let cancelled = false;
+    void initAnalytics().then((ready) => {
+      if (ready && !cancelled) setAnalyticsReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [analyticsView]);
+
+  useEffect(() => {
+    if (analyticsView === null) {
+      lastTrackedViewRef.current = null;
+      return;
+    }
+    if (
+      !analyticsReady ||
+      lastTrackedViewRef.current === analyticsView
+    ) return;
+    trackView(analyticsView);
+    lastTrackedViewRef.current = analyticsView;
+  }, [analyticsReady, analyticsView, urlState.view]);
 
   useEffect(() => setSelectedBrand(null), [siteMarket]);
 
