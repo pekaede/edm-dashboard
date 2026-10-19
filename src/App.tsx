@@ -28,8 +28,8 @@ const DASHBOARD_SECTIONS = [
   { id: "onepage-summary", label: "OnePage 摘要" },
   { id: "overview", label: "数据概览" },
   { id: "keywords", label: "关键词" },
-  { id: "comparison", label: "跨市场对比" },
   { id: "calendar", label: "日历" },
+  { id: "comparison", label: "跨市场对比" },
 ];
 
 // URL 原始 hash 的视图段；空 hash / "#" / 未知视图返回 null（旧行为：显示看板）。
@@ -273,8 +273,13 @@ function Dashboard() {
               </div>
             </div>
 
-            <div id="keywords" className="scroll-mt-20 min-w-0">
-              <WordCloud />
+            <div className="grid items-start gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] lg:grid-cols-2">
+              <div id="keywords" className="scroll-mt-20 min-w-0">
+                <WordCloud />
+              </div>
+              <div id="calendar" className="scroll-mt-20 min-w-0">
+                <CalendarView key={siteMarket ?? "all"} />
+              </div>
             </div>
 
             <div id="comparison" className="scroll-mt-20 min-w-0">
@@ -282,9 +287,6 @@ function Dashboard() {
                 markets={comparisonMarkets}
                 onMarketsChange={setComparisonMarkets}
               />
-            </div>
-            <div id="calendar" className="scroll-mt-20 min-w-0">
-              <CalendarView key={siteMarket ?? "all"} />
             </div>
             <DashboardFooter />
           </>
