@@ -3,6 +3,7 @@ import { BrandDetailDialog } from "./components/BrandDetailDialog";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CalendarView } from "./components/CalendarView";
 import { CampaignOverview } from "./components/CampaignOverview";
+import { ContentAnalysis } from "./components/ContentAnalysis";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
@@ -21,6 +22,7 @@ import {
   useSiteSelection,
 } from "./site-data";
 import { getSavedReadingPosition, useUrlSync } from "./use-url-sync";
+import { THREE_WEEK_WINDOW } from "./three-week-aggregation";
 
 type View = "dashboard" | "report" | "emails";
 
@@ -30,6 +32,7 @@ const DASHBOARD_SECTIONS = [
   { id: "keywords", label: "关键词" },
   { id: "calendar", label: "日历" },
   { id: "comparison", label: "跨市场对比" },
+  { id: "content-analysis", label: "内容 AI 分析" },
 ];
 
 // URL 原始 hash 的视图段；空 hash / "#" / 未知视图返回 null（旧行为：显示看板）。
@@ -287,6 +290,11 @@ function Dashboard() {
                 markets={comparisonMarkets}
                 onMarketsChange={setComparisonMarkets}
               />
+            </div>
+
+            <div id="content-analysis" className="scroll-mt-20 min-w-0">
+              {/* 内容 AI 分析：窗口唯一来源 THREE_WEEK_WINDOW（22 天），不另行定义 */}
+              <ContentAnalysis site={siteMarket} window={THREE_WEEK_WINDOW} />
             </div>
             <DashboardFooter />
           </>

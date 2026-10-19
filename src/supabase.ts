@@ -7,6 +7,11 @@ export interface SupabaseEmailRow {
   theme: string;
   keywords: string[];
   original_url: string | null;
+  // 原始内容（可空；ALTER TABLE 由迁移执行，见 email_content_analysis 契约）。
+  // 供内容 AI 分析读取：subject / preheader / banner_url。
+  subject?: string | null;
+  preheader?: string | null;
+  banner_url?: string | null;
   // 市场代码（US/UK/AU/FR/DE/EU）。SELECT 必须含 market，且 isEmailRow 强制校验，
   // 避免 SELECT 遗漏时静默兜底为 US（会让 UK 筛选撒谎）。
   market: string;
@@ -126,7 +131,7 @@ export async function fetchEmailDataset(): Promise<EmailDataset> {
     throw new Error("Supabase 环境配置无效。");
   }
   const keyColumns = await getEmailKeyColumns(baseUrl, publishableKey);
-  const columns = new Set(["brand", "sent_date", "day_seq", "source_index", "theme", "keywords", "original_url", "market", ...keyColumns]);
+  const columns = new Set(["brand", "sent_date", "day_seq", "source_index", "theme", "keywords", "original_url", "market", "subject", "preheader", "banner_url", ...keyColumns]);
   endpoint.searchParams.set("select", [...columns].join(","));
   endpoint.searchParams.append("sent_date", "gte.2026-07-17");
   endpoint.searchParams.append("sent_date", "lte.2026-10-17");
