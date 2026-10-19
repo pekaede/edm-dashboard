@@ -139,15 +139,47 @@ async function supabaseAdapter(): Promise<ExtendedEmailsData> {
   };
 }
 
-const promiseCache = new Map<EmailDataSource, Promise<ExtendedEmailsData>>();
+// 每日更新为主、白天偶有补数：5 分钟兼顾补数可见时效与全量分页查询的开销。
+const STALE_TIME = 5 * 60 * 1000;
+
+interface EmailCacheEntry {
+  request: Promise<ExtendedEmailsData>;
+  updatedAt: number | null;
+}
+
+const promiseCache = new Map<EmailDataSource, EmailCacheEntry>();
+const inFlightRequests = new Map<EmailDataSource, Promise<ExtendedEmailsData>>();
+
+function requestExtendedEmails(source: EmailDataSource, force = false): Promise<ExtendedEmailsData> {
+  const cached = promiseCache.get(source);
+  const pending = inFlightRequests.get(source);
+  if (cached && (
+    cached.request === pending ||
+    (!force && (cached.updatedAt === null || Date.now() - cached.updatedAt < STALE_TIME))
+  )) return cached.request;
+
+  const fetchDataset = () => source === "json" ? jsonAdapter() : supabaseAdapter();
+  const request = pending ? pending.then(fetchDataset, fetchDataset) : fetchDataset();
+  const entry: EmailCacheEntry = { request, updatedAt: null };
+  promiseCache.set(source, entry);
+  inFlightRequests.set(source, request);
+
+  function settleRequest(data?: ExtendedEmailsData) {
+    if (inFlightRequests.get(source) === request) inFlightRequests.delete(source);
+    if (promiseCache.get(source) !== entry) return;
+    if (data && data.meta.total !== null && data.emails.length === data.meta.total) {
+      entry.updatedAt = Date.now();
+    } else if (cached && cached.updatedAt !== null) {
+      promiseCache.set(source, cached);
+    }
+  }
+
+  void request.then(settleRequest, () => settleRequest());
+  return request;
+}
 
 export function getExtendedEmails(source: EmailDataSource = DEFAULT_SOURCE): Promise<ExtendedEmailsData> {
-  const cached = promiseCache.get(source);
-  if (cached) return cached;
-
-  const request = source === "json" ? jsonAdapter() : supabaseAdapter();
-  promiseCache.set(source, request);
-  return request;
+  return requestExtendedEmails(source);
 }
 
 const loadingState: ExtendedEmailsState = {
@@ -161,6 +193,49 @@ const loadingState: ExtendedEmailsState = {
 let state = loadingState;
 let activeRequest: Promise<ExtendedEmailsData> | null = null;
 const listeners = new Set<() => void>();
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+function stopRefreshTimer() {
+  if (refreshTimer === null) return;
+  clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+function refreshVisibleEmails() {
+  if (document.visibilityState === "visible" && navigator.onLine) loadExtendedEmails(true);
+}
+
+function startRefreshTimer() {
+  if (refreshTimer !== null || document.visibilityState !== "visible") return;
+  refreshTimer = setInterval(refreshVisibleEmails, STALE_TIME);
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    startRefreshTimer();
+    refreshVisibleEmails();
+  } else {
+    stopRefreshTimer();
+  }
+}
+
+function handleOnline() {
+  loadExtendedEmails(true);
+}
+
+function startAutoRefresh() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("online", handleOnline);
+  startRefreshTimer();
+}
+
+function stopAutoRefresh() {
+  stopRefreshTimer();
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
+  window.removeEventListener("online", handleOnline);
+}
 
 function setState(nextState: ExtendedEmailsState) {
   state = nextState;
@@ -169,23 +244,29 @@ function setState(nextState: ExtendedEmailsState) {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  if (listeners.size === 1) startAutoRefresh();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) stopAutoRefresh();
+  };
 }
 
 function getSnapshot() {
   return state;
 }
 
-function loadExtendedEmails() {
-  const request = getExtendedEmails();
+function loadExtendedEmails(force = false) {
+  const request = requestExtendedEmails(DEFAULT_SOURCE, force);
   if (activeRequest === request) return;
   activeRequest = request;
 
   request.then(
     ({ emails, meta }) => {
       if (activeRequest !== request) return;
+      const complete = meta.total !== null && emails.length === meta.total;
+      if (state.status === "ready" && !complete) return;
       setState({
-        status: meta.total !== null && emails.length === meta.total ? "ready" : "incomplete",
+        status: complete ? "ready" : "incomplete",
         emails,
         meta,
         total: emails.length,
@@ -193,7 +274,7 @@ function loadExtendedEmails() {
       });
     },
     (error: unknown) => {
-      if (activeRequest !== request) return;
+      if (activeRequest !== request || state.status === "ready") return;
       // 完整性失败（分页未取齐/总数变化/标识不一致）映射为 incomplete，
       // 与网络失败（error）区分，避免分页不完整被展示为网络失败。
       setState({
@@ -211,13 +292,13 @@ export function resetExtendedEmailsCache() {
   setState(loadingState);
 }
 
-function retryExtendedEmails() {
+export function retryExtendedEmails() {
   resetExtendedEmailsCache();
   loadExtendedEmails();
 }
 
 export function useExtendedEmails(): ExtendedEmailsResult {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  useEffect(loadExtendedEmails, []);
+  useEffect(() => { loadExtendedEmails(); }, []);
   return { ...snapshot, retry: retryExtendedEmails };
 }
