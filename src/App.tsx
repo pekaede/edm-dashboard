@@ -1,17 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { initAnalytics, trackView } from "./analytics";
-import { BrandDetailDialog } from "./components/BrandDetailDialog";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CalendarView } from "./components/CalendarView";
 import { CampaignOverview } from "./components/CampaignOverview";
-import { ContentAnalysis } from "./components/ContentAnalysis";
 import { DashboardFooter } from "./components/DashboardFooter";
 import { DashboardHeader } from "./components/DashboardHeader";
-import { ExtendedEmailFilter } from "./components/ExtendedEmailFilter";
 import { Insights } from "./components/Insights";
 import { KpiGrid } from "./components/KpiGrid";
-import { MarketComparison } from "./components/MarketComparison";
-import { MarkdownReport } from "./components/MarkdownReport";
 import { PageNav } from "./components/PageNav";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
@@ -25,6 +20,36 @@ import {
 } from "./site-data";
 import { getSavedReadingPosition, useUrlSync } from "./use-url-sync";
 import { THREE_WEEK_WINDOW } from "./three-week-aggregation";
+
+// 重组件按需加载：非默认视图（报告/邮件）与看板下半区（内容分析/跨市场对比）
+// 不进首屏包；品牌弹窗只在点开时才加载。
+const ContentAnalysis = lazy(() =>
+  import("./components/ContentAnalysis").then((m) => ({ default: m.ContentAnalysis })),
+);
+const MarketComparison = lazy(() =>
+  import("./components/MarketComparison").then((m) => ({ default: m.MarketComparison })),
+);
+const MarkdownReport = lazy(() =>
+  import("./components/MarkdownReport").then((m) => ({ default: m.MarkdownReport })),
+);
+const ExtendedEmailFilter = lazy(() =>
+  import("./components/ExtendedEmailFilter").then((m) => ({ default: m.ExtendedEmailFilter })),
+);
+const BrandDetailDialog = lazy(() =>
+  import("./components/BrandDetailDialog").then((m) => ({ default: m.BrandDetailDialog })),
+);
+
+function ChunkFallback({ className = "" }: { className?: string }) {
+  const { t } = useLocale();
+  return (
+    <div
+      role="status"
+      className={`flex items-center justify-center rounded-[var(--card-radius)] border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-sm text-[var(--text-secondary)] ${className}`}
+    >
+      {t("loading")}
+    </div>
+  );
+}
 
 type View = "dashboard" | "report" | "emails";
 
@@ -322,22 +347,28 @@ function Dashboard() {
             </div>
 
             <div id="comparison" className="scroll-mt-20 min-w-0">
-              <MarketComparison
-                markets={comparisonMarkets}
-                onMarketsChange={setComparisonMarkets}
-              />
+              <Suspense fallback={<ChunkFallback className="min-h-60" />}>
+                <MarketComparison
+                  markets={comparisonMarkets}
+                  onMarketsChange={setComparisonMarkets}
+                />
+              </Suspense>
             </div>
 
             <div id="content-analysis" className="scroll-mt-20 min-w-0">
               {/* 内容 AI 分析：默认三周窗口 THREE_WEEK_WINDOW，组件内可切三个月（数据窗口） */}
-              <ContentAnalysis site={siteMarket} window={THREE_WEEK_WINDOW} />
+              <Suspense fallback={<ChunkFallback className="min-h-60" />}>
+                <ContentAnalysis site={siteMarket} window={THREE_WEEK_WINDOW} />
+              </Suspense>
             </div>
             <DashboardFooter />
           </>
         ) : view === "report" ? (
           <>
             {viewNavigation}
-            <MarkdownReport />
+            <Suspense fallback={<ChunkFallback className="min-h-96" />}>
+              <MarkdownReport />
+            </Suspense>
           </>
         ) : (
           <section
@@ -356,16 +387,20 @@ function Dashboard() {
               </a>
             </div>
 
-            <ExtendedEmailFilter
-              key={`${siteMarket ?? "all"}-${emailTheme ?? "all"}`}
-              initialTheme={emailTheme}
-            />
+            <Suspense fallback={<ChunkFallback className="min-h-96" />}>
+              <ExtendedEmailFilter
+                key={`${siteMarket ?? "all"}-${emailTheme ?? "all"}`}
+                initialTheme={emailTheme}
+              />
+            </Suspense>
           </section>
         )}
       </main>
 
       {selectedBrand ? (
-        <BrandDetailDialog brand={selectedBrand} onClose={() => setSelectedBrand(null)} />
+        <Suspense fallback={null}>
+          <BrandDetailDialog brand={selectedBrand} onClose={() => setSelectedBrand(null)} />
+        </Suspense>
       ) : null}
     </div>
   );
