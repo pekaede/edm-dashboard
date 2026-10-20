@@ -463,6 +463,7 @@ function OutcomeBreakdown({
 
 export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisProps) {
   const [period, setPeriod] = useState<AnalysisPeriod>("threeWeeks");
+  const [brand, setBrand] = useState<string | null>(null);
   // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
   const activeWindow =
     period === "threeWeeks"
@@ -554,6 +555,13 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     };
   }, [site, activeWindow.start, activeWindow.end, retryKey]);
 
+  // 品牌筛选：选项来自当前市场+窗口的 emails 样本；选中的品牌不在样本中时回落全部品牌。
+  const brandOptions = useMemo(() => {
+    if (emails === null) return [];
+    return [...new Set(emails.map((e) => e.brand))].sort();
+  }, [emails]);
+  const activeBrand = brand !== null && brandOptions.includes(brand) ? brand : null;
+
   const joined = useMemo(() => {
     if (emails === null) return null;
     const byKey = new Map<string, { subject?: EmailContentAnalysisRow; banner?: EmailContentAnalysisRow }>();
@@ -564,7 +572,8 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       if (row.analysis_type === "banner" && !slot.banner) slot.banner = row;
       byKey.set(key, slot);
     }
-    return emails.map((email) => {
+    const visibleEmails = activeBrand === null ? emails : emails.filter((e) => e.brand === activeBrand);
+    return visibleEmails.map((email) => {
       const slot = byKey.get(analysisKey(email.market, email.brand, email.sent_date, email.day_seq));
       return {
         email,
@@ -574,7 +583,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         } as EmailAnalysis,
       };
     });
-  }, [emails, analysisRows]);
+  }, [emails, analysisRows, activeBrand]);
 
   const coverage = useMemo<Coverage | null>(() => {
     if (joined === null) return null;
@@ -659,6 +668,27 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     </div>
   );
 
+  // 品牌筛选：默认全部品牌；选项随当前市场+窗口样本变化。
+  const brandSelect =
+    brandOptions.length > 0 ? (
+      <label className="flex flex-wrap items-center gap-3 text-sm font-bold text-[var(--text-control)]">
+        品牌
+        <select
+          aria-label="选择品牌"
+          value={activeBrand ?? ""}
+          onChange={(e) => setBrand(e.target.value === "" ? null : e.target.value)}
+          className="min-h-10 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-bold text-[var(--text-control)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
+        >
+          <option value="">全部品牌</option>
+          {brandOptions.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
+      </label>
+    ) : null;
+
   // 0. 未选单个市场：覆盖率分母是同市场样本，多市场聚合无意义，提示选市场而非报错。
   if (site === null) {
     return (
@@ -735,7 +765,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-5 py-3 shadow-xs">
-          {periodToggle}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {periodToggle}
+            {brandSelect}
+          </div>
           <span className="text-xs text-[var(--text-secondary)]">
             日期窗口：{activeWindow.start} ~ {activeWindow.end}
           </span>
@@ -758,14 +791,22 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
             市场：{site}
           </span>
+          {activeBrand !== null && (
+            <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+              品牌：{activeBrand}
+            </span>
+          )}
           <span className="text-xs text-[var(--text-secondary)]">
             日期窗口：{activeWindow.start} ~ {activeWindow.end}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            （同市场同窗口 emails 样本：{totalEmails} 封）
+            （同市场同窗口{activeBrand !== null ? "同品牌" : ""} emails 样本：{totalEmails} 封）
           </span>
         </div>
-        {periodToggle}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {periodToggle}
+          {brandSelect}
+        </div>
         <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
           <span>
             采集覆盖：
