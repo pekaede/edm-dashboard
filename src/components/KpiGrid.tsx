@@ -16,23 +16,6 @@ function MailIcon() {
   );
 }
 
-function TagIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3.5 12.5 12 4h7.5v7.5L11 20z" />
-      <circle cx="16.5" cy="7.5" r="1" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 5.5h14v14H5zM8 3v5M16 3v5M5 9h14" />
-    </svg>
-  );
-}
-
 function ChartIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -53,8 +36,6 @@ export function KpiGrid() {
   const perDay = data && data.total > 0 ? (data.total / data.windowDays).toFixed(1) : "—";
   const kpis = [
     { num: total, label: t("kpiTotalEmails"), icon: <MailIcon />, theme: "price" },
-    { num: data && meta.brandCount > 0 ? String(meta.brandCount) : "—", label: t("kpiBrandCount"), icon: <TagIcon />, theme: "behavior" },
-    { num: String(meta.weekCount), label: t("kpiWeekCount"), icon: <CalendarIcon />, theme: "new" },
     { num: perDay, label: t("kpiPerDay"), icon: <ChartIcon />, theme: "category" },
   ];
 
@@ -63,7 +44,7 @@ export function KpiGrid() {
       <h2 id="kpi-title" className="sr-only">
         {t("kpiTitle")}
       </h2>
-      <dl className="grid grid-cols-2 gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] xl:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)]">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="kpi-card h-full">
             <div

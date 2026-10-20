@@ -62,8 +62,6 @@
   "pageNavAriaLabel": "页面内容导航",
   "kpiTitle": "关键指标",
   "kpiTotalEmails": "3 周邮件总数",
-  "kpiBrandCount": "3 个月有记录品牌",
-  "kpiWeekCount": "研究周期（周）",
   "kpiPerDay": "日均邮件",
   "kpiEmptyTitle": "当前站点三周窗口暂无邮件",
   "kpiEmptyDescPart1": " 内暂无邮件，邮件总数与日均以 — 显示。品牌数按三个月（",

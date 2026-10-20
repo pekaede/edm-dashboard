@@ -62,8 +62,6 @@
   "pageNavAriaLabel": "Page content navigation",
   "kpiTitle": "Key Metrics",
   "kpiTotalEmails": "3-Week Total Emails",
-  "kpiBrandCount": "Brands Recorded (3 Mo)",
-  "kpiWeekCount": "Study Period (Weeks)",
   "kpiPerDay": "Daily Avg Emails",
   "kpiEmptyTitle": "No emails in 3-week window for current site",
   "kpiEmptyDescPart1": " has no emails in this window. Total emails and daily average are shown as —. Brand count is based on 3 months (",
