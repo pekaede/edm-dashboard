@@ -434,7 +434,7 @@ function HorizontalProgressBar({
         aria-label={t("caShareAria", { label: label })}
       >
         <div
-          className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+          className="h-full rounded-full bg-[var(--text-heading)] transition-all duration-300"
           style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
         />
       </div>
@@ -943,7 +943,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         role="status"
         aria-live="polite"
       >
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--text-heading)] border-t-transparent" />
         <p className="mt-4 text-sm font-medium text-[var(--text-body)]">
           {t("caLoading", { site: site })}
         </p>
@@ -1018,11 +1018,11 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       {/* 头部元数据栏 */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-5 py-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+          <span className="inline-flex items-center rounded-md border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-body)]">
             {t("caMetaMarket", { site: site })}
           </span>
           {brandFilterActive && (
-            <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+            <span className="inline-flex items-center rounded-md border border-[var(--border-default)] bg-[var(--surface-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-body)]">
               {t("caMetaBrand", {
                 brand:
                   effectiveBrands.length <= 3
@@ -1154,7 +1154,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           onClick={() => setSelectedTactic(isSelected ? null : item.key)}
                           className={`block w-full rounded-lg px-2 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
-                              ? "bg-indigo-50 dark:bg-indigo-950/30"
+                              ? "bg-[var(--surface-subtle)]"
                               : "hover:bg-[var(--surface-subtle)]"
                           }`}
                         >
@@ -1309,12 +1309,16 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           onClick={() => setSelectedTrend(isSelected ? null : key)}
                           className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
-                              ? "border-violet-500 bg-violet-100 text-violet-950 dark:border-violet-400 dark:bg-violet-900/60 dark:text-violet-100"
-                              : "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200 dark:hover:bg-violet-900/50"
+                              ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
+                              : "border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-body)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
                           }`}
                           title={t("caTrendChipTitle", { n: count })}
                         >
-                          <span className="rounded-sm bg-violet-200/70 px-1 text-[10px] font-semibold text-violet-800 dark:bg-violet-800/70 dark:text-violet-200">
+                          <span className={`rounded-sm px-1 text-[10px] font-semibold ${
+                            isSelected
+                              ? "bg-white/20 text-white"
+                              : "bg-[var(--surface-card)] text-[var(--text-secondary)]"
+                          }`}>
                             {labelText(TREND_CATEGORY_LABEL_MAP, category)}
                           </span>
                           <span>{term}</span>
