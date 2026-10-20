@@ -34,8 +34,20 @@ export const COLOR_FAMILIES = [
 ] as const;
 export type BannerColorFamily = (typeof COLOR_FAMILIES)[number];
 
-/** 构图枚举。 */
+/**
+ * 构图枚举（2026-10-20 起改为 8 类内容构图：大字报/时尚大片/单模特/多商品/群像/拼贴/细节特写/场景生活）。
+ * 旧 5 类（centered 等）为 legacy 值：仅为让版本升级前的历史结果在重分析完成前仍可通过校验而保留，
+ * 新分析（prompt v2）只产出新 8 类；待全量重分析完成后删除 legacy。
+ */
 export const BANNER_COMPOSITIONS = [
+  "text-poster",
+  "fashion-editorial",
+  "single-model",
+  "multi-product",
+  "group-shot",
+  "collage",
+  "detail-closeup",
+  "lifestyle-scene",
   "centered",
   "left-aligned",
   "split-layout",
@@ -100,7 +112,8 @@ export const BANNER_VISION_JSON_SCHEMA = {
     },
     composition: {
       type: "string",
-      description: "Overall visual layout of the banner.",
+      description:
+        "Content composition type of the banner, one of: text-poster (typography-dominant, oversized headline is the main visual), fashion-editorial (high-fashion editorial look, artistic styling or lighting), single-model (one model showcasing an outfit or product), multi-product (multiple products displayed or arranged together), group-shot (several models or people posed together), collage (multiple distinct images combined in panels or a collage layout), detail-closeup (close-up of a product detail, material or texture), lifestyle-scene (product shown in a real-life scene or setting).",
       enum: [...BANNER_COMPOSITIONS],
     },
     cta_presence: {

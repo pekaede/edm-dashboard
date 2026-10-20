@@ -115,6 +115,15 @@ const TACTIC_LABEL_MAP: Record<string, DictionaryKey> = {
 };
 
 const COMPOSITION_LABEL_MAP: Record<string, DictionaryKey> = {
+  "text-poster": "caLayTextPoster",
+  "fashion-editorial": "caLayFashionEditorial",
+  "single-model": "caLaySingleModel",
+  "multi-product": "caLayMultiProduct",
+  "group-shot": "caLayGroupShot",
+  collage: "caLayCollage",
+  "detail-closeup": "caLayDetailCloseup",
+  "lifestyle-scene": "caLayLifestyleScene",
+  // legacy（prompt v1）值：全量重分析完成后随枚举一并清理。
   centered: "caLayCentered",
   "left-aligned": "caLayLeftAligned",
   "split-layout": "caLaySplit",

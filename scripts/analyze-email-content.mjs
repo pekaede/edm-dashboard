@@ -65,7 +65,8 @@ const DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BANNER_BUCKET = process.env.SUPABASE_BANNER_BUCKET ?? "email-banners";
 
 // ---- 枚举（与 src/email-content-analysis.ts 校验一致） ----
-const BANNER_COMPOSITIONS = new Set(["centered", "left-aligned", "split-layout", "full-bleed", "grid"]);
+// 构图枚举与 src/banner-vision-prompt.ts 同步：新 8 类 + 旧 5 类 legacy（历史结果重分析前仍可通过校验）。
+const BANNER_COMPOSITIONS = new Set(["text-poster", "fashion-editorial", "single-model", "multi-product", "group-shot", "collage", "detail-closeup", "lifestyle-scene", "centered", "left-aligned", "split-layout", "full-bleed", "grid"]);
 const BANNER_CTA_POSITIONS = new Set(["top", "center", "bottom", "bottom-right"]);
 const BANNER_TEXT_IMAGE_RATIOS = new Set(["text-heavy", "balanced", "image-heavy"]);
 // 主色色族枚举（与 Pi 的 src/banner-vision-prompt.ts COLOR_FAMILIES 一致）。
