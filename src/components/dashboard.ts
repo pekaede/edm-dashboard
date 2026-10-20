@@ -1,3 +1,16 @@
+import type { DictionaryKey } from "../i18n";
+
+// 主题 key → 字典键：组件用 t(THEME_LABEL_KEYS[theme.key]) 取当前语言的主题名，
+// zh 与聚合层 labelZh 一致，en 与 DATA.themes 的 label 一致。
+export const THEME_LABEL_KEYS: Record<string, DictionaryKey> = {
+  price: "themePrice",
+  behavior: "themeBehavior",
+  new: "themeNew",
+  lifestyle: "themeLifestyle",
+  category: "themeCategory",
+  other: "themeOther",
+};
+
 // 冻结快照常量 TOTAL / DAYS 已删除（B2）：KPI 不再用 DATA.meta.total = 196，
 // 改由 KpiGrid 对 emails 表做 3 周实时聚合（默认窗口全市场 211，日均 211/22）。
 export const THEME_COLORS: Record<string, string> = {

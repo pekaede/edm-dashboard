@@ -9,7 +9,9 @@ import {
   type BrandKey,
 } from "../data-calendar";
 import { getEmailMarket } from "../email-data";
+import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
+import { THEME_LABEL_KEYS } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
@@ -20,36 +22,44 @@ const EMPTY_STATE_CLASS_NAME =
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
 // 月份选项由当前窗口推导（不硬编码月份列表），窗口滑动后自动跟随。
-function deriveMonths(start: string, end: string): Array<{ key: string; label: string; fullLabel: string }> {
-  const months: Array<{ key: string; label: string; fullLabel: string }> = [];
+interface MonthDef {
+  key: string;
+  year: number;
+  month: number;
+}
+
+function deriveMonths(start: string, end: string): MonthDef[] {
+  const months: MonthDef[] = [];
   const cursor = new Date(`${start.slice(0, 7)}-01T00:00:00Z`);
   const endMonth = end.slice(0, 7);
   while (toDateString(cursor).slice(0, 7) <= endMonth) {
     const year = cursor.getUTCFullYear();
     const month = cursor.getUTCMonth() + 1;
     const key = `${year}-${String(month).padStart(2, "0")}`;
-    months.push({ key, label: `${month} 月`, fullLabel: `${year}年${month}月` });
+    months.push({ key, year, month });
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
   return months;
+}
+
+const MONTH_SHORT_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_LONG_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function formatMonthLabel(month: MonthDef): string {
+  return getCurrentLocale() === "zh" ? `${month.month} 月` : MONTH_SHORT_EN[month.month - 1];
+}
+
+function formatMonthFullLabel(month: MonthDef): string {
+  return getCurrentLocale() === "zh" ? `${month.year}年${month.month}月` : `${MONTH_LONG_EN[month.month - 1]} ${month.year}`;
 }
 const MONTHS = deriveMonths(WINDOW_START, WINDOW_END);
 // 初始/回退选中月份：窗口第二个月（与此前默认 8 月一致），窗口不足两个月时取首月。
 const DEFAULT_MONTH = MONTHS[1] ?? MONTHS[0];
 const ALL_BRANDS = "全部" as const;
-const DAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] as const;
+const DAY_LABEL_KEYS: DictionaryKey[] = ["calDay0", "calDay1", "calDay2", "calDay3", "calDay4", "calDay5", "calDay6"];
 const EMPTY_DAY_COLOR = "var(--calendar-heat-empty)";
 const HEAT_COLORS = ["var(--calendar-heat-1)", "var(--calendar-heat-2)", "var(--calendar-heat-3)", "var(--calendar-heat-4)", "var(--calendar-heat-5)"] as const;
 type MonthKey = (typeof MONTHS)[number]["key"];
-
-const THEME_LABELS: Record<string, string> = {
-  price: "价格促销",
-  behavior: "行为触发",
-  new: "上新",
-  lifestyle: "生活方式",
-  category: "品类聚焦",
-  other: "其他",
-};
 
 interface CalendarDay {
   date: string;
@@ -114,7 +124,10 @@ function formatDate(date: string, includeYear = false): string {
   const parsed = parseDate(date);
   const month = parsed.getUTCMonth() + 1;
   const day = parsed.getUTCDate();
-  return includeYear ? `${parsed.getUTCFullYear()}年${month}月${day}日` : `${month}/${day}`;
+  if (!includeYear) return `${month}/${day}`;
+  return getCurrentLocale() === "zh"
+    ? `${parsed.getUTCFullYear()}年${month}月${day}日`
+    : `${MONTH_SHORT_EN[month - 1]} ${day}, ${parsed.getUTCFullYear()}`;
 }
 
 function getHeatColor(count: number, minimum: number, maximum: number): string {
@@ -132,7 +145,8 @@ function getHeatColor(count: number, minimum: number, maximum: number): string {
 }
 
 function getThemeLabel(theme: string): string {
-  return THEME_LABELS[theme] ?? theme;
+  const key = THEME_LABEL_KEYS[theme];
+  return key ? dictionary[key][getCurrentLocale()] : theme;
 }
 
 function getOriginalUrl(url: string | undefined): string | null {
@@ -149,6 +163,7 @@ function getOriginalUrl(url: string | undefined): string | null {
 }
 
 export function CalendarView({ className = "" }: CalendarViewProps) {
+  const { t, locale } = useLocale();
   const emailData = useSiteEmails();
   const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, status, total, meta } = emailData;
@@ -320,6 +335,8 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
     }
   }
 
+  const displayBrand = selectedBrand === ALL_BRANDS ? t("calAllBrands") : selectedBrand;
+
   if (status !== "ready" || (validation && !validation.isValid)) {
     return (
       <section
@@ -327,13 +344,13 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
         aria-labelledby={titleId}
       >
         <h2 id={titleId} className="card-title text-[var(--text-calendar-heading)]">
-          日历热力图与关键词搜索
+          {t("calTitle")}
         </h2>
         <p className="mb-4 mt-1 text-sm text-[var(--text-calendar-secondary)]">{meta.range} · {meta.market}</p>
         <ExtendedEmailsState
           {...emailData}
           status={status === "ready" ? "error" : status}
-          error={validation && !validation.isValid ? `日历数据校验失败：${validation.errors.join("；")}` : emailData.error}
+          error={validation && !validation.isValid ? `${t("calValidationFailed")}${validation.errors.join("；")}` : emailData.error}
         />
       </section>
     );
@@ -346,15 +363,15 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
     >
       <div>
         <h2 id={titleId} className="card-title text-[var(--text-calendar-heading)]">
-          日历热力图与关键词搜索
+          {t("calTitle")}
         </h2>
         <p className="mt-1 text-sm leading-5 text-[var(--text-calendar-secondary)]">
-          {meta.range} · {meta.market} · {meta.brandCount} 个有记录品牌 · 共 {total} 封邮件
+          {t("calSubtitle").replace("{range}", meta.range).replace("{market}", meta.market).replace("{brands}", String(meta.brandCount)).replace("{total}", String(total))}
         </p>
       </div>
 
       <div className="mt-3">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="按品牌筛选邮件">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("calBrandFilterAria")}>
           {[ALL_BRANDS, ...BRANDS].map((brand) => {
             const isSelected = selectedBrand === brand;
             return (
@@ -369,7 +386,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                     : "border-[var(--border-calendar-control)] bg-[var(--surface-calendar)] text-[var(--text-calendar-label)] hover:border-[var(--border-calendar-hover)] hover:bg-[var(--surface-calendar-hover)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
-                {brand}
+                {brand === ALL_BRANDS ? t("calAllBrands") : brand}
               </button>
             );
           })}
@@ -378,7 +395,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
         <div
           className="mt-3 flex gap-1 rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar-tabs)] p-1"
           role="tablist"
-          aria-label="选择月份"
+          aria-label={t("calMonthTablistAria")}
         >
           {MONTHS.map((month, monthIndex) => {
             const isSelected = selectedMonth === month.key;
@@ -399,7 +416,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                     : "text-[var(--text-calendar-secondary)] hover:bg-[var(--surface-calendar)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
-                {month.label}
+                {formatMonthLabel(month)}
               </button>
             );
           })}
@@ -407,16 +424,16 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="section-title text-[var(--text-calendar-heading)]">{activeMonth.fullLabel}每日发信量</h3>
+            <h3 className="section-title text-[var(--text-calendar-heading)]">{t("calDailyTitle").replace("{month}", formatMonthFullLabel(activeMonth))}</h3>
             <p className="mt-0.5 text-sm text-[var(--text-calendar-secondary)]" aria-live="polite">
-              当前范围：{selectedBrand} · {getMarketLabel(selectedMarket)}，共 {filteredEmails.length} 封
+              {t("calScopeLine").replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(filteredEmails.length))}
             </p>
           </div>
           <div
             className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-calendar-secondary)]"
-            aria-label={`热力图颜色图例，无邮件为米白，有邮件时从每日 ${heatRange.minimum} 封到 ${heatRange.maximum} 封由浅至深`}
+            aria-label={t("calLegendAria").replace("{min}", String(heatRange.minimum)).replace("{max}", String(heatRange.maximum))}
           >
-            <span>少</span>
+            <span>{t("calLegendLow")}</span>
             <span className="flex items-center gap-1" aria-hidden="true">
               <span className="size-3 rounded-[3px] border border-[var(--border-calendar-legend)]" style={{ backgroundColor: EMPTY_DAY_COLOR }} />
               {HEAT_COLORS.map((color) => (
@@ -427,9 +444,9 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 />
               ))}
             </span>
-            <span>多</span>
+            <span>{t("calLegendHigh")}</span>
             <span className="ml-1 text-[var(--text-calendar-muted)]">
-              全窗口非零范围 {heatRange.minimum}–{heatRange.maximum} 封
+              {t("calLegendRange").replace("{min}", String(heatRange.minimum)).replace("{max}", String(heatRange.maximum))}
             </span>
           </div>
         </div>
@@ -445,26 +462,26 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           {filteredEmails.length === 0 ? (
             <div className={EMPTY_STATE_CLASS_NAME}>
               <EmptyState
-                title="当前筛选暂无邮件"
-                description={`${selectedBrand} · ${getMarketLabel(selectedMarket)}在统计窗口 ${meta.range} 内暂无邮件（0 封），请切换市场或清除筛选。日历按日期统计邮件收录数。`}
-                actionLabel={selectedBrand === ALL_BRANDS && selectedMarket === null ? "重新拉取" : "重置品牌与市场筛选"}
+                title={t("calEmptyTitle")}
+                description={t("calEmptyDesc").replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{range}", meta.range)}
+                actionLabel={selectedBrand === ALL_BRANDS && selectedMarket === null ? t("calRetry") : t("calResetFilters")}
                 onAction={resetCalendarFilters}
               />
             </div>
           ) : (
             <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
               <caption className="sr-only">
-                {activeMonth.fullLabel}邮件日历，颜色深浅使用{formatDate(WINDOW_START, true)}至{formatDate(WINDOW_END, true)}的全局刻度
+                {t("calCaption").replace("{month}", formatMonthFullLabel(activeMonth)).replace("{start}", formatDate(WINDOW_START, true)).replace("{end}", formatDate(WINDOW_END, true))}
               </caption>
               <thead>
                 <tr>
-                  {DAY_LABELS.map((dayLabel) => (
+                  {DAY_LABEL_KEYS.map((dayKey) => (
                     <th
                       scope="col"
-                      key={dayLabel}
+                      key={dayKey}
                       className="h-5 text-xs font-semibold text-[var(--text-calendar-muted)]"
                     >
-                      {dayLabel}
+                      {t(dayKey)}
                     </th>
                   ))}
                 </tr>
@@ -487,7 +504,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           <td key={day.date} className="p-0">
                             <div
                               className="h-12 rounded-md border border-[var(--border-calendar-outside)] bg-[var(--surface-calendar-outside)] p-1 text-left text-xs font-medium leading-4 text-[var(--text-calendar-outside)]"
-                              aria-label={`${formatDate(day.date, true)}，不在统计窗口内`}
+                              aria-label={t("calOutsideAria").replace("{date}", formatDate(day.date, true))}
                             >
                               {dayNumber}
                             </div>
@@ -504,10 +521,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           <button
                             type="button"
                             onClick={(event) => toggleDate(day.date, event.currentTarget)}
-                            aria-label={`${formatDate(day.date, true)}，${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
+                            aria-label={t("calDayAria").replace("{date}", formatDate(day.date, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(count))}
                             aria-expanded={isSelected}
                             aria-controls={detailId}
-                            title={`${formatDate(day.date, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)} ${count} 封邮件`}
+                            title={t("calDayTitle").replace("{date}", formatDate(day.date, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(count))}
                             className={`calendar-day-button group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-[var(--border-calendar-legend)] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
                               usesWhiteText ? "text-[var(--text-inverse)]" : "text-[var(--text-calendar-heading)]"
                             } ${
@@ -519,7 +536,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                               {dayNumber}
                             </span>
                             <span className="text-xs font-bold leading-4">
-                              {count}<span className="hidden sm:inline"> 封</span>
+                              {count}<span className="hidden sm:inline"> {t("marketUnitEmails")}</span>
                             </span>
                           </button>
                         </td>
@@ -548,14 +565,14 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${detailId}-title`} ref={detailHeadingRef} tabIndex={-1} className="rounded-md font-bold text-[var(--text-calendar-heading)]">
-                  {formatDate(selectedDate, true)} · {selectedEmails.length} 封
+                  {formatDate(selectedDate, true)} · {selectedEmails.length} {t("marketUnitEmails")}
                 </h3>
                 <button
                   type="button"
                   onClick={closeDetails}
                   className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--text-calendar-secondary)] transition hover:bg-[var(--surface-calendar-item)] hover:text-[var(--text-calendar-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)]"
                 >
-                  收起详情
+                  {t("calCloseDetail")}
                 </button>
               </div>
               {selectedEmails.length > 0 ? (
@@ -569,32 +586,32 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                         className="rounded-xl border border-[var(--border-calendar-item)] bg-[var(--surface-calendar-item)] p-3 text-sm"
                       >
                         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5">
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">日期</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldDate")}</dt>
                           <dd className="text-[var(--text-primary)]">{email.date}</dd>
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">品牌</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldBrand")}</dt>
                           <dd className="font-semibold text-[var(--text-primary)]">{email.brand}</dd>
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">市场</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldMarket")}</dt>
                           <dd className="text-[var(--text-primary)]">{getMarketLabel(getEmailMarket(email))}</dd>
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">主题</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldTheme")}</dt>
                           <dd className="text-[var(--text-primary)]">{getThemeLabel(email.theme)}</dd>
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">关键词</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldKeywords")}</dt>
                           <dd className="break-words text-[var(--text-primary)]">
-                            {email.keywords.length > 0 ? email.keywords.join("、") : "无关键词"}
+                            {email.keywords.length > 0 ? email.keywords.join(locale === "zh" ? "、" : ", ") : t("calNoKeywords")}
                           </dd>
-                          <dt className="font-semibold text-[var(--text-calendar-muted)]">原文</dt>
+                          <dt className="font-semibold text-[var(--text-calendar-muted)]">{t("calFieldOriginal")}</dt>
                           <dd>
                             {originalUrl ? (
                               <a
                                 href={originalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                aria-label={`打开 ${email.brand} ${email.date} ${getMarketLabel(getEmailMarket(email))}第 ${index + 1} 封邮件原文（新窗口打开）`}
+                                aria-label={t("calOpenOriginalAria").replace("{brand}", email.brand).replace("{date}", email.date).replace("{market}", getMarketLabel(getEmailMarket(email))).replace("{n}", String(index + 1))}
                                 className="inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-[var(--accent-ink)] underline underline-offset-4"
                               >
-                                打开原文 <span aria-hidden="true">↗</span>
+                                {t("calOpenOriginal")} <span aria-hidden="true">↗</span>
                               </a>
                             ) : (
-                              <span className="text-[var(--text-calendar-secondary)]">暂无原文链接</span>
+                              <span className="text-[var(--text-calendar-secondary)]">{t("calNoOriginal")}</span>
                             )}
                           </dd>
                         </dl>
@@ -605,9 +622,9 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               ) : (
                 <div className={`mt-[var(--card-padding)] ${EMPTY_STATE_CLASS_NAME}`}>
                   <EmptyState
-                    title="当日无邮件"
-                    description={`${formatDate(selectedDate, true)} · ${selectedBrand} · ${getMarketLabel(selectedMarket)}暂无邮件记录，请返回日历选择其他日期。`}
-                    actionLabel="返回日历"
+                    title={t("calDayEmptyTitle")}
+                    description={t("calDayEmptyDesc").replace("{date}", formatDate(selectedDate, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket))}
+                    actionLabel={t("calBackToCalendar")}
                     onAction={closeDetails}
                   />
                 </div>
@@ -618,10 +635,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
         <div className="mt-4 border-t border-[var(--border-calendar)] pt-3">
           <label htmlFor={`${searchHelpId}-input`} className="text-base font-bold text-[var(--text-calendar-heading)]">
-            关键词搜索
+            {t("calSearchLabel")}
           </label>
           <p id={searchHelpId} className="mt-1 text-sm text-[var(--text-calendar-secondary)]">
-            搜索范围跟随品牌与市场筛选；支持完整词或部分词，例如 dress、sale、new。
+            {t("calSearchHelp")}
           </p>
           <input
             id={`${searchHelpId}-input`}
@@ -629,7 +646,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             aria-describedby={searchHelpId}
-            placeholder="输入关键词"
+            placeholder={t("calSearchPlaceholder")}
             className="mt-2 min-h-11 w-full rounded-xl border border-[var(--border-calendar-input)] bg-[var(--surface-calendar-item)] px-3 py-2 text-base text-[var(--text-calendar-heading)] outline-none transition placeholder:text-[var(--text-calendar-muted)] focus:border-[var(--control-calendar-focus)] focus:ring-2 focus:ring-[var(--selection-bg)]"
           />
 
@@ -638,7 +655,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               {searchResults.length > 0 ? (
                 <>
                   <p className="text-sm font-semibold text-[var(--text-calendar-label)]">
-                    找到 {searchResults.length} 个日期与品牌与市场组合
+                    {t("calSearchFound").replace("{n}", String(searchResults.length))}
                   </p>
                   <ul className="mt-2 divide-y divide-[var(--divider-calendar)] rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar-item)]">
                     {searchResults.map((result) => (
@@ -651,16 +668,16 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                         </time>
                         <span className="font-semibold text-[var(--text-calendar-heading)]">{result.brand}</span>
                         <span className="text-[var(--text-calendar-secondary)]">{getMarketLabel(result.market)}</span>
-                        <span className="text-[var(--text-calendar-secondary)]">{result.count} 封</span>
+                        <span className="text-[var(--text-calendar-secondary)]">{result.count} {t("marketUnitEmails")}</span>
                         <button
                           type="button"
                           onClick={(event) => openSearchResult(result.date, event.currentTarget)}
-                          aria-label={`查看 ${formatDate(result.date, true)} 当日邮件详情（搜索命中 ${result.brand} · ${getMarketLabel(result.market)}）`}
+                          aria-label={t("calViewDayAria").replace("{date}", formatDate(result.date, true)).replace("{brand}", result.brand).replace("{market}", getMarketLabel(result.market))}
                           aria-controls={detailId}
                           aria-expanded={selectedDate === result.date}
                           className="min-h-11 rounded-lg border border-[var(--border-calendar-control)] bg-[var(--surface-calendar)] px-2 py-1 font-semibold text-[var(--accent-ink)] transition-colors hover:bg-[var(--surface-calendar-hover)]"
                         >
-                          查看当日
+                          {t("calViewDay")}
                         </button>
                       </li>
                     ))}
@@ -669,9 +686,9 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               ) : (
                 <div className={EMPTY_STATE_CLASS_NAME}>
                   <EmptyState
-                    title="无匹配"
-                    description={`当前品牌与市场筛选内，没有包含关键词“${searchTerm.trim()}”的邮件。支持完整词或部分词，可清除关键词后重新搜索。`}
-                    actionLabel="清除关键词"
+                    title={t("calNoMatchTitle")}
+                    description={t("calNoMatchDesc").replace("{term}", searchTerm.trim())}
+                    actionLabel={t("calClearSearch")}
                     onAction={() => setSearchTerm("")}
                   />
                 </div>

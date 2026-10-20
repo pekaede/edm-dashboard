@@ -1,15 +1,16 @@
 import { useId } from "react";
+import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
 
 export const MARKET_OPTIONS = [
-  { code: "US", label: "美国" },
-  { code: "UK", label: "英国" },
-  { code: "AU", label: "澳洲" },
-  { code: "FR", label: "法国" },
-  { code: "DE", label: "德国" },
-  { code: "IT", label: "意大利" },
-  { code: "NL", label: "荷兰" },
-  { code: "ES", label: "西班牙" },
-] as const;
+  { code: "US", labelKey: "marketUS" },
+  { code: "UK", labelKey: "marketUK" },
+  { code: "AU", labelKey: "marketAU" },
+  { code: "FR", labelKey: "marketFR" },
+  { code: "DE", labelKey: "marketDE" },
+  { code: "IT", labelKey: "marketIT" },
+  { code: "NL", labelKey: "marketNL" },
+  { code: "ES", labelKey: "marketES" },
+] as const satisfies readonly { code: string; labelKey: DictionaryKey }[];
 
 /**
  * 市场筛选值：null = 全部市场，否则为市场代码。
@@ -19,8 +20,10 @@ export const MARKET_OPTIONS = [
 export type MarketFilterValue = string | null;
 
 export function getMarketLabel(market: MarketFilterValue): string {
-  if (market === null) return "全部市场";
-  return MARKET_OPTIONS.find((option) => option.code === market)?.label ?? market;
+  const locale = getCurrentLocale();
+  if (market === null) return dictionary.marketAll[locale];
+  const option = MARKET_OPTIONS.find((item) => item.code === market);
+  return option ? dictionary[option.labelKey][locale] : market;
 }
 
 export function MarketFilter({
@@ -28,7 +31,7 @@ export function MarketFilter({
   onChange,
   counts,
   total,
-  label = "按市场筛选",
+  label,
 }: {
   value: MarketFilterValue;
   onChange: (market: MarketFilterValue) => void;
@@ -38,11 +41,15 @@ export function MarketFilter({
   total: number;
   label?: string;
 }) {
+  const { t, locale } = useLocale();
+  const resolvedLabel = label ?? t("marketFilterLabel");
   const selectId = useId();
   // 下拉外的新市场（如未来导入 JP）：有封数时追加为 extra 选项，避免其封数在下拉中不可见。
   const extraMarkets = Object.keys(counts)
     .filter((code) => counts[code] > 0 && !MARKET_OPTIONS.some((option) => option.code === code))
     .sort();
+  const formatOption = (name: string, count: number) =>
+    locale === "zh" ? `${name}（${count}${t("marketUnitEmails")}）` : `${name} (${count} ${t("marketUnitEmails")})`;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -50,7 +57,7 @@ export function MarketFilter({
         htmlFor={selectId}
         className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]"
       >
-        {label}
+        {resolvedLabel}
       </label>
       <select
         id={selectId}
@@ -65,23 +72,23 @@ export function MarketFilter({
             (counts[next] ?? 0) > 0;
           onChange(next === "" || !isKnown ? null : next);
         }}
-        aria-label={label}
+        aria-label={resolvedLabel}
         className="min-h-11 max-w-full rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:border-[var(--control-filter-hover-border)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
       >
-        <option value="">全部市场（{total} 封）</option>
+        <option value="">{formatOption(t("marketAll"), total)}</option>
         {MARKET_OPTIONS.map((option) => (
           <option key={option.code} value={option.code}>
-            {option.label}（{counts[option.code] ?? 0} 封）
+            {formatOption(t(option.labelKey), counts[option.code] ?? 0)}
           </option>
         ))}
         {extraMarkets.map((code) => (
           <option key={code} value={code}>
-            {code}（{counts[code]} 封）
+            {formatOption(code, counts[code])}
           </option>
         ))}
       </select>
       <span className="text-xs text-[var(--text-description)]" aria-live="polite" aria-atomic="true">
-        当前：{getMarketLabel(value)}
+        {t("marketCurrent")}{getMarketLabel(value)}
       </span>
     </div>
   );

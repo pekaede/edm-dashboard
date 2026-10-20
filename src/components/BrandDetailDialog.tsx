@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef } from "react";
 import type { Brand } from "../data";
 import { DATA } from "../data";
+import { useLocale } from "../i18n";
 import { themeColor, themeTint } from "../three-week-aggregation";
+import { THEME_LABEL_KEYS } from "./dashboard";
 
 interface BrandDetailDialogProps {
   brand: Brand;
@@ -9,6 +11,9 @@ interface BrandDetailDialogProps {
 }
 
 export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
+  const { t } = useLocale();
+  const themeName = (theme: { key: string; labelZh: string }) =>
+    THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -65,18 +70,18 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
       <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-[var(--surface-card)] px-5 py-4 sm:px-6 sm:py-5">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
-            品牌明细
+            {t("bddEyebrow")}
           </p>
           <h2 id={titleId} className="mt-1 break-words text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
             {brand.name}
           </h2>
           <p id={descriptionId} className="mt-1 text-sm text-slate-600">
-            可见收录频率、主题结构与近期活动摘要；Esc 关闭并返回原位置。
+            {t("bddDesc")}
           </p>
         </div>
         <button
           type="button"
-          aria-label="关闭品牌明细"
+          aria-label={t("bddCloseAria")}
           className="flex size-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[var(--surface-card)] text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-ink)]"
           onClick={closeDialog}
           autoFocus
@@ -90,25 +95,25 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
       <div className="space-y-7 px-5 py-6 sm:px-6 sm:py-7">
         <section aria-labelledby="brand-overview-title">
           <h3 id="brand-overview-title" className="dialog-section-title">
-            概览
+            {t("bddOverview")}
           </h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-              <p className="text-sm font-medium text-slate-600">总封数</p>
+              <p className="text-sm font-medium text-slate-600">{t("bddTotalLabel")}</p>
               <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-950">
                 {brand.total}
-                <span className="ml-1 text-sm font-medium text-slate-500">封</span>
+                <span className="ml-1 text-sm font-medium text-slate-500">{t("marketUnitEmails")}</span>
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-              <p className="text-sm font-medium text-slate-600">日均</p>
+              <p className="text-sm font-medium text-slate-600">{t("bddPerDayLabel")}</p>
               <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-950">
                 {brand.perDay.toFixed(1)}
-                <span className="ml-1 text-sm font-medium text-slate-500">封 / 天</span>
+                <span className="ml-1 text-sm font-medium text-slate-500">{t("bddPerDayUnit")}</span>
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2 sm:p-5">
-              <p className="text-sm font-medium text-slate-600">主要策略</p>
+              <p className="text-sm font-medium text-slate-600">{t("bddStrategyLabel")}</p>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-900">
                 {brand.strategy}
               </p>
@@ -118,9 +123,9 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
 
         <section aria-labelledby="brand-weekly-title">
           <h3 id="brand-weekly-title" className="dialog-section-title">
-            每周趋势
+            {t("bddWeeklyTitle")}
           </h3>
-          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">横柱共用 0–{maxWeekly} 封刻度；各周覆盖天数可能不同，不能将周总量直接当作发送效率。</p>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("bddWeeklyNote").replace("{max}", String(maxWeekly))}</p>
           <div className="mt-4 space-y-4">
             {brand.weekly.map((count, index) => (
               <div key={weeks[index].id} className="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)_4rem] items-center gap-3">
@@ -138,7 +143,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                   />
                 </div>
                 <span className="text-right font-mono text-sm font-bold tabular-nums text-slate-900">
-                  {count} 封
+                  {count} {t("marketUnitEmails")}
                 </span>
               </div>
             ))}
@@ -147,7 +152,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
 
         <section aria-labelledby="brand-themes-title">
           <h3 id="brand-themes-title" className="dialog-section-title">
-            主题结构
+            {t("bddThemesTitle")}
           </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {themeEntries.map((theme) => {
@@ -172,10 +177,10 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                         style={{ backgroundColor: color }}
                         aria-hidden="true"
                       />
-                      {theme.labelZh}
+                      {themeName(theme)}
                     </span>
                     <span className="font-mono text-sm font-bold tabular-nums text-slate-950">
-                      {count} 封
+                      {count} {t("marketUnitEmails")}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-3">
@@ -200,7 +205,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
 
         <section aria-labelledby="brand-campaigns-title">
           <h3 id="brand-campaigns-title" className="dialog-section-title">
-            每周活动摘要
+            {t("bddCampaignsTitle")}
           </h3>
           <ol className="mt-4 space-y-3">
             {brand.campaigns.slice(0, 3).map((campaign, index) => (

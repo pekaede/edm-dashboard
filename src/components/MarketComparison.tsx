@@ -6,8 +6,11 @@ import {
   useExtendedEmails,
   type EmailRecord,
 } from "../email-data";
+import { useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
+import { THEME_LABEL_KEYS } from "./dashboard";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import { getMarketLabel } from "./MarketFilter";
 import { Tooltip } from "./Tooltip";
 import { themeColor } from "../three-week-aggregation";
 
@@ -210,11 +213,11 @@ function weeklyAvg(count: number, windowDays: number): string {
 
 type ComparisonView = "brand" | "theme" | "frequency";
 
-const TASK_VIEWS = [
-  { key: "brand", label: "品牌对比", question: "同一品牌，在哪些市场更活跃？", description: "先比较收录邮件数，再用周均核对频率。横柱在同一品牌行内共用刻度，不跨品牌比较柱长；收录覆盖差异不等于市场需求差异。" },
-  { key: "theme", label: "主题对比", question: "不同市场的内容侧重有何区别？", description: "先比较主题在各市场内的占比，避免市场总量不同造成误读；所有横柱均使用 0–100% 刻度，同时保留封数。" },
-  { key: "frequency", label: "频率对比", question: "同一品牌的触达节奏，在哪些周出现差异？", description: "选择一个品牌，沿同一时间轴比较市场。所有柱共用纵轴，避免每个市场独立放大；末桶可能不足 7 天，周均按实际窗口天数折算。" },
-] as const;
+const TASK_VIEWS: readonly { key: ComparisonView; labelKey: DictionaryKey; questionKey: DictionaryKey; descKey: DictionaryKey }[] = [
+  { key: "brand", labelKey: "mcViewBrand", questionKey: "mcViewBrandQ", descKey: "mcViewBrandDesc" },
+  { key: "theme", labelKey: "mcViewTheme", questionKey: "mcViewThemeQ", descKey: "mcViewThemeDesc" },
+  { key: "frequency", labelKey: "mcViewFreq", questionKey: "mcViewFreqQ", descKey: "mcViewFreqDesc" },
+];
 
 const FOCUS_CLASS_NAME = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]";
 
@@ -223,19 +226,20 @@ function shareLabel(count: number, total: number): string {
 }
 
 function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; selected: string[]; view: "brand" | "theme" }) {
+  const { t } = useLocale();
   const isTheme = view === "theme";
-  const rows = isTheme ? data.themes.map((theme) => ({ key: theme.key, label: theme.labelZh })) : data.brands.map((brand) => ({ key: brand, label: brand }));
+  const rows = isTheme ? data.themes.map((theme) => ({ key: theme.key, label: THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh })) : data.brands.map((brand) => ({ key: brand, label: brand }));
   const countsByRow = isTheme ? data.themeMarket : data.brandMarket;
   const totalsByRow = isTheme ? data.themeTotals : data.brandTotals;
   return (
-    <div role="region" aria-label={(isTheme ? "主题占比" : "品牌收录量") + "对比表，可横向滚动"} tabIndex={0} className={"mt-4 overflow-x-auto rounded-xl border border-[var(--border-default)] p-1 " + FOCUS_CLASS_NAME}>
+    <div role="region" aria-label={isTheme ? t("mcMatrixAriaTheme") : t("mcMatrixAriaBrand")} tabIndex={0} className={"mt-4 overflow-x-auto rounded-xl border border-[var(--border-default)] p-1 " + FOCUS_CLASS_NAME}>
       <table className="w-full min-w-[36rem] border-collapse text-sm">
-        <caption className="sr-only">{isTheme ? "主题在各市场的封数与市场内占比" : "各品牌在各市场的封数与周均"}；全市场参照包含未选市场，最高仅比较已选市场，含并列。</caption>
+        <caption className="sr-only">{(isTheme ? t("mcCaptionTheme") : t("mcCaptionBrand")) + t("mcCaptionSuffix")}</caption>
         <thead className="bg-[var(--surface-subtle)] text-[var(--text-heading)]">
           <tr className="border-b border-[var(--border-default)]">
-            <th scope="col" className="px-3 py-3 text-left">{isTheme ? "主题" : "品牌"}</th>
-            {selected.map((market) => <th key={market} scope="col" className="min-w-40 px-3 py-3 text-left">{data.marketLabels.get(market) ?? market} · {market}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">市场样本 {data.marketTotals.get(market) ?? 0} 封</span></th>)}
-            <th scope="col" className="min-w-32 px-3 py-3 text-right">全市场参照<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">包含未选市场</span></th>
+            <th scope="col" className="px-3 py-3 text-left">{isTheme ? t("mcColTheme") : t("mcColBrand")}</th>
+            {selected.map((market) => <th key={market} scope="col" className="min-w-40 px-3 py-3 text-left">{getMarketLabel(market)} · {market}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcMarketSample").replace("{n}", String(data.marketTotals.get(market) ?? 0))}</span></th>)}
+            <th scope="col" className="min-w-32 px-3 py-3 text-right">{t("mcColAllMarkets")}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcColAllMarketsSub")}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -258,40 +262,40 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
                     <td key={market} className={"px-2 py-2 align-top " + (highest ? "bg-[var(--accent-tint)]" : "")}>
                       <Tooltip
                         className={"rounded-lg p-2 hover:ring-2 hover:ring-[var(--control-focus)] " + FOCUS_CLASS_NAME}
-                        label={row.label + "，" + market + "：" + count + " 封，市场内占比 " + share + "，周均 " + average + " 封" + (highest ? "，已选市场最高，含并列" : "")}
+                        label={t("mcCellLabel").replace("{label}", row.label).replace("{market}", market).replace("{count}", String(count)).replace("{share}", share).replace("{avg}", average) + (highest ? t("mcHighestSuffix") : "")}
                         content={<>
-                          <div className="font-semibold">{row.label} · {data.marketLabels.get(market) ?? market}（{market}）</div>
-                          <div className="mt-1 font-mono font-bold">{count} 封 · 市场内占比 {share} · 周均 {average} 封</div>
-                          <div className="mt-1">{data.windowStart} – {data.windowEnd} · 市场分母 {marketTotal} 封 · 可见收录</div>
+                          <div className="font-semibold">{row.label} · {getMarketLabel(market)}（{market}）</div>
+                          <div className="mt-1 font-mono font-bold">{t("mcCellLine").replace("{count}", String(count)).replace("{share}", share).replace("{avg}", average)}</div>
+                          <div className="mt-1">{data.windowStart} – {data.windowEnd} · {t("mcMarketDenominator")} {marketTotal} {t("marketUnitEmails")} · {t("mcVisible")}</div>
                         </>}
                       >
-                        <div className="flex flex-wrap items-baseline justify-between gap-1 text-[var(--text-heading)]"><strong className="font-mono tabular-nums">{isTheme ? share : count + " 封"}</strong>{highest ? <span className="text-xs font-bold text-[var(--accent-ink)]">最高</span> : null}</div>
+                        <div className="flex flex-wrap items-baseline justify-between gap-1 text-[var(--text-heading)]"><strong className="font-mono tabular-nums">{isTheme ? share : `${count} ${t("marketUnitEmails")}`}</strong>{highest ? <span className="text-xs font-bold text-[var(--accent-ink)]">{t("mcHighest")}</span> : null}</div>
                         <div className="my-2 h-2 overflow-hidden rounded-full bg-[var(--chart-empty)]" aria-hidden="true"><div className="h-full rounded-full" style={{ width: width + "%", backgroundColor: isTheme ? themeColor(row.key) : "var(--control-active-bg)" }} /></div>
-                        <div className="text-xs tabular-nums text-[var(--text-secondary)]">{isTheme ? count + " 封 / " + marketTotal + " 封" : "周均 " + average + " 封"}</div>
+                        <div className="text-xs tabular-nums text-[var(--text-secondary)]">{isTheme ? `${count} ${t("marketUnitEmails")} / ${marketTotal} ${t("marketUnitEmails")}` : `${t("mcWeeklyAvg")} ${average} ${t("marketUnitEmails")}`}</div>
                       </Tooltip>
                     </td>
                   );
                 })}
-                <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--text-heading)]">{total} 封<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{isTheme ? shareLabel(total, data.grandTotal) : "周均 " + weeklyAvg(total, data.windowDays) + " 封"}</span></td>
+                <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--text-heading)]">{total} {t("marketUnitEmails")}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{isTheme ? shareLabel(total, data.grandTotal) : `${t("mcWeeklyAvg")} ${weeklyAvg(total, data.windowDays)} ${t("marketUnitEmails")}`}</span></td>
               </tr>
             );
           })}
         </tbody>
         <tfoot className="bg-[var(--surface-subtle)] font-bold text-[var(--text-heading)]">
           <tr>
-            <th scope="row" className="px-3 py-3 text-left">市场合计</th>
+            <th scope="row" className="px-3 py-3 text-left">{t("mcMarketTotal")}</th>
             {selected.map((market) => {
               const total = data.marketTotals.get(market) ?? 0;
               return (
                 <td key={market} className="px-3 py-3 font-mono tabular-nums">
-                  {total} 封
-                  {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">周均 {weeklyAvg(total, data.windowDays)} 封</span> : null}
+                  {total} {t("marketUnitEmails")}
+                  {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails")}</span> : null}
                 </td>
               );
             })}
             <td className="px-3 py-3 text-right font-mono tabular-nums">
-              {data.grandTotal} 封
-              {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">周均 {weeklyAvg(data.grandTotal, data.windowDays)} 封</span> : null}
+              {data.grandTotal} {t("marketUnitEmails")}
+              {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(data.grandTotal, data.windowDays)} {t("marketUnitEmails")}</span> : null}
             </td>
           </tr>
         </tfoot>
@@ -301,22 +305,23 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
 }
 
 function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { data: ComparisonData; selected: string[]; brand: string; onBrandChange: (brand: string) => void; id: string }) {
+  const { t } = useLocale();
   const series = selected.map((market) => ({ market, weekly: data.brandMarketWeekly.get(brand)?.get(market) ?? data.weeks.map(() => 0) }));
   const maximum = Math.max(0, ...series.flatMap((item) => item.weekly));
   return (
     <div className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label htmlFor={id} className="text-sm font-bold text-[var(--text-heading)]">聚焦品牌</label>
+        <label htmlFor={id} className="text-sm font-bold text-[var(--text-heading)]">{t("mcFocusBrand")}</label>
         <select id={id} value={brand} onChange={(event) => onBrandChange(event.target.value)} className={"min-h-11 max-w-full rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] " + FOCUS_CLASS_NAME}>{data.brands.map((name) => <option key={name}>{name}</option>)}</select>
-        <span className="text-xs text-[var(--text-secondary)]">共用刻度：0–{maximum} 封 / 周桶；标注「最高」包含并列。</span>
+        <span className="text-xs text-[var(--text-secondary)]">{t("mcScaleNote").replace("{max}", String(maximum))}</span>
       </div>
-      <div role="region" tabIndex={0} aria-label={brand + "各市场周频率，可横向滚动，所有图共用刻度"} className={"overflow-x-auto rounded-xl border border-[var(--border-default)] p-2 " + FOCUS_CLASS_NAME}>
+      <div role="region" tabIndex={0} aria-label={t("mcFreqRegionAria").replace("{brand}", brand)} className={"overflow-x-auto rounded-xl border border-[var(--border-default)] p-2 " + FOCUS_CLASS_NAME}>
         <div className="space-y-5 p-2" style={{ minWidth: Math.max(480, data.weeks.length * 48) + "px" }}>
           {series.map(({ market, weekly }) => {
             const total = weekly.reduce((sum, count) => sum + count, 0);
             return (
-              <section key={market} aria-label={brand + " · " + market + "周频率"}>
-                <h4 className="mb-2 flex flex-wrap items-baseline gap-x-3 text-sm font-bold text-[var(--text-heading)]">{data.marketLabels.get(market) ?? market} · {market}<span className="text-xs font-normal text-[var(--text-secondary)]">{total} 封 · 周均 {weeklyAvg(total, data.windowDays)} 封</span></h4>
+              <section key={market} aria-label={t("mcFreqSectionAria").replace("{brand}", brand).replace("{market}", market)}>
+                <h4 className="mb-2 flex flex-wrap items-baseline gap-x-3 text-sm font-bold text-[var(--text-heading)]">{getMarketLabel(market)} · {market}<span className="text-xs font-normal text-[var(--text-secondary)]">{total} {t("marketUnitEmails")} · {t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails")}</span></h4>
                 <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }}>
                   {weekly.map((count, index) => {
                     const week = data.weeks[index];
@@ -326,14 +331,14 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
                       <Tooltip
                         key={week.label}
                         className={"rounded-md px-1 py-2 hover:ring-2 hover:ring-[var(--control-focus)] " + FOCUS_CLASS_NAME}
-                        label={brand + "，" + market + "，" + week.label + "，" + week.start + " 至 " + week.end + "：" + count + " 封，覆盖 " + days + " 天" + (highest ? "，当前视图最高" : "")}
+                        label={t("mcFreqLabel").replace("{brand}", brand).replace("{market}", market).replace("{week}", week.label).replace("{start}", week.start).replace("{end}", week.end).replace("{count}", String(count)).replace("{days}", String(days)) + (highest ? t("mcFreqHighestSuffix") : "")}
                         content={<>
                           <div className="font-semibold">{brand} · {market} · {week.label}（{week.range}）</div>
-                          <div className="mt-1 font-mono font-bold">{count} 封 · 覆盖 {days} 天 · 日均 {(count / days).toFixed(2)} 封</div>
-                          <div className="mt-1">{week.start} – {week.end} · 共用刻度 0–{maximum} 封 · 可见收录</div>
+                          <div className="mt-1 font-mono font-bold">{t("mcFreqLine").replace("{count}", String(count)).replace("{days}", String(days)).replace("{perDay}", (count / days).toFixed(2))}</div>
+                          <div className="mt-1">{t("mcFreqLine3").replace("{start}", week.start).replace("{end}", week.end).replace("{max}", String(maximum))}</div>
                         </>}
                       >
-                        <div className={"h-9 text-center font-mono text-xs tabular-nums " + (highest ? "font-bold text-[var(--accent-ink)]" : "text-[var(--text-heading)]")}>{count}<span className="block text-xs">{highest ? "最高" : ""}</span></div>
+                        <div className={"h-9 text-center font-mono text-xs tabular-nums " + (highest ? "font-bold text-[var(--accent-ink)]" : "text-[var(--text-heading)]")}>{count}<span className="block text-xs">{highest ? t("mcHighest") : ""}</span></div>
                         <div className="flex h-24 items-end justify-center border-b border-[var(--border-default)]" aria-hidden="true"><span className="w-3/4 max-w-7 rounded-t-sm" style={{ height: count > 0 ? count / maximum * 100 + "%" : "2px", backgroundColor: highest ? "var(--accent-ink)" : count > 0 ? "var(--control-active-bg)" : "var(--chart-empty)" }} /></div>
                         <div className="mt-2 text-center font-mono text-xs text-[var(--text-secondary)]">{week.label}</div>
                       </Tooltip>
@@ -343,10 +348,10 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
               </section>
             );
           })}
-          <div className="grid gap-1 border-t border-[var(--divider)] pt-3" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }} aria-label="各周日期范围">{data.weeks.map((week) => <div key={week.label} className="text-center text-xs leading-5 text-[var(--text-secondary)]"><strong>{week.label}</strong><br />{formatDayMonth(week.start)}<br />–{formatDayMonth(week.end)}</div>)}</div>
+          <div className="grid gap-1 border-t border-[var(--divider)] pt-3" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }} aria-label={t("mcWeeksAria")}>{data.weeks.map((week) => <div key={week.label} className="text-center text-xs leading-5 text-[var(--text-secondary)]"><strong>{week.label}</strong><br />{formatDayMonth(week.start)}<br />–{formatDayMonth(week.end)}</div>)}</div>
         </div>
       </div>
-      <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">末桶按实际覆盖天数展示；悬停或聚焦柱子可查看日期和日均。0 表示未收录，不代表实际未发送。</p>
+      <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mcFreqFooter")}</p>
     </div>
   );
 }
@@ -358,6 +363,7 @@ export function MarketComparison({
   markets?: string[];
   onMarketsChange?: (markets: string[]) => void;
 } = {}) {
+  const { t } = useLocale();
   const { status, emails, total: emailTotal, error, retry, meta } = useExtendedEmails();
   const [internalSelected, setInternalSelected] = useState<string[]>(["US", "UK"]);
   // 受控时由调用方（SiteProvider）持有对比多选，切视图/切站点不丢失、不被全局站点覆盖；
@@ -395,11 +401,11 @@ export function MarketComparison({
   const id = useId();
   const data = useMemo(() => emails.length > 0 ? aggregateComparison(emails) : null, [emails]);
   const hint = data
-    ? "实时聚合（全期数据，窗口 " + data.windowStart + " – " + data.windowEnd + "，共 " + data.grandTotal + " 封）。至少选择 2 个市场；品牌、主题、频率视图共用所选市场，0 封市场仍可比较。"
-    : "实时聚合（全期数据）。选择至少 2 个市场，按品牌、主题或频率任务进行对比。";
+    ? t("mcHint").replace("{start}", data.windowStart).replace("{end}", data.windowEnd).replace("{total}", String(data.grandTotal))
+    : t("mcHintFallback");
 
-  if (status === "ready" && !data) return <Card title="跨市场对比" hint={hint}><p className="py-6 text-center text-sm text-[var(--text-secondary)]" role="status">暂无邮件</p></Card>;
-  if (status === "loading" || status === "error" || !data) return <Card title="跨市场对比" hint={hint}><ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} meta={meta} /></Card>;
+  if (status === "ready" && !data) return <Card title={t("mcTitle")} hint={hint}><p className="py-6 text-center text-sm text-[var(--text-secondary)]" role="status">{t("mcEmpty")}</p></Card>;
+  if (status === "loading" || status === "error" || !data) return <Card title={t("mcTitle")} hint={hint}><ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} meta={meta} /></Card>;
 
   const effectiveSelected = data.markets.filter((market) => selected.includes(market));
   const task = TASK_VIEWS.find((item) => item.key === view)!;
@@ -407,15 +413,15 @@ export function MarketComparison({
   const brand = data.brands.includes(focusedBrand) ? focusedBrand : data.brands[0];
 
   return (
-    <Card title="跨市场对比" hint={hint}>
-      {status === "incomplete" ? <p className="mb-4 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3 text-sm text-[var(--status-warning)]" role="alert">数据未取齐（已取 {emailTotal} / 预期 {meta.total} 封），以下对比基于已取数据，不作完整市场排名。</p> : null}
+    <Card title={t("mcTitle")} hint={hint}>
+      {status === "incomplete" ? <p className="mb-4 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3 text-sm text-[var(--status-warning)]" role="alert">{t("mcIncomplete").replace("{got}", String(emailTotal)).replace("{expected}", String(meta.total))}</p> : null}
       <fieldset className="mb-5">
-        <legend className="mb-2 text-sm font-bold text-[var(--text-heading)]">选择对比市场（至少 2 个）</legend>
+        <legend className="mb-2 text-sm font-bold text-[var(--text-heading)]">{t("mcSelectLegend")}</legend>
         <div className="flex flex-wrap gap-2">
-          {data.markets.map((market) => <label key={market} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] hover:border-[var(--control-hover-border)]"><input type="checkbox" checked={selected.includes(market)} onChange={() => setSelected((previous) => previous.includes(market) ? previous.filter((code) => code !== market) : [...previous, market])} className={"size-4 accent-[var(--control-active-bg)] " + FOCUS_CLASS_NAME} />{data.marketLabels.get(market) ?? market} · {market}<span className="text-xs text-[var(--text-secondary)]">{data.marketTotals.get(market) ?? 0} 封</span></label>)}
+          {data.markets.map((market) => <label key={market} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] hover:border-[var(--control-hover-border)]"><input type="checkbox" checked={selected.includes(market)} onChange={() => setSelected((previous) => previous.includes(market) ? previous.filter((code) => code !== market) : [...previous, market])} className={"size-4 accent-[var(--control-active-bg)] " + FOCUS_CLASS_NAME} />{getMarketLabel(market)} · {market}<span className="text-xs text-[var(--text-secondary)]">{data.marketTotals.get(market) ?? 0} {t("marketUnitEmails")}</span></label>)}
         </div>
       </fieldset>
-      <div role="tablist" aria-label="对比任务视图" className="mb-4 flex flex-wrap gap-2 rounded-xl bg-[var(--surface-subtle)] p-2">
+      <div role="tablist" aria-label={t("mcTablistAria")} className="mb-4 flex flex-wrap gap-2 rounded-xl bg-[var(--surface-subtle)] p-2">
         {TASK_VIEWS.map((item, index) => (
           <button key={item.key} id={id + "-tab-" + item.key} type="button" role="tab" aria-selected={view === item.key} aria-controls={id + "-panel"} tabIndex={view === item.key ? 0 : -1} onClick={() => setView(item.key)} onKeyDown={(event) => {
             let next = index;
@@ -427,15 +433,15 @@ export function MarketComparison({
             event.preventDefault();
             setView(TASK_VIEWS[next].key);
             document.getElementById(id + "-tab-" + TASK_VIEWS[next].key)?.focus();
-          }} className={"min-h-11 flex-1 rounded-lg border px-4 py-2 text-sm font-bold " + FOCUS_CLASS_NAME + " " + (view === item.key ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]" : "border-[var(--control-border)] bg-[var(--control-bg)] text-[var(--control-text)] hover:bg-[var(--control-hover-bg)]")}>{item.label}</button>
+          }} className={"min-h-11 flex-1 rounded-lg border px-4 py-2 text-sm font-bold " + FOCUS_CLASS_NAME + " " + (view === item.key ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]" : "border-[var(--control-border)] bg-[var(--control-bg)] text-[var(--control-text)] hover:bg-[var(--control-hover-bg)]")}>{t(item.labelKey)}</button>
         ))}
       </div>
       <section id={id + "-panel"} role="tabpanel" aria-labelledby={id + "-tab-" + view} tabIndex={0} className={"rounded-lg p-1 " + FOCUS_CLASS_NAME}>
-        <h3 className="text-base font-bold text-[var(--text-heading)]">{task.question}</h3>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{task.description}</p>
-        <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]" role="status">已选 {effectiveSelected.length} 个市场 · 样本 {selectedTotal} 封；全市场 {data.grandTotal} 封。{data.windowDays} 天共同窗口。</p>
-        {effectiveSelected.length < 2 ? <p className="py-6 text-sm text-[var(--text-secondary)]" role="status">请至少选择 2 个市场进行对比，任务视图选择会保留。</p> : <>
-          <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">强调色＋「最高」表示当前指标的已选市场最大值（频率视图含所有周桶），含并列；描边仅表示当前查看，不代表效果。聚焦可读 Tooltip，Esc 关闭。</p>
+        <h3 className="text-base font-bold text-[var(--text-heading)]">{t(task.questionKey)}</h3>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{t(task.descKey)}</p>
+        <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]" role="status">{t("mcStatusLine").replace("{n}", String(effectiveSelected.length)).replace("{sample}", String(selectedTotal)).replace("{total}", String(data.grandTotal)).replace("{days}", String(data.windowDays))}</p>
+        {effectiveSelected.length < 2 ? <p className="py-6 text-sm text-[var(--text-secondary)]" role="status">{t("mcNeedTwo")}</p> : <>
+          <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">{t("mcHighestNote")}</p>
           {view === "frequency" ? <FrequencyComparison data={data} selected={effectiveSelected} brand={brand} onBrandChange={setFocusedBrand} id={id + "-brand"} /> : <ComparisonMatrix data={data} selected={effectiveSelected} view={view} />}
         </>}
       </section>

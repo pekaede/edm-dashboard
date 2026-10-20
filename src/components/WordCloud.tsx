@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { EmailRecord } from "../email-data";
+import { useLocale, type DictionaryKey } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
   MAX_WORDS_PER_CATEGORY,
@@ -121,7 +122,16 @@ function getWordSize(count: number, words: Word[]): string {
   return `${0.95 + scale * 1.05}rem`;
 }
 
+const WC_CATEGORY_KEYS: Record<string, DictionaryKey> = {
+  category: "wcCatCategory",
+  promotion: "wcCatPromotion",
+  style: "wcCatStyle",
+  audience: "wcCatAudience",
+  other: "themeOther",
+};
+
 export function WordCloud() {
+  const { t } = useLocale();
   const emailData = useSiteEmails();
   const { emails, meta, status, retry } = emailData;
   const [timeRange, setTimeRange] = useState<TimeRange>("threeWeeks");
@@ -146,26 +156,29 @@ export function WordCloud() {
   const groupedWords = isThreeWeeks ? threeWeekGroups : threeMonthGroups;
   const displayedWords = groupedWords.flatMap((category) => category.words);
   const sampleTotal = isThreeWeeks ? threeWeekEmails.length : marketFilteredEmails.length;
+  const catName = (key: string, fallback: string) => (WC_CATEGORY_KEYS[key] ? t(WC_CATEGORY_KEYS[key]) : fallback);
+  const fillTokens = (template: string, count: number) =>
+    template.replace("{market}", marketLabel).replace("{count}", String(count));
   const title = isThreeWeeks
-    ? `分类高频词 Top 10 · 三周窗口${status === "ready" ? `（${marketLabel} · ${threeWeekEmails.length} 封 · 实时聚合）` : ""}`
-    : `分类高频词 Top 10 · 三个月窗口${status === "ready" ? `（${marketLabel} · ${marketFilteredEmails.length} 封）` : ""}`;
+    ? `${t("wcTitleBase")}${t("wcTitleWeeks")}${status === "ready" ? fillTokens(t("wcTitleSuffixWeeks"), threeWeekEmails.length) : ""}`
+    : `${t("wcTitleBase")}${t("wcTitleMonths")}${status === "ready" ? fillTokens(t("wcTitleSuffixMonths"), marketFilteredEmails.length) : ""}`;
   const hint = isThreeWeeks
-    ? `${THREE_WEEK_RANGE}；市场：${marketLabel}；实时聚合窗口内邮件，与三个月词云同口径分组，逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`
-    : `${meta.range}；市场：${marketLabel}；逐封邮件内同词去重，每类按含该词的邮件数倒序展示前 10 个。`;
+    ? t("wcHintWeeks").replace("{range}", THREE_WEEK_RANGE).replace("{market}", marketLabel)
+    : t("wcHintMonths").replace("{range}", meta.range).replace("{market}", marketLabel);
 
   return (
     <Card title={title} hint={hint}>
       <div className="overflow-hidden rounded-2xl border border-[var(--border-wordcloud)] bg-[var(--surface-raised)]">
         <div className="flex flex-col gap-3 border-b border-[var(--border-wordcloud)] bg-[var(--surface-page)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <span className="text-sm font-bold text-[var(--text-control)]">时间范围</span>
+          <span className="text-sm font-bold text-[var(--text-control)]">{t("wcTimeRangeLabel")}</span>
           <div
             role="group"
-            aria-label="选择词云统计时间范围"
+            aria-label={t("wcRangeGroupAria")}
             className="grid w-full grid-cols-2 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] p-1 sm:w-auto"
           >
             {([
-              ["threeWeeks", "三周"],
-              ["threeMonths", "三个月"],
+              ["threeWeeks", t("wcRangeWeeks")],
+              ["threeMonths", t("wcRangeMonths")],
             ] as const).map(([value, label]) => {
               const isSelected = timeRange === value;
 
@@ -195,9 +208,9 @@ export function WordCloud() {
         ) : marketFilteredEmails.length === 0 ? (
           <div className={`p-[var(--card-padding)] sm:p-[var(--card-padding-sm)] ${EMPTY_STATE_CLASS_NAME}`}>
             <EmptyState
-              title="该市场暂无邮件"
-              description={`${marketLabel}在统计窗口内暂无邮件，请切换市场或重新拉取数据。`}
-              actionLabel={selectedMarket === null ? "重新拉取" : "切换至全部市场"}
+              title={t("wcEmptyMarketTitle")}
+              description={t("wcEmptyMarketDesc").replace("{market}", marketLabel)}
+              actionLabel={selectedMarket === null ? t("wcRetry") : t("wcSwitchAll")}
               onAction={selectedMarket === null ? retry : () => setMarket(null)}
             />
           </div>
@@ -205,12 +218,12 @@ export function WordCloud() {
           <div className={`p-[var(--card-padding)] sm:p-[var(--card-padding-sm)] ${EMPTY_STATE_CLASS_NAME}`}>
             <EmptyState
               title={isThreeWeeks && threeWeekEmails.length === 0
-                ? "该市场在三周窗口内暂无邮件"
-                : "无有效词"}
+                ? t("wcEmptyWeeksTitle")
+                : t("wcEmptyNoWordsTitle")}
               description={isThreeWeeks && threeWeekEmails.length === 0
-                ? "该市场在三周窗口内暂无邮件，请切换市场或时间范围。"
-                : "该市场邮件的关键词均为空或为噪音词，无法生成词云。"}
-              actionLabel={isThreeWeeks ? "切换至三个月" : selectedMarket === null ? "重新拉取" : "切换至全部市场"}
+                ? t("wcEmptyWeeksDesc")
+                : t("wcEmptyNoWordsDesc")}
+              actionLabel={isThreeWeeks ? t("wcSwitchMonths") : selectedMarket === null ? t("wcRetry") : t("wcSwitchAll")}
               onAction={isThreeWeeks
                 ? () => setTimeRange("threeMonths")
                 : selectedMarket === null ? retry : () => setMarket(null)}
@@ -218,7 +231,7 @@ export function WordCloud() {
           </div>
         ) : (
           <div className="divide-y divide-[var(--divider-wordcloud)] px-4 sm:px-5" aria-live="polite" aria-atomic="true">
-            <p className="py-3 text-xs leading-5 text-[var(--text-secondary)]">字号表示含该词的邮件数，右上角为封数；分类色标不代表效果。聚焦词条查看样本占比，Esc 关闭提示。</p>
+            <p className="py-3 text-xs leading-5 text-[var(--text-secondary)]">{t("wcNote")}</p>
             {groupedWords.map((category) => {
               const headingId = `word-category-${timeRange}-${category.key}`;
 
@@ -238,12 +251,12 @@ export function WordCloud() {
                         className="h-3 w-1 shrink-0 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      {category.label}
+                      {catName(category.key, category.label)}
                     </h3>
                     <span className="shrink-0 text-xs tabular-nums text-[var(--text-caption)]">
                       {category.total > MAX_WORDS_PER_CATEGORY
-                        ? `展示 ${category.words.length} / 共 ${category.total} 个词`
-                        : `${category.words.length} 个词`}
+                        ? t("wcShowing").replace("{shown}", String(category.words.length)).replace("{total}", String(category.total))
+                        : t("wcWordCount").replace("{n}", String(category.words.length))}
                     </span>
                   </div>
 
@@ -251,11 +264,11 @@ export function WordCloud() {
                     {category.words.map((word) => (
                       <li key={word.text} className="min-w-0">
                         <Tooltip
-                          label={`${word.text}，包含于 ${word.count} 封邮件，${category.label}，占当前样本 ${(word.count / sampleTotal * 100).toFixed(1)}%`}
+                          label={t("wcWordLabel").replace("{word}", word.text).replace("{count}", String(word.count)).replace("{category}", catName(category.key, category.label)).replace("{pct}", (word.count / sampleTotal * 100).toFixed(1))}
                           content={<>
-                            <div className="font-semibold">{word.text} · {category.label}</div>
-                            <div className="mt-1 font-mono font-bold">{word.count} 封 · 样本占比 {(word.count / sampleTotal * 100).toFixed(1)}%</div>
-                            <div className="mt-1">{marketLabel} · {isThreeWeeks ? THREE_WEEK_RANGE : meta.range} · 分母 {sampleTotal} 封</div>
+                            <div className="font-semibold">{word.text} · {catName(category.key, category.label)}</div>
+                            <div className="mt-1 font-mono font-bold">{word.count} {t("marketUnitEmails")} · {t("wcSampleShare")} {(word.count / sampleTotal * 100).toFixed(1)}%</div>
+                            <div className="mt-1">{marketLabel} · {isThreeWeeks ? THREE_WEEK_RANGE : meta.range} · {t("wcDenominator")} {sampleTotal} {t("marketUnitEmails")}</div>
                           </>}
                           className="inline-block max-w-full break-words rounded px-1 py-1 font-semibold tracking-tight hover:bg-[var(--surface-wordcloud-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                           style={{
