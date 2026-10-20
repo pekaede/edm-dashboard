@@ -14,6 +14,7 @@ import {
   matchesMarket,
 } from "../email-data";
 import { downloadFile, EmailExportRow, emailsToCSV } from "../export";
+import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
 import {
   createFavoriteKey,
   loadFavorites,
@@ -29,6 +30,7 @@ import {
 } from "../url-state";
 import { useUrlSync } from "../use-url-sync";
 import { Card } from "./Card";
+import { THEME_LABEL_KEYS } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
@@ -39,27 +41,23 @@ const EMAIL_WINDOW_SCROLL_KEY = "edm-emails-window-scroll";
 const EMAIL_VISIBLE_COUNT_KEY = "edm-emails-visible-count";
 
 const FILTER_THEMES = [
-  { key: "price", label: "价格促销" },
-  { key: "behavior", label: "行为触发" },
-  { key: "new", label: "上新" },
-  { key: "lifestyle", label: "生活方式" },
-  { key: "category", label: "品类聚焦" },
-  { key: "other", label: "其他" },
-] as const;
+  { key: "price", labelKey: "themePrice" },
+  { key: "behavior", labelKey: "themeBehavior" },
+  { key: "new", labelKey: "themeNew" },
+  { key: "lifestyle", labelKey: "themeLifestyle" },
+  { key: "category", labelKey: "themeCategory" },
+  { key: "other", labelKey: "themeOther" },
+] as const satisfies readonly { key: string; labelKey: DictionaryKey }[];
 
 const FILTER_BRANDS = BRAND_ORDER;
 
 type FilterTheme = (typeof FILTER_THEMES)[number]["key"];
 type FilterBrand = (typeof FILTER_BRANDS)[number];
 
-const THEME_LABELS: Record<string, string> = {
-  price: "价格促销",
-  behavior: "行为触发",
-  new: "上新",
-  lifestyle: "生活方式",
-  category: "品类聚焦",
-  other: "其他",
-};
+function themeLabelOf(theme: string): string {
+  const key = THEME_LABEL_KEYS[theme];
+  return key ? dictionary[key][getCurrentLocale()] : theme;
+}
 
 const THEME_BADGE_STYLES: Record<string, string> = {
   price: "border-[var(--theme-price-border)] bg-[var(--theme-price-tint)] text-[var(--theme-price-text)]",
@@ -120,6 +118,7 @@ function ExpandableKeywords({
   onToggle: () => void;
   searchQuery: string;
 }) {
+  const { t } = useLocale();
   const spanRef = useRef<HTMLSpanElement | null>(null);
   // A row can remount while already expanded (pagination / filter /
   // sort unmounts the row, expandedRowKeys survives). The only way to
@@ -201,12 +200,10 @@ function ExpandableKeywords({
           type="button"
           onClick={onToggle}
           aria-expanded={isExpanded}
-          aria-label={`${
-            isExpanded ? "收起" : "展开"
-          } ${email.brand} ${email.date} 的全部关键词`}
+          aria-label={t("efKwAria").replace("{action}", isExpanded ? t("efCollapse") : t("efExpand")).replace("{brand}", email.brand).replace("{date}", email.date)}
           className="inline-flex rounded-xs text-xs font-semibold text-[var(--accent-ink)] underline underline-offset-2 hover:underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
         >
-          {isExpanded ? "收起" : "展开全部"}
+          {isExpanded ? t("efCollapse") : t("efExpandAllBtn")}
         </button>
       ) : null}
     </div>
@@ -215,11 +212,11 @@ function ExpandableKeywords({
 
 type DatePresetKey = "all" | "7d" | "3w" | "30d";
 
-const DATE_PRESETS: { key: DatePresetKey; label: string; days: number | null }[] = [
-  { key: "all", label: "全部日期", days: null },
-  { key: "7d", label: "最近 7 天", days: 7 },
-  { key: "3w", label: "最近三周", days: 21 },
-  { key: "30d", label: "最近一个月", days: 30 },
+const DATE_PRESETS: { key: DatePresetKey; labelKey: DictionaryKey; days: number | null }[] = [
+  { key: "all", labelKey: "efRangeAll", days: null },
+  { key: "7d", labelKey: "efRange7d", days: 7 },
+  { key: "3w", labelKey: "efRange3w", days: 21 },
+  { key: "30d", labelKey: "efRange30d", days: 30 },
 ];
 
 /** ISO 日期平移（UTC 计算，避免时区跨日）。 */
@@ -233,6 +230,7 @@ export function ExtendedEmailFilter({
 }: {
   initialTheme?: string | null;
 }) {
+  const { t } = useLocale();
   const emailData = useSiteEmails();
   const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, meta, status } = emailData;
@@ -752,9 +750,12 @@ export function ExtendedEmailFilter({
       if (q) {
         const matchesBrand = email.brand.toLowerCase().includes(q);
         const matchesDate = email.date.toLowerCase().includes(q);
-        const matchesTheme = (THEME_LABELS[email.theme] ?? email.theme)
-          .toLowerCase()
-          .includes(q);
+        const themeEntry = THEME_LABEL_KEYS[email.theme]
+          ? dictionary[THEME_LABEL_KEYS[email.theme]]
+          : null;
+        const matchesTheme = themeEntry
+          ? themeEntry.zh.toLowerCase().includes(q) || themeEntry.en.toLowerCase().includes(q)
+          : email.theme.toLowerCase().includes(q);
         const matchesKeywords = email.keywords.some((kw) =>
           kw.toLowerCase().includes(q),
         );
@@ -794,14 +795,20 @@ export function ExtendedEmailFilter({
       setExpandedRowKeys(new Set(visibleEmails.map((e) => getEmailKey(e))));
     }
   };
-  const selectedThemeLabel = selectedTheme ? THEME_LABELS[selectedTheme] : "全部";
-  const selectedBrandLabel = selectedBrand ?? "全部";
+  const selectedThemeLabel = selectedTheme ? themeLabelOf(selectedTheme) : t("calAllBrands");
+  const selectedBrandLabel = selectedBrand ?? t("calAllBrands");
   const selectedMarketLabel = getMarketLabel(selectedMarket);
   const dateRangeLabel =
-    dateFrom || dateTo ? `${dateFrom || "不限"} 至 ${dateTo || "不限"}` : "全部日期";
-  const filterSummary = `市场：${selectedMarketLabel}，品牌：${selectedBrandLabel}，主题：${selectedThemeLabel}${
-    dateFrom || dateTo ? `，日期：${dateRangeLabel}` : ""
-  }${showOnlyFavorites ? "，仅看收藏" : ""}${searchQuery.trim() ? `，搜索：“${searchQuery.trim()}”` : ""}`;
+    dateFrom || dateTo
+      ? t("efDateRange").replace("{from}", dateFrom || t("efUnlimited")).replace("{to}", dateTo || t("efUnlimited"))
+      : t("efRangeAll");
+  const filterSummary = t("efFilterSummary")
+    .replace("{market}", selectedMarketLabel)
+    .replace("{brand}", selectedBrandLabel)
+    .replace("{theme}", selectedThemeLabel)
+    .replace("{date}", dateFrom || dateTo ? t("efSummaryDate").replace("{range}", dateRangeLabel) : "")
+    .replace("{fav}", showOnlyFavorites ? t("efSummaryFav") : "")
+    .replace("{search}", searchQuery.trim() ? t("efSummarySearch").replace("{q}", searchQuery.trim()) : "");
   const hasMore = visibleEmails.length < filteredEmails.length;
 
   // Load more without layout jump / scroll position loss
@@ -850,11 +857,11 @@ export function ExtendedEmailFilter({
     setVisibleCount(PAGE_SIZE);
   };
 
-  const hint = `${meta.range} · ${meta.market} · 逐封记录按日期倒序`;
+  const hint = t("efHint").replace("{range}", meta.range).replace("{market}", meta.market);
 
   if (status !== "ready") {
     return (
-      <Card title="3 个月邮件筛选" hint={hint}>
+      <Card title={t("efTitle")} hint={hint}>
         <ExtendedEmailsState {...emailData} />
       </Card>
     );
@@ -862,12 +869,12 @@ export function ExtendedEmailFilter({
 
   if (emails.length === 0) {
     return (
-      <Card title="3 个月邮件筛选" hint={hint}>
+      <Card title={t("efTitle")} hint={hint}>
         <div className="py-6">
           <EmptyState
-            title={`${selectedMarketLabel}暂无收录邮件`}
-            description={`该市场在当前统计窗口（${meta.range}）内暂无公开邮件收录记录。看板统计总量均为 Milled 公开收录样本，非品牌私域全量投递。`}
-            actionLabel={selectedMarket ? "切换至全部市场" : "重新拉取"}
+            title={t("stEmptyMarketTitle").replace("{market}", selectedMarketLabel)}
+            description={t("efEmptyMarketDesc").replace("{range}", meta.range)}
+            actionLabel={selectedMarket ? t("efSwitchAll") : t("efRetry")}
             onAction={selectedMarket ? () => setMarket(null) : emailData.retry}
           />
         </div>
@@ -878,7 +885,7 @@ export function ExtendedEmailFilter({
   const favoriteCount = favoriteKeys.size;
 
   return (
-    <Card title="3 个月邮件筛选" hint={hint}>
+    <Card title={t("efTitle")} hint={hint}>
       <div className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-page)]">
         <div className="space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
           {/* Header summary banner */}
@@ -888,14 +895,14 @@ export function ExtendedEmailFilter({
                 Editorial email index
               </p>
               <p className="mt-2 text-sm leading-7 text-[var(--text-email-intro)] sm:text-base">
-                从品牌与主题切入三个月邮件触达（含服务/法务通知），支持关键词高亮搜索、收藏标记与结果全量导出。
+                {t("efIntro")}
               </p>
             </div>
             <div className="flex shrink-0 items-baseline gap-2 text-[var(--text-heading)]">
               <strong className="text-3xl font-extrabold leading-none tracking-tight tabular-nums sm:text-4xl">
                 {filteredEmails.length}
               </strong>
-              <span className="pb-1 text-sm font-semibold">封邮件</span>
+              <span className="pb-1 text-sm font-semibold">{t("efUnitEmails")}</span>
             </div>
           </div>
 
@@ -904,17 +911,17 @@ export function ExtendedEmailFilter({
             <div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
-                  按品牌筛选
+                  {t("efFilterByBrand")}
                 </p>
                 <p className="text-xs text-[var(--text-description)]">
-                  当前：{selectedBrandLabel}
+                  {t("marketCurrent")}{selectedBrandLabel}
                 </p>
               </div>
 
               <div
                 className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7"
                 role="group"
-                aria-label="按邮件品牌筛选"
+                aria-label={t("efBrandGroupAria")}
               >
                 <button
                   type="button"
@@ -926,7 +933,7 @@ export function ExtendedEmailFilter({
                       : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
                   }`}
                 >
-                  全部
+                  {t("calAllBrands")}
                 </button>
 
                 {FILTER_BRANDS.map((brand) => {
@@ -938,7 +945,7 @@ export function ExtendedEmailFilter({
                       key={brand}
                       onClick={() => selectBrand(brand)}
                       aria-pressed={isSelected}
-                      aria-label={`${brand}品牌${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
+                      aria-label={t("efBrandChipAria").replace("{brand}", brand).replace("{selected}", isSelected ? t("efChipSelectedSuffix") : "")}
                       className={`flex min-h-12 items-center justify-center rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isSelected
                           ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
@@ -955,21 +962,21 @@ export function ExtendedEmailFilter({
             <div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
-                  按主题筛选
+                  {t("efFilterByTheme")}
                 </p>
                 <p
                   className="text-xs text-[var(--text-description)]"
                   aria-live="polite"
                   aria-atomic="true"
                 >
-                  当前：{selectedThemeLabel}
+                  {t("marketCurrent")}{selectedThemeLabel}
                 </p>
               </div>
 
               <div
                 className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6"
                 role="group"
-                aria-label="按邮件主题筛选"
+                aria-label={t("efThemeGroupAria")}
               >
                 <button
                   type="button"
@@ -981,7 +988,7 @@ export function ExtendedEmailFilter({
                       : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
                   }`}
                 >
-                  全部
+                  {t("calAllBrands")}
                 </button>
 
                 {FILTER_THEMES.map((theme) => {
@@ -993,7 +1000,7 @@ export function ExtendedEmailFilter({
                       key={theme.key}
                       onClick={() => selectTheme(theme.key)}
                       aria-pressed={isSelected}
-                      aria-label={`${theme.label}主题${isSelected ? "，当前已选中，再次点击清除筛选" : ""}`}
+                      aria-label={t("efThemeChipAria").replace("{label}", t(theme.labelKey)).replace("{selected}", isSelected ? t("efChipSelectedSuffix") : "")}
                       className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isSelected
                           ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
@@ -1004,7 +1011,7 @@ export function ExtendedEmailFilter({
                         className={`size-2 rounded-full ${isSelected ? "bg-white/80" : FILTER_DOT_STYLES[theme.key]}`}
                         aria-hidden="true"
                       />
-                      {theme.label}
+                      {t(theme.labelKey)}
                     </button>
                   );
                 })}
@@ -1014,20 +1021,20 @@ export function ExtendedEmailFilter({
             <div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
-                  按日期筛选
+                  {t("efFilterByDate")}
                 </p>
                 <p
                   className="text-xs text-[var(--text-description)]"
                   aria-live="polite"
                   aria-atomic="true"
                 >
-                  当前：{dateRangeLabel}
+                  {t("marketCurrent")}{dateRangeLabel}
                 </p>
               </div>
               <div
                 className="mb-3 flex flex-wrap gap-2.5"
                 role="group"
-                aria-label="日期快捷范围"
+                aria-label={t("efDateGroupAria")}
               >
                 {DATE_PRESETS.map((preset) => {
                   const isActive = activeDatePreset === preset.key;
@@ -1043,14 +1050,14 @@ export function ExtendedEmailFilter({
                           : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
                       }`}
                     >
-                      {preset.label}
+                      {t(preset.labelKey)}
                     </button>
                   );
                 })}
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
                 <label className="flex items-center gap-2 text-base font-semibold text-[var(--text-description)]">
-                  起始
+                  {t("efDateFrom")}
                   <input
                     type="date"
                     value={dateFrom}
@@ -1064,7 +1071,7 @@ export function ExtendedEmailFilter({
                   —
                 </span>
                 <label className="flex items-center gap-2 text-base font-semibold text-[var(--text-description)]">
-                  结束
+                  {t("efDateTo")}
                   <input
                     type="date"
                     value={dateTo}
@@ -1084,7 +1091,7 @@ export function ExtendedEmailFilter({
                     }}
                     className="rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:bg-[var(--control-filter-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
                   >
-                    清除日期
+                    {t("efClearDates")}
                   </button>
                 ) : null}
               </div>
@@ -1096,7 +1103,7 @@ export function ExtendedEmailFilter({
             {/* Search Input Box */}
             <div className="relative flex-1">
               <label htmlFor={`${listId}-search`} className="sr-only">
-                搜索邮件关键词、品牌或主题
+                {t("efSearchLabel")}
               </label>
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--text-muted)]">
                 <svg
@@ -1118,14 +1125,14 @@ export function ExtendedEmailFilter({
                 type="search"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="搜索邮件关键词、品牌、主题或日期..."
+                placeholder={t("efSearchPlaceholder")}
                 className="w-full rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] py-2 pr-9 pl-9 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
               />
               {searchQuery ? (
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  aria-label="清空搜索内容"
+                  aria-label={t("efClearSearchAria")}
                   className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[var(--text-muted)] hover:text-[var(--text-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-1 rounded-sm"
                 >
                   <svg
@@ -1172,7 +1179,7 @@ export function ExtendedEmailFilter({
                 >
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-                <span>仅看收藏 ({favoriteCount})</span>
+                <span>{t("efFavOnly").replace("{n}", String(favoriteCount))}</span>
               </button>
 
               <button
@@ -1181,14 +1188,14 @@ export function ExtendedEmailFilter({
                 aria-pressed={allExpanded}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 py-2 text-xs font-semibold text-[var(--control-text)] transition hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] sm:text-sm"
               >
-                <span>{allExpanded ? "收起所有内容" : "展开全部内容"}</span>
+                <span>{allExpanded ? t("efCollapseAll") : t("efExpandAll")}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExportCSV}
                 disabled={filteredEmails.length === 0}
-                aria-label={`导出当前全部筛选结果为 CSV，共 ${filteredEmails.length} 封邮件`}
+                aria-label={t("efExportAria").replace("{n}", String(filteredEmails.length))}
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] sm:text-sm ${
                   filteredEmails.length > 0
                     ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-[var(--text-inverse)] hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)]"
@@ -1209,7 +1216,7 @@ export function ExtendedEmailFilter({
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span>导出 CSV ({filteredEmails.length})</span>
+                <span>{t("efExportLabel").replace("{n}", String(filteredEmails.length))}</span>
               </button>
             </div>
           </div>
@@ -1219,9 +1226,9 @@ export function ExtendedEmailFilter({
         {filteredEmails.length === 0 ? (
           <div className="border-y border-[var(--border-strong)] bg-[var(--surface-card)] p-4 sm:p-6">
             <EmptyState
-              title="无符合当前条件的邮件"
-              description={`${filterSummary}。当前暂无符合该组合条件的公开邮件样本。你可以重置条件或清空搜索词。`}
-              actionLabel="重置筛选与搜索"
+              title={t("efNoResultTitle")}
+              description={t("efNoResultDesc").replace("{summary}", filterSummary)}
+              actionLabel={t("efResetFilterSearch")}
               onAction={() => {
                 setSelectedBrand(null);
                 setSelectedTheme(null);
@@ -1241,42 +1248,42 @@ export function ExtendedEmailFilter({
             onScroll={handleContainerScroll}
             className="max-h-[min(42rem,65dvh)] overflow-auto border-y border-[var(--border-strong)] bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent-ink)]"
             tabIndex={0}
-            aria-label={`${filterSummary}的邮件列表，可横向滚动`}
+            aria-label={t("efTableAria").replace("{summary}", filterSummary)}
           >
             <table className="w-full min-w-[48rem] border-separate border-spacing-0 text-left text-sm text-[var(--text-email-table)]">
               <caption className="sr-only">
-                {filterSummary}的 3 个月邮件记录，按日期从新到旧排列
+                {t("efCaption").replace("{summary}", filterSummary)}
               </caption>
               <thead className="sticky top-0 z-10 bg-[var(--surface-table-header)] text-xs font-bold uppercase tracking-[0.08em] text-[var(--surface-table-stripe)] shadow-[var(--shadow-table-header)]">
                 <tr>
                   <th scope="col" className="w-16 px-4 py-4 text-center">
-                    收藏
+                    {t("efColFav")}
                   </th>
                   <th scope="col" className="w-32 px-5 py-4">
-                    日期
+                    {t("efColDate")}
                   </th>
                   <th scope="col" className="w-40 px-5 py-4">
-                    品牌
+                    {t("efColBrand")}
                   </th>
                   {selectedMarket === null && (
                     <th scope="col" className="w-24 px-5 py-4">
-                      市场
+                      {t("efColMarket")}
                     </th>
                   )}
                   <th scope="col" className="w-36 px-5 py-4">
-                    主题
+                    {t("efColTheme")}
                   </th>
                   <th scope="col" className="min-w-56 px-5 py-4">
-                    标题
+                    {t("efColSubject")}
                   </th>
                   <th scope="col" className="min-w-56 px-5 py-4">
-                    副标题
+                    {t("efColPreheader")}
                   </th>
                   <th scope="col" className="px-5 py-4">
-                    关键词
+                    {t("efColKeywords")}
                   </th>
                   <th scope="col" className="w-24 whitespace-nowrap px-5 py-4">
-                    原文
+                    {t("efColOriginal")}
                   </th>
                 </tr>
               </thead>
@@ -1301,7 +1308,7 @@ export function ExtendedEmailFilter({
                         <button
                           type="button"
                           onClick={() => handleToggleFavorite(email)}
-                          aria-label={`${isFav ? "取消收藏" : "收藏"} ${email.brand} ${email.date} 的邮件`}
+                          aria-label={t("efFavAria").replace("{action}", isFav ? t("efFavRemove") : t("efFavAdd")).replace("{brand}", email.brand).replace("{date}", email.date)}
                           aria-pressed={isFav}
                           className={`inline-flex size-8 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] ${
                             isFav
@@ -1358,9 +1365,7 @@ export function ExtendedEmailFilter({
                           }`}
                         >
                           <HighlightText
-                            text={
-                              THEME_LABELS[email.theme] ?? email.theme
-                            }
+                            text={themeLabelOf(email.theme)}
                             query={searchQuery}
                           />
                         </span>
@@ -1409,10 +1414,10 @@ export function ExtendedEmailFilter({
                             href={email.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={`查看 ${email.brand} ${email.date} 的邮件原文（新窗口打开）`}
+                            aria-label={t("efOriginalAria").replace("{brand}", email.brand).replace("{date}", email.date)}
                             className="rounded-xs font-semibold text-[var(--accent-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
                           >
-                            原文
+                            {t("efColOriginal")}
                           </a>
                         ) : (
                           <span className="text-[var(--text-muted)]">—</span>
@@ -1433,15 +1438,15 @@ export function ExtendedEmailFilter({
               className="text-xs leading-5 text-[var(--text-caption)]"
               aria-live="polite"
             >
-              已显示{" "}
+              {t("efShownPrefix")}{" "}
               <strong className="text-[var(--text-control)]">
                 {visibleEmails.length}
               </strong>{" "}
-              / {filteredEmails.length} 封
+              / {filteredEmails.length} {t("marketUnitEmails")}
               <span className="mx-2" aria-hidden="true">
                 ·
               </span>
-              按日期倒序
+              {t("efSortDesc")}
             </p>
 
             {hasMore ? (
@@ -1451,11 +1456,11 @@ export function ExtendedEmailFilter({
                 aria-controls={listId}
                 className="min-h-11 rounded-full border border-[var(--text-control)] bg-[var(--text-control)] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-[var(--accent-ink)] hover:bg-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
               >
-                加载更多（剩余 {filteredEmails.length - visibleEmails.length} 封）
+                {t("efLoadMore").replace("{n}", String(filteredEmails.length - visibleEmails.length))}
               </button>
             ) : (
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">
-                已加载全部
+                {t("efLoadedAll")}
               </p>
             )}
           </div>

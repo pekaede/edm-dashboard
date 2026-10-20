@@ -327,7 +327,242 @@ export type DictionaryKey =
   | "calViewDayAria"
   | "calNoMatchTitle"
   | "calNoMatchDesc"
-  | "calClearSearch";
+  | "calClearSearch"
+  // Batch C: state components (st shared, ss snapshot)
+  | "stEmptyMarketTitle"
+  | "stEmptyNoMatch"
+  | "stEmptyMarketDesc"
+  | "stEmptyFilterDesc"
+  | "stRetryFetch"
+  | "stLoadingTitle"
+  | "stLoadingDesc"
+  | "stConfigBadge"
+  | "stConfigTitleEmails"
+  | "stConfigDescEmails"
+  | "stRecheck"
+  | "stIncompleteBadge"
+  | "stIncompleteTitle"
+  | "stIncompleteDescToken"
+  | "stIncompleteDescPlain"
+  | "stRefetchFull"
+  | "stNetworkBadge"
+  | "stErrorTitleEmails"
+  | "stErrorDescEmails"
+  | "stRetryLoad"
+  | "ssEmptyTitle"
+  | "ssEmptyDesc"
+  | "ssLoadingDefault"
+  | "ssLoadingDesc"
+  | "ssConfigTitle"
+  | "ssConfigDesc"
+  | "ssIncompleteTitle"
+  | "ssIncompleteDesc"
+  | "ssErrorTitle"
+  | "ssErrorDesc"
+  // Batch C: MarkdownReport chrome (mr) — report body stays generated content
+  | "mrEmptyTitle"
+  | "mrEmptyDesc"
+  | "mrRetry"
+  | "mrSwitchAll"
+  | "mrEyebrow"
+  | "mrTitle"
+  | "mrSubNote"
+  | "mrSummaryTitle"
+  | "mrEvidence"
+  | "mrAction"
+  | "mrWatch"
+  | "mrNextStep"
+  | "mrAppendix"
+  | "mrAppendixSub"
+  | "mrFullReport"
+  | "mrTableAria"
+  // Batch C: ExtendedEmailFilter (ef)
+  | "efTitle"
+  | "efHint"
+  | "efEmptyMarketDesc"
+  | "efSwitchAll"
+  | "efRetry"
+  | "efIntro"
+  | "efUnitEmails"
+  | "efFilterByBrand"
+  | "efFilterByTheme"
+  | "efFilterByDate"
+  | "efBrandGroupAria"
+  | "efThemeGroupAria"
+  | "efChipSelectedSuffix"
+  | "efBrandChipAria"
+  | "efThemeChipAria"
+  | "efDateGroupAria"
+  | "efRangeAll"
+  | "efRange7d"
+  | "efRange3w"
+  | "efRange30d"
+  | "efDateFrom"
+  | "efDateTo"
+  | "efClearDates"
+  | "efSearchLabel"
+  | "efSearchPlaceholder"
+  | "efClearSearchAria"
+  | "efFavOnly"
+  | "efCollapseAll"
+  | "efExpandAll"
+  | "efExportAria"
+  | "efExportLabel"
+  | "efNoResultTitle"
+  | "efNoResultDesc"
+  | "efResetFilterSearch"
+  | "efTableAria"
+  | "efCaption"
+  | "efColFav"
+  | "efColDate"
+  | "efColBrand"
+  | "efColMarket"
+  | "efColTheme"
+  | "efColSubject"
+  | "efColPreheader"
+  | "efColKeywords"
+  | "efColOriginal"
+  | "efFavAria"
+  | "efFavAdd"
+  | "efFavRemove"
+  | "efOriginalAria"
+  | "efShownPrefix"
+  | "efSortDesc"
+  | "efLoadMore"
+  | "efLoadedAll"
+  | "efUnlimited"
+  | "efDateRange"
+  | "efFilterSummary"
+  | "efSummaryDate"
+  | "efSummaryFav"
+  | "efSummarySearch"
+  | "efKwAria"
+  | "efCollapse"
+  | "efExpand"
+  | "efExpandAllBtn"
+  // Batch C: ContentAnalysis (ca)
+  | "caTacUrgency"
+  | "caTacDiscount"
+  | "caTacSocialProof"
+  | "caTacNewness"
+  | "caTacCuriosity"
+  | "caTacPersonalization"
+  | "caTacBenefit"
+  | "caTacExclusivity"
+  | "caTacSeasonal"
+  | "caLayCentered"
+  | "caLayLeftAligned"
+  | "caLaySplit"
+  | "caLayFullBleed"
+  | "caLayGrid"
+  | "caRatioTextHeavy"
+  | "caRatioBalanced"
+  | "caRatioImageHeavy"
+  | "caCtaTop"
+  | "caCtaCenter"
+  | "caCtaBottom"
+  | "caCtaBottomRight"
+  | "caCtaNone"
+  | "caTrendFashion"
+  | "caTrendTrend"
+  | "caTrendHotspot"
+  | "caTrendSeasonal"
+  | "caTrendMarketing"
+  | "caShareAria"
+  | "caOutcomeLine"
+  | "caOutcomeExpired"
+  | "caNoSubjects"
+  | "caTimeout"
+  | "caSrcEmails"
+  | "caSrcAnalysis"
+  | "caNotEnabledCol"
+  | "caNotEnabledView"
+  | "caRangeLabel"
+  | "caRangeAria"
+  | "caPeriod3w"
+  | "caPeriod3m"
+  | "caBrandAria"
+  | "caAllBrands"
+  | "caPickMarketTitle"
+  | "caPickMarketDesc"
+  | "caLoading"
+  | "caWindowLine"
+  | "caNotEnabledTitle"
+  | "caNotEnabledDesc"
+  | "caRetryBtn"
+  | "caFailedTitle"
+  | "caMetaWindow"
+  | "caEmptyWindowTitle"
+  | "caEmptyWindowDesc"
+  | "caMetaMarket"
+  | "caMetaBrand"
+  | "caMetaSampleAll"
+  | "caMetaSampleBrand"
+  | "caCovCollected"
+  | "caCovSubject"
+  | "caCovBanner"
+  | "caCovTitle"
+  | "caCovHint"
+  | "caCovCollectedTitle"
+  | "caCovCollectedSub"
+  | "caCovSubjectTitle"
+  | "caCovSubjectSub"
+  | "caCovBannerTitle"
+  | "caCovBannerSub"
+  | "caRawLine"
+  | "caOutcomeSubject"
+  | "caOutcomeBanner"
+  | "caOutcomeBannerExtra"
+  | "caOutcomeBannerRate"
+  | "caSubjectTitle"
+  | "caAnalyzedHint"
+  | "caLenTitle"
+  | "caLenRange"
+  | "caEmojiAvgTitle"
+  | "caEmojiRate"
+  | "caPersTitle"
+  | "caPersSub"
+  | "caEmojiCountTitle"
+  | "caAnalyzedSamples"
+  | "caTacticsHeading"
+  | "caTacticsHint"
+  | "caNoTactics"
+  | "caDetailCount"
+  | "caCommonPatterns"
+  | "caExamplePrefix"
+  | "caNewPatterns"
+  | "caFirstSeen"
+  | "caFewSamples"
+  | "caAllSubjectsHeading"
+  | "caCtaVerbsHeading"
+  | "caNoCtaVerbs"
+  | "caDiscountHeading"
+  | "caOccurTitle"
+  | "caNoDiscount"
+  | "caTrendHeading"
+  | "caTrendChipTitle"
+  | "caNoTrend"
+  | "caNoSubjectResults"
+  | "caBannerTitle"
+  | "caBannerCtaTitle"
+  | "caBannerCtaSub"
+  | "caColorKindsTitle"
+  | "caColorKindsSub"
+  | "caColorsHeading"
+  | "caColorAria"
+  | "caColorUnit"
+  | "caColorCount"
+  | "caNoColors"
+  | "caCompositionHeading"
+  | "caNoComposition"
+  | "caRatioHeading"
+  | "caNoRatio"
+  | "caCtaPlacementHeading"
+  | "caNoCtaPlacement"
+  | "caSeasonalHeading"
+  | "caNoSeasonal"
+  | "caNoBannerResults"
+  | "caColorGlyph";
 
 export const dictionary: Record<DictionaryKey, Record<Locale, string>> = {
   appTitle: { zh: "EDM 竞品监测", en: "EDM Competitor Monitor" },
@@ -836,6 +1071,335 @@ export const dictionary: Record<DictionaryKey, Record<Locale, string>> = {
     en: "No emails containing “{term}” within the current brand and market filters. Whole or partial words are supported; clear the keyword to search again.",
   },
   calClearSearch: { zh: "清除关键词", en: "Clear Keyword" },
+  // Batch C: state components (st shared, ss snapshot)
+  stEmptyMarketTitle: { zh: "{market}暂无收录邮件", en: "No archived emails for {market}" },
+  stEmptyNoMatch: { zh: "未找到匹配邮件", en: "No matching emails found" },
+  stEmptyMarketDesc: {
+    zh: "该市场在当前统计窗口内暂无邮件收录记录，请切换其他站点或清除筛选条件。",
+    en: "This market has no archived emails in the current statistics window. Switch sites or clear the filters.",
+  },
+  stEmptyFilterDesc: {
+    zh: "当前筛选条件下暂无符合条件的邮件记录，请尝试调整筛选条件。",
+    en: "No email records match the current filters. Try adjusting them.",
+  },
+  stRetryFetch: { zh: "重新拉取", en: "Retry" },
+  stLoadingTitle: { zh: "正在载入邮件数据…", en: "Loading email data…" },
+  stLoadingDesc: {
+    zh: "正在连接 Supabase 校验数据完整性与记录总量，请稍候。",
+    en: "Connecting to Supabase to verify data integrity and totals. Please wait.",
+  },
+  stConfigBadge: { zh: "配置缺失", en: "Missing Configuration" },
+  stConfigTitleEmails: { zh: "Supabase 环境配置缺失", en: "Missing Supabase Configuration" },
+  stConfigDescEmails: {
+    zh: "缺少 Supabase 本地环境配置，请检查环境变量 VITE_SUPABASE_URL 与 VITE_SUPABASE_PUBLISHABLE_KEY。",
+    en: "Supabase environment configuration is missing. Check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
+  },
+  stRecheck: { zh: "重新检测配置", en: "Recheck Configuration" },
+  stIncompleteBadge: { zh: "数据未取齐", en: "Incomplete Data" },
+  stIncompleteTitle: { zh: "邮件数据载入不完整", en: "Email Data Loaded Incompletely" },
+  stIncompleteDescToken: {
+    zh: "当前已接收 {loaded} 封邮件，预期完整记录应为 {expected} 封。部分数据分页拉取中断，可点击重新拉取以补全完整记录。",
+    en: "{loaded} emails received so far; the complete record should be {expected}. Paginated fetching was interrupted — retry to complete the records.",
+  },
+  stIncompleteDescPlain: {
+    zh: "邮件数据分页拉取未取齐，部分记录中断，可点击重新拉取以补全完整记录。",
+    en: "Paginated email fetching was incomplete and some records were interrupted. Retry to complete the records.",
+  },
+  stRefetchFull: { zh: "重新拉取完整数据", en: "Refetch Complete Data" },
+  stNetworkBadge: { zh: "网络请求失败", en: "Network Request Failed" },
+  stErrorTitleEmails: { zh: "邮件数据加载失败", en: "Failed to Load Email Data" },
+  stErrorDescEmails: {
+    zh: "网络连接异常或请求超时，未能成功获取邮件数据，请检查网络连接后重试。",
+    en: "Network error or request timeout — email data could not be fetched. Check your connection and retry.",
+  },
+  stRetryLoad: { zh: "重试加载", en: "Retry Loading" },
+  ssEmptyTitle: { zh: "暂无快照数据", en: "No Snapshot Data" },
+  ssEmptyDesc: { zh: "当前无可用快照记录。", en: "No snapshot records are currently available." },
+  ssLoadingDefault: { zh: "正在加载快照数据…", en: "Loading snapshot data…" },
+  ssLoadingDesc: { zh: "正在拉取数据视图，请稍候。", en: "Fetching the data view. Please wait." },
+  ssConfigTitle: { zh: "快照环境配置缺失", en: "Missing Snapshot Configuration" },
+  ssConfigDesc: { zh: "缺少必要的环境变量配置，请检查相关设置。", en: "Required environment variables are missing. Check the related settings." },
+  ssIncompleteTitle: { zh: "快照数据不完整", en: "Snapshot Data Incomplete" },
+  ssIncompleteDesc: {
+    zh: "快照数据未能完全拉取，请重试以重新同步完整数据。",
+    en: "Snapshot data was not fully fetched. Retry to resync the complete data.",
+  },
+  ssErrorTitle: { zh: "快照加载失败", en: "Failed to Load Snapshot" },
+  ssErrorDesc: { zh: "网络连接异常，未能获取快照数据，请重试。", en: "Network error — snapshot data could not be fetched. Please retry." },
+  // Batch C: MarkdownReport chrome (mr)
+  mrEmptyTitle: { zh: "{market} · OnePage 报告暂无记录", en: "{market} · No records for the OnePage report" },
+  mrEmptyDesc: {
+    zh: "{range} 内暂无邮件（0 封），不生成主题或发送频次结论。可切换市场或重新拉取数据。",
+    en: "No emails (0) within {range}; no theme or frequency conclusions are generated. Switch markets or retry.",
+  },
+  mrRetry: { zh: "重新拉取", en: "Retry" },
+  mrSwitchAll: { zh: "切换至全部市场", en: "Switch to all markets" },
+  mrEyebrow: { zh: "先决策，再查证 · {market}", en: "Decide first, verify second · {market}" },
+  mrTitle: { zh: "EDM 竞品 OnePage", en: "EDM Competitor OnePage" },
+  mrSubNote: {
+    zh: "{range} · 固定截止 {end}。可见收录不等于实际全量发送，也不代表营销效果。",
+    en: "{range} · fixed cutoff {end}. Visible archived emails do not equal actual total sends, nor marketing effectiveness.",
+  },
+  mrSummaryTitle: { zh: "决策摘要", en: "Decision Summary" },
+  mrEvidence: { zh: "证据：", en: "Evidence: " },
+  mrAction: { zh: "建议：", en: "Recommendation: " },
+  mrWatch: { zh: "值得关注", en: "Worth Watching" },
+  mrNextStep: { zh: "下一步：", en: "Next step: " },
+  mrAppendix: { zh: "完整报告附录", en: "Full Report Appendix" },
+  mrAppendixSub: {
+    zh: "统计口径、完整数据表与验证建议 · 点击展开",
+    en: "Definitions, full data tables and validation advice · click to expand",
+  },
+  mrFullReport: { zh: "完整报告", en: "Full Report" },
+  mrTableAria: { zh: "报告数据表：{headers}，可横向滚动", en: "Report data table: {headers}, horizontally scrollable" },
+  // Batch C: ExtendedEmailFilter (ef)
+  efTitle: { zh: "3 个月邮件筛选", en: "3-Month Email Filter" },
+  efHint: { zh: "{range} · {market} · 逐封记录按日期倒序", en: "{range} · {market} · records sorted by date, newest first" },
+  efEmptyMarketDesc: {
+    zh: "该市场在当前统计窗口（{range}）内暂无公开邮件收录记录。看板统计总量均为 Milled 公开收录样本，非品牌私域全量投递。",
+    en: "This market has no publicly archived emails in the current statistics window ({range}). All dashboard totals are Milled public samples, not full private sends.",
+  },
+  efSwitchAll: { zh: "切换至全部市场", en: "Switch to all markets" },
+  efRetry: { zh: "重新拉取", en: "Retry" },
+  efIntro: {
+    zh: "从品牌与主题切入三个月邮件触达（含服务/法务通知），支持关键词高亮搜索、收藏标记与结果全量导出。",
+    en: "Explore three months of email outreach by brand and theme (including service/legal notices), with keyword highlight search, favorites and full-result export.",
+  },
+  efUnitEmails: { zh: "封邮件", en: "emails" },
+  efFilterByBrand: { zh: "按品牌筛选", en: "Filter by Brand" },
+  efFilterByTheme: { zh: "按主题筛选", en: "Filter by Theme" },
+  efFilterByDate: { zh: "按日期筛选", en: "Filter by Date" },
+  efBrandGroupAria: { zh: "按邮件品牌筛选", en: "Filter emails by brand" },
+  efThemeGroupAria: { zh: "按邮件主题筛选", en: "Filter emails by theme" },
+  efChipSelectedSuffix: { zh: "，当前已选中，再次点击清除筛选", en: ", currently selected; click again to clear" },
+  efBrandChipAria: { zh: "{brand}品牌{selected}", en: "{brand} brand{selected}" },
+  efThemeChipAria: { zh: "{label}主题{selected}", en: "{label} theme{selected}" },
+  efDateGroupAria: { zh: "日期快捷范围", en: "Quick date ranges" },
+  efRangeAll: { zh: "全部日期", en: "All Dates" },
+  efRange7d: { zh: "最近 7 天", en: "Last 7 Days" },
+  efRange3w: { zh: "最近三周", en: "Last 3 Weeks" },
+  efRange30d: { zh: "最近一个月", en: "Last Month" },
+  efDateFrom: { zh: "起始", en: "From" },
+  efDateTo: { zh: "结束", en: "To" },
+  efClearDates: { zh: "清除日期", en: "Clear Dates" },
+  efSearchLabel: { zh: "搜索邮件关键词、品牌或主题", en: "Search email keywords, brands or themes" },
+  efSearchPlaceholder: { zh: "搜索邮件关键词、品牌、主题或日期...", en: "Search keywords, brands, themes or dates..." },
+  efClearSearchAria: { zh: "清空搜索内容", en: "Clear search" },
+  efFavOnly: { zh: "仅看收藏 ({n})", en: "Favorites only ({n})" },
+  efCollapseAll: { zh: "收起所有内容", en: "Collapse All" },
+  efExpandAll: { zh: "展开全部内容", en: "Expand All" },
+  efExportAria: { zh: "导出当前全部筛选结果为 CSV，共 {n} 封邮件", en: "Export all current filtered results as CSV, {n} emails" },
+  efExportLabel: { zh: "导出 CSV ({n})", en: "Export CSV ({n})" },
+  efNoResultTitle: { zh: "无符合当前条件的邮件", en: "No Emails Match the Current Filters" },
+  efNoResultDesc: {
+    zh: "{summary}。当前暂无符合该组合条件的公开邮件样本。你可以重置条件或清空搜索词。",
+    en: "{summary}. No public email samples match this combination yet. Reset the filters or clear the search term.",
+  },
+  efResetFilterSearch: { zh: "重置筛选与搜索", en: "Reset Filters & Search" },
+  efTableAria: { zh: "{summary}的邮件列表，可横向滚动", en: "Email list for {summary}, horizontally scrollable" },
+  efCaption: { zh: "{summary}的 3 个月邮件记录，按日期从新到旧排列", en: "3-month email records for {summary}, sorted newest to oldest" },
+  efColFav: { zh: "收藏", en: "Favorite" },
+  efColDate: { zh: "日期", en: "Date" },
+  efColBrand: { zh: "品牌", en: "Brand" },
+  efColMarket: { zh: "市场", en: "Market" },
+  efColTheme: { zh: "主题", en: "Theme" },
+  efColSubject: { zh: "标题", en: "Subject" },
+  efColPreheader: { zh: "副标题", en: "Preheader" },
+  efColKeywords: { zh: "关键词", en: "Keywords" },
+  efColOriginal: { zh: "原文", en: "Original" },
+  efFavAria: { zh: "{action} {brand} {date} 的邮件", en: "{action} the email from {brand} on {date}" },
+  efFavAdd: { zh: "收藏", en: "Favorite" },
+  efFavRemove: { zh: "取消收藏", en: "Unfavorite" },
+  efOriginalAria: { zh: "查看 {brand} {date} 的邮件原文（新窗口打开）", en: "View the original email from {brand} on {date} (opens in a new window)" },
+  efShownPrefix: { zh: "已显示", en: "Showing" },
+  efSortDesc: { zh: "按日期倒序", en: "Newest first" },
+  efLoadMore: { zh: "加载更多（剩余 {n} 封）", en: "Load more ({n} remaining)" },
+  efLoadedAll: { zh: "已加载全部", en: "All Loaded" },
+  efUnlimited: { zh: "不限", en: "Any" },
+  efDateRange: { zh: "{from} 至 {to}", en: "{from} to {to}" },
+  efFilterSummary: {
+    zh: "市场：{market}，品牌：{brand}，主题：{theme}{date}{fav}{search}",
+    en: "Market: {market}, Brand: {brand}, Theme: {theme}{date}{fav}{search}",
+  },
+  efSummaryDate: { zh: "，日期：{range}", en: ", Date: {range}" },
+  efSummaryFav: { zh: "，仅看收藏", en: ", Favorites only" },
+  efSummarySearch: { zh: "，搜索：“{q}”", en: ", Search: “{q}”" },
+  efKwAria: { zh: "{action} {brand} {date} 的全部关键词", en: "{action} all keywords for {brand} on {date}" },
+  efCollapse: { zh: "收起", en: "Collapse" },
+  efExpand: { zh: "展开", en: "Expand" },
+  efExpandAllBtn: { zh: "展开全部", en: "Expand all" },
+  // Batch C: ContentAnalysis (ca) — enum labels
+  caTacUrgency: { zh: "紧迫感 (Urgency)", en: "Urgency" },
+  caTacDiscount: { zh: "折扣促销 (Discount)", en: "Discount" },
+  caTacSocialProof: { zh: "社会认同 (Social Proof)", en: "Social Proof" },
+  caTacNewness: { zh: "新品上架 (Newness)", en: "Newness" },
+  caTacCuriosity: { zh: "好奇悬念 (Curiosity)", en: "Curiosity" },
+  caTacPersonalization: { zh: "个性化 (Personalization)", en: "Personalization" },
+  caTacBenefit: { zh: "利益承诺 (Benefit)", en: "Benefit" },
+  caTacExclusivity: { zh: "专享特权 (Exclusivity)", en: "Exclusivity" },
+  caTacSeasonal: { zh: "节日时效 (Seasonal)", en: "Seasonal" },
+  caLayCentered: { zh: "居中对称 (Centered)", en: "Centered" },
+  caLayLeftAligned: { zh: "左侧对齐 (Left-aligned)", en: "Left-aligned" },
+  caLaySplit: { zh: "左右/图文分栏 (Split)", en: "Split" },
+  caLayFullBleed: { zh: "满版全屏 (Full-bleed)", en: "Full-bleed" },
+  caLayGrid: { zh: "网格拼贴 (Grid)", en: "Grid" },
+  caRatioTextHeavy: { zh: "文字主导 (Text-heavy)", en: "Text-heavy" },
+  caRatioBalanced: { zh: "图文均衡 (Balanced)", en: "Balanced" },
+  caRatioImageHeavy: { zh: "图片主导 (Image-heavy)", en: "Image-heavy" },
+  caCtaTop: { zh: "顶部 (Top)", en: "Top" },
+  caCtaCenter: { zh: "居中 (Center)", en: "Center" },
+  caCtaBottom: { zh: "底部 (Bottom)", en: "Bottom" },
+  caCtaBottomRight: { zh: "右下角 (Bottom-right)", en: "Bottom-right" },
+  caCtaNone: { zh: "未标明/无明显按钮 (None)", en: "None" },
+  caTrendFashion: { zh: "时尚", en: "Fashion" },
+  caTrendTrend: { zh: "趋势", en: "Trend" },
+  caTrendHotspot: { zh: "热点", en: "Hotspot" },
+  caTrendSeasonal: { zh: "季节", en: "Seasonal" },
+  caTrendMarketing: { zh: "营销", en: "Marketing" },
+  // Batch C: ContentAnalysis (ca) — chrome
+  caShareAria: { zh: "{label} 占比", en: "{label} share" },
+  caOutcomeLine: {
+    zh: "成功 {s} 封 ({sp}) · 排队中 {q} 封 ({qp}) · 失败 {f} 封 ({fp}) · 未采集 {m} 封 ({mp}) · 已跳过 {sk} 封 ({skp})",
+    en: "Succeeded {s} ({sp}) · Queued {q} ({qp}) · Failed {f} ({fp}) · Not collected {m} ({mp}) · Skipped {sk} ({skp})",
+  },
+  caOutcomeExpired: { zh: "其中结果过期（成功但无分析时间）{n} 封", en: "Of these, {n} results are stale (succeeded without an analysis time)" },
+  caNoSubjects: { zh: "该分类下暂无可展示的标题", en: "No subjects to show in this category yet" },
+  caTimeout: { zh: "{label}请求超时（{s} 秒）。", en: "{label} request timed out ({s}s)." },
+  caSrcEmails: { zh: "邮件", en: "Emails" },
+  caSrcAnalysis: { zh: "内容分析", en: "Content analysis" },
+  caNotEnabledCol: {
+    zh: "emails 表缺少 subject / preheader / banner_url 列，迁移尚未执行：{detail}",
+    en: "The emails table is missing subject / preheader / banner_url columns; the migration has not run: {detail}",
+  },
+  caNotEnabledView: {
+    zh: "内容分析视图 email_content_analysis_current 不存在或未迁移：{detail}",
+    en: "The email_content_analysis_current view does not exist or is not migrated: {detail}",
+  },
+  caRangeLabel: { zh: "时间范围", en: "Time Range" },
+  caRangeAria: { zh: "选择内容分析统计周期", en: "Select the content analysis period" },
+  caPeriod3w: { zh: "三周", en: "3 Weeks" },
+  caPeriod3m: { zh: "三个月", en: "3 Months" },
+  caBrandAria: { zh: "选择品牌", en: "Select brand" },
+  caAllBrands: { zh: "全部品牌", en: "All Brands" },
+  caPickMarketTitle: { zh: "请选择单个市场查看内容 AI 分析", en: "Select a single market to view content AI analysis" },
+  caPickMarketDesc: {
+    zh: "覆盖率按同市场同窗口的 emails 样本计算；当前为全部市场视图，请先在顶部站点选择器选一个市场。",
+    en: "Coverage is computed from emails samples in the same market and window. You are in the all-markets view — pick a market in the top site selector first.",
+  },
+  caLoading: { zh: "正在加载 {site} 市场内容 AI 分析数据...", en: "Loading content AI analysis data for the {site} market..." },
+  caWindowLine: { zh: "窗口范围：{start} 至 {end}", en: "Window: {start} to {end}" },
+  caNotEnabledTitle: { zh: "内容 AI 分析尚未启用", en: "Content AI Analysis Not Enabled Yet" },
+  caNotEnabledDesc: {
+    zh: "{detail}完成迁移后刷新即可查看；已有原始内容仍按未采集计入覆盖率。",
+    en: "{detail} Refresh after the migration to view it; existing raw content still counts as not collected in coverage.",
+  },
+  caRetryBtn: { zh: "重新尝试", en: "Try Again" },
+  caFailedTitle: { zh: "内容 AI 分析数据拉取失败", en: "Failed to Fetch Content AI Analysis Data" },
+  caMetaWindow: { zh: "日期窗口：{start} ~ {end}", en: "Date window: {start} ~ {end}" },
+  caEmptyWindowTitle: { zh: "窗口内无邮件", en: "No Emails in Window" },
+  caEmptyWindowDesc: {
+    zh: "市场 {site} 在所选日期窗口（{start} ~ {end}）内暂无邮件样本，无法计算覆盖率。",
+    en: "The {site} market has no email samples in the selected window ({start} ~ {end}), so coverage cannot be computed.",
+  },
+  caMetaMarket: { zh: "市场：{site}", en: "Market: {site}" },
+  caMetaBrand: { zh: "品牌：{brand}", en: "Brand: {brand}" },
+  caMetaSampleAll: { zh: "（同市场同窗口 emails 样本：{n} 封）", en: "(emails samples in the same market & window: {n})" },
+  caMetaSampleBrand: { zh: "（同市场同窗口同品牌 emails 样本：{n} 封）", en: "(emails samples for the same brand, market & window: {n})" },
+  caCovCollected: { zh: "采集覆盖：", en: "Collection coverage: " },
+  caCovSubject: { zh: "标题成功：", en: "Subject success: " },
+  caCovBanner: { zh: "Banner 成功：", en: "Banner success: " },
+  caCovTitle: { zh: "覆盖率", en: "Coverage" },
+  caCovHint: {
+    zh: "分母统一为同市场同窗口 emails 样本 {n} 封；标题/Banner 分布占比的分母是各自已分析封数，缺失行不计入分布。",
+    en: "The denominator is uniformly the {n} emails samples in the same market & window; subject/banner distribution shares use their own analyzed counts, and missing rows are excluded.",
+  },
+  caCovCollectedTitle: { zh: "采集覆盖率", en: "Collection Coverage" },
+  caCovCollectedSub: { zh: "{c} / {n} 封已采集任一原始内容", en: "{c} / {n} emails with any raw content collected" },
+  caCovSubjectTitle: { zh: "标题成功率", en: "Subject Success Rate" },
+  caCovSubjectSub: { zh: "{c} / {n} 封标题分析成功", en: "{c} / {n} subjects analyzed successfully" },
+  caCovBannerTitle: { zh: "Banner 成功率", en: "Banner Success Rate" },
+  caCovBannerSub: { zh: "{c} / {n} 封 Banner 分析成功", en: "{c} / {n} banners analyzed successfully" },
+  caRawLine: {
+    zh: "原始内容采集：有标题 {a} 封 · 有副标题 {b} 封 · 有 Banner 图 {c} 封 · 无任一原始内容 {d} 封（未采集的邮件不进入分析，标题成功率也不把它们算成“无 CTA”）。",
+    en: "Raw content collection: {a} with subjects · {b} with preheaders · {c} with banner images · {d} with none (uncollected emails never enter analysis, and the subject success rate does not count them as “no CTA”).",
+  },
+  caOutcomeSubject: { zh: "标题分析状态", en: "Subject Analysis Status" },
+  caOutcomeBanner: { zh: "Banner 分析状态", en: "Banner Analysis Status" },
+  caOutcomeBannerExtra: { zh: "无 Banner 图 {n} 封", en: "{n} without a banner image" },
+  caOutcomeBannerRate: { zh: " · 在有 Banner 图的邮件中成功率 {r}%", en: " · success rate among emails with a banner image: {r}%" },
+  caSubjectTitle: { zh: "主副标题策略分析", en: "Subject & Preheader Strategy" },
+  caAnalyzedHint: {
+    zh: "已分析 {n} 封（分布占比按已分析计） · 未采集/排队/失败见覆盖率",
+    en: "{n} analyzed (shares are based on analyzed emails) · see Coverage for not-collected / queued / failed",
+  },
+  caLenTitle: { zh: "标题平均字符", en: "Avg. Subject Length" },
+  caLenRange: { zh: "范围 {min} ~ {max}", en: "Range {min} ~ {max}" },
+  caEmojiAvgTitle: { zh: "平均 Emoji", en: "Avg. Emojis" },
+  caEmojiRate: { zh: "含 Emoji 占比 {r}%", en: "{r}% contain emojis" },
+  caPersTitle: { zh: "个性化元素", en: "Personalization Elements" },
+  caPersSub: { zh: "强信号：模板变量/为你定制", en: "Strong signals: template variables / made-for-you" },
+  caEmojiCountTitle: { zh: "含 Emoji 封数", en: "Emails with Emojis" },
+  caAnalyzedSamples: { zh: "共 {n} 封已分析样本", en: "{n} analyzed samples in total" },
+  caTacticsHeading: { zh: "标题策略分布 (Tactics)", en: "Tactic Distribution" },
+  caTacticsHint: {
+    zh: "点击某个分类，展开该类型下的全部标题/副标题与句式总结",
+    en: "Click a category to expand all its subjects/preheaders and the pattern summary",
+  },
+  caNoTactics: { zh: "暂未标记任何策略标签", en: "No tactic tags marked yet" },
+  caDetailCount: { zh: "共 {n} 封", en: "{n} emails" },
+  caCommonPatterns: { zh: "常用句式（数字/价格已抽象为占位符）", en: "Common patterns (numbers/prices abstracted as placeholders)" },
+  caExamplePrefix: { zh: "例：", en: "Example: " },
+  caNewPatterns: { zh: "新句式（最近 7 天内首次出现）", en: "New patterns (first seen in the last 7 days)" },
+  caFirstSeen: { zh: "首见 {d}", en: "First seen {d}" },
+  caFewSamples: { zh: "该分类样本较少，未形成可归纳的句式", en: "Too few samples in this category to generalize patterns" },
+  caAllSubjectsHeading: { zh: "全部标题 / 副标题", en: "All Subjects / Preheaders" },
+  caCtaVerbsHeading: { zh: "CTA 高频动词 Top", en: "Top CTA Verbs" },
+  caNoCtaVerbs: {
+    zh: "已分析样本中无提取到的行动召唤动词（未分析行不计入）",
+    en: "No call-to-action verbs extracted from analyzed samples (unanalyzed rows excluded)",
+  },
+  caDiscountHeading: { zh: "折扣促销话术 (去重收录)", en: "Discount Phrases (deduplicated)" },
+  caOccurTitle: { zh: "出现 {n} 次", en: "Appears {n} times" },
+  caNoDiscount: { zh: "已分析样本中未检测到明确的折扣短语", en: "No explicit discount phrases detected in analyzed samples" },
+  caTrendHeading: { zh: "趋势 · 热点 · 季节词 (去重收录)", en: "Trend · Hotspot · Seasonal Terms (deduplicated)" },
+  caTrendChipTitle: { zh: "出现 {n} 次，点击查看相关邮件", en: "Appears {n} times — click to view related emails" },
+  caNoTrend: {
+    zh: "已分析样本中暂未抽取到趋势/热点词（新版分析补跑后自动填充）",
+    en: "No trend/hotspot terms extracted yet (filled automatically after the new analysis backfill)",
+  },
+  caNoSubjectResults: {
+    zh: "该窗口内 {n} 封邮件尚无标题分析成功结果（成功 0 封；排队/失败/未采集见上方覆盖率）。",
+    en: "None of the {n} emails in this window has a successful subject analysis yet (0 succeeded; see Coverage above for queued / failed / not collected).",
+  },
+  caBannerTitle: { zh: "Banner 视觉风格分析", en: "Banner Visual Style" },
+  caBannerCtaTitle: { zh: "Banner CTA 包含率（视觉）", en: "Banner CTA Presence (visual)" },
+  caBannerCtaSub: {
+    zh: "共 {a} / {b} 封已分析；仅指视觉可见按钮，不代表可点击",
+    en: "{a} / {b} analyzed; refers only to visually visible buttons, not clickability",
+  },
+  caColorKindsTitle: { zh: "识别主色族种类", en: "Dominant Color Families Found" },
+  caColorKindsSub: { zh: "色族标签按频次降序 Top（模型不直接编 Hex）", en: "Color-family labels by frequency (the model never invents Hex values)" },
+  caColorsHeading: { zh: "视觉主色族分布 (Dominant Colors)", en: "Dominant Color Families" },
+  caColorAria: { zh: "颜色 {hex}", en: "Color {hex}" },
+  caColorUnit: { zh: " 色", en: "" },
+  caColorCount: { zh: "{count} 次 ({percentage}%)", en: "{count}× ({percentage}%)" },
+  caNoColors: { zh: "暂无色彩提取数据", en: "No color data extracted yet" },
+  caCompositionHeading: { zh: "构图风格分布 (Composition)", en: "Composition Distribution" },
+  caNoComposition: { zh: "暂无构图风格标签", en: "No composition tags yet" },
+  caRatioHeading: { zh: "图文比例分布 (Text-Image Ratio)", en: "Text–Image Ratio Distribution" },
+  caNoRatio: { zh: "暂无图文比例数据", en: "No text–image ratio data yet" },
+  caCtaPlacementHeading: { zh: "CTA 引导位置分布（视觉位置）", en: "CTA Placement Distribution (visual)" },
+  caNoCtaPlacement: { zh: "暂无 CTA 位置数据", en: "No CTA placement data yet" },
+  caSeasonalHeading: { zh: "季节与节日氛围 (Seasonal Cues)", en: "Seasonal & Holiday Cues" },
+  caNoSeasonal: {
+    zh: "已分析样本中无可见季节/节日氛围标签（标题里的季节词不计入）",
+    en: "No visible seasonal/holiday cues in analyzed samples (seasonal words in subjects do not count)",
+  },
+  caNoBannerResults: {
+    zh: "该窗口内 {n} 封邮件尚无 Banner 视觉分析成功结果（成功 0 封；排队/失败/未采集/无 Banner 见上方覆盖率）。",
+    en: "None of the {n} emails in this window has a successful banner visual analysis yet (0 succeeded; see Coverage above for queued / failed / not collected / no banner).",
+  },
+  caColorGlyph: { zh: "色", en: "C" },
 };
 
 type LocaleContextValue = {

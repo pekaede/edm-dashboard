@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import { useLocale } from "../i18n";
 import { buildLiveOnePage, buildOnePageSummary } from "../onepage-report";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { EmptyState } from "./EmptyState";
@@ -138,6 +139,7 @@ function renderInline(content: string): ReactNode[] {
 }
 
 export function MarkdownReport() {
+  const { t, locale } = useLocale();
   const emailData = useSiteEmails();
   const { status, emails, meta, retry } = emailData;
   const { market, setMarket } = useSiteSelection();
@@ -164,9 +166,9 @@ export function MarkdownReport() {
             <>
               <div className={EMPTY_STATE_CLASS_NAME}>
                 <EmptyState
-                  title={`${meta.market} · OnePage 报告暂无记录`}
-                  description={`${meta.range} 内暂无邮件（0 封），不生成主题或发送频次结论。可切换市场或重新拉取数据。`}
-                  actionLabel={market === null ? "重新拉取" : "切换至全部市场"}
+                  title={t("mrEmptyTitle").replace("{market}", meta.market)}
+                  description={t("mrEmptyDesc").replace("{range}", meta.range)}
+                  actionLabel={market === null ? t("mrRetry") : t("mrSwitchAll")}
                   onAction={market === null ? retry : () => setMarket(null)}
                 />
               </div>
@@ -182,34 +184,34 @@ export function MarkdownReport() {
       <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         <header className="mb-6">
-          <p className="text-xs font-bold tracking-wide text-[var(--text-secondary)]">先决策，再查证 · {meta.market}</p>
-          <h2 className="mt-2 text-2xl font-extrabold leading-snug text-[var(--text-heading)]">EDM 竞品 OnePage</h2>
-          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{meta.range} · 固定截止 {meta.windowEnd}。可见收录不等于实际全量发送，也不代表营销效果。</p>
+          <p className="text-xs font-bold tracking-wide text-[var(--text-secondary)]">{t("mrEyebrow").replace("{market}", meta.market)}</p>
+          <h2 className="mt-2 text-2xl font-extrabold leading-snug text-[var(--text-heading)]">{t("mrTitle")}</h2>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mrSubNote").replace("{range}", meta.range).replace("{end}", meta.windowEnd)}</p>
         </header>
         {summary ? (
-          <section aria-label="决策摘要" className="space-y-5">
-            <h3 className="text-xl font-bold text-[var(--text-heading)]">决策摘要</h3>
+          <section aria-label={t("mrSummaryTitle")} className="space-y-5">
+            <h3 className="text-xl font-bold text-[var(--text-heading)]">{t("mrSummaryTitle")}</h3>
             <div className="grid gap-4">
               {summary.decisions.map((decision) => (
                 <section key={decision.title} className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5">
                   <h4 className="font-bold text-[var(--text-heading)]">{decision.title}</h4>
                   <p className="mt-2 text-sm leading-6 text-[var(--text-body)]">{decision.conclusion}</p>
-                  <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">证据：{decision.evidence}</p>
-                  <p className="mt-3 border-l-2 border-[var(--accent-ink)] pl-3 text-sm leading-6 text-[var(--text-body)]"><strong>建议：</strong>{decision.action}</p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mrEvidence")}{decision.evidence}</p>
+                  <p className="mt-3 border-l-2 border-[var(--accent-ink)] pl-3 text-sm leading-6 text-[var(--text-body)]"><strong>{t("mrAction")}</strong>{decision.action}</p>
                 </section>
               ))}
             </div>
             <section className="rounded-xl border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] p-4 sm:p-5">
-              <h4 className="font-bold text-[var(--status-warning)]">值得关注</h4>
+              <h4 className="font-bold text-[var(--status-warning)]">{t("mrWatch")}</h4>
               <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--text-body)]">
                 {summary.watchpoints.map((point) => <li key={point}>{point}</li>)}
               </ul>
             </section>
-            <p className="rounded-xl bg-[var(--surface-subtle)] p-4 text-sm leading-6 text-[var(--text-body)]"><strong>下一步：</strong>{summary.nextStep}</p>
+            <p className="rounded-xl bg-[var(--surface-subtle)] p-4 text-sm leading-6 text-[var(--text-body)]"><strong>{t("mrNextStep")}</strong>{summary.nextStep}</p>
           </section>
         ) : null}
         <details className="mt-8 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 sm:p-5">
-          <summary className="min-h-11 cursor-pointer rounded py-2 font-bold text-[var(--text-heading)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"><h3 className="inline">完整报告附录<span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">统计口径、完整数据表与验证建议 · 点击展开</span></h3></summary>
+          <summary className="min-h-11 cursor-pointer rounded py-2 font-bold text-[var(--text-heading)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"><h3 className="inline">{t("mrAppendix")}<span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">{t("mrAppendixSub")}</span></h3></summary>
           <div className="min-w-0">
         {blocks.map((block, blockIndex) => {
           if (block.type === "heading") {
@@ -217,7 +219,7 @@ export function MarkdownReport() {
               return (
                 <header key={blockIndex} className="mb-9 border-b border-slate-200 pb-7 sm:mb-10 sm:pb-8">
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
-                    完整报告
+                    {t("mrFullReport")}
                   </p>
                   <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-slate-950 sm:text-3xl">
                     {renderInline(block.content)}
@@ -284,7 +286,7 @@ export function MarkdownReport() {
                 key={blockIndex}
                 className="report-table-scroll my-7 overflow-x-auto rounded-xl border border-[var(--border-default)] p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                 role="region"
-                aria-label={`报告数据表：${block.headers.join("、")}，可横向滚动`}
+                aria-label={t("mrTableAria").replace("{headers}", block.headers.join(locale === "zh" ? "、" : ", "))}
                 tabIndex={0}
               >
                 <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-6">

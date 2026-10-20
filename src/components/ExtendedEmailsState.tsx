@@ -1,4 +1,5 @@
 import type { ExtendedEmailMeta, ExtendedEmailsResult } from "../email-data";
+import { useLocale } from "../i18n";
 import { EmptyState } from "./EmptyState";
 
 function isConfigError(error: string | null | undefined): boolean {
@@ -33,20 +34,19 @@ export function ExtendedEmailsState({
   actionLabel,
   onAction,
 }: ExtendedEmailsStateProps) {
+  const { t } = useLocale();
   // 1. P0-06 空态：筛选零结果、市场零记录时统一用 EmptyState
   const isZeroRecords = status === "ready" && typeof total === "number" && total === 0;
   if (isEmpty || isZeroRecords || (status === "ready" && emptyTitle)) {
     const marketName = meta?.market;
     return (
       <EmptyState
-        title={emptyTitle ?? (marketName ? `${marketName}暂无收录邮件` : "未找到匹配邮件")}
+        title={emptyTitle ?? (marketName ? t("stEmptyMarketTitle").replace("{market}", marketName) : t("stEmptyNoMatch"))}
         description={
           emptyDescription ??
-          (marketName
-            ? `该市场在当前统计窗口内暂无邮件收录记录，请切换其他站点或清除筛选条件。`
-            : "当前筛选条件下暂无符合条件的邮件记录，请尝试调整筛选条件。")
+          (marketName ? t("stEmptyMarketDesc") : t("stEmptyFilterDesc"))
         }
-        actionLabel={actionLabel ?? (onAction ? "重置筛选" : retry ? "重新拉取" : undefined)}
+        actionLabel={actionLabel ?? (onAction ? t("emptyStateReset") : retry ? t("stRetryFetch") : undefined)}
         onAction={onAction ?? retry}
       />
     );
@@ -90,10 +90,10 @@ export function ExtendedEmailsState({
           </svg>
         </div>
         <h3 className="mt-4 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          正在载入邮件数据…
+          {t("stLoadingTitle")}
         </h3>
         <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-          正在连接 Supabase 校验数据完整性与记录总量，请稍候。
+          {t("stLoadingDesc")}
         </p>
       </div>
     );
@@ -126,13 +126,13 @@ export function ExtendedEmailsState({
           </svg>
         </div>
         <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-warning-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-warning)]">
-          配置缺失
+          {t("stConfigBadge")}
         </span>
         <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          Supabase 环境配置缺失
+          {t("stConfigTitleEmails")}
         </h3>
         <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-          {error || "缺少 Supabase 本地环境配置，请检查环境变量 VITE_SUPABASE_URL 与 VITE_SUPABASE_PUBLISHABLE_KEY。"}
+          {error || t("stConfigDescEmails")}
         </p>
         {retry ? (
           <button
@@ -140,7 +140,7 @@ export function ExtendedEmailsState({
             onClick={retry}
             className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
-            重新检测配置
+            {t("stRecheck")}
           </button>
         ) : null}
       </div>
@@ -154,8 +154,8 @@ export function ExtendedEmailsState({
     const description = error
       ? error
       : safeExpected !== null
-        ? `当前已接收 ${safeLoaded} 封邮件，预期完整记录应为 ${safeExpected} 封。部分数据分页拉取中断，可点击重新拉取以补全完整记录。`
-        : "邮件数据分页拉取未取齐，部分记录中断，可点击重新拉取以补全完整记录。";
+        ? t("stIncompleteDescToken").replace("{loaded}", String(safeLoaded)).replace("{expected}", String(safeExpected))
+        : t("stIncompleteDescPlain");
 
     return (
       <div
@@ -182,10 +182,10 @@ export function ExtendedEmailsState({
           </svg>
         </div>
         <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-warning-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-warning)]">
-          数据未取齐
+          {t("stIncompleteBadge")}
         </span>
         <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          邮件数据载入不完整
+          {t("stIncompleteTitle")}
         </h3>
         <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
           {description}
@@ -196,7 +196,7 @@ export function ExtendedEmailsState({
             onClick={retry}
             className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
-            重新拉取完整数据
+            {t("stRefetchFull")}
           </button>
         ) : null}
       </div>
@@ -229,13 +229,13 @@ export function ExtendedEmailsState({
         </svg>
       </div>
       <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-error-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-error)]">
-        网络请求失败
+        {t("stNetworkBadge")}
       </span>
       <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-        邮件数据加载失败
+        {t("stErrorTitleEmails")}
       </h3>
       <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-        {error || "网络连接异常或请求超时，未能成功获取邮件数据，请检查网络连接后重试。"}
+        {error || t("stErrorDescEmails")}
       </p>
       {retry ? (
         <button
@@ -243,7 +243,7 @@ export function ExtendedEmailsState({
           onClick={retry}
           className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
-          重试加载
+          {t("stRetryLoad")}
         </button>
       ) : null}
     </div>

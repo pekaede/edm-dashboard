@@ -10,6 +10,7 @@ import {
 } from "../email-content-analysis";
 import { fetchEmailDataset } from "../supabase";
 import { EXTENDED_EMAIL_META } from "../email-data";
+import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 
@@ -101,39 +102,44 @@ interface Coverage {
   bannerSuccessRateAmongWithBanner: number | null;
 }
 
-const TACTIC_LABEL_MAP: Record<string, string> = {
-  urgency: "紧迫感 (Urgency)",
-  discount: "折扣促销 (Discount)",
-  social_proof: "社会认同 (Social Proof)",
-  newness: "新品上架 (Newness)",
-  curiosity: "好奇悬念 (Curiosity)",
-  personalization: "个性化 (Personalization)",
-  benefit: "利益承诺 (Benefit)",
-  exclusivity: "专享特权 (Exclusivity)",
-  seasonal: "节日时效 (Seasonal)",
+const TACTIC_LABEL_MAP: Record<string, DictionaryKey> = {
+  urgency: "caTacUrgency",
+  discount: "caTacDiscount",
+  social_proof: "caTacSocialProof",
+  newness: "caTacNewness",
+  curiosity: "caTacCuriosity",
+  personalization: "caTacPersonalization",
+  benefit: "caTacBenefit",
+  exclusivity: "caTacExclusivity",
+  seasonal: "caTacSeasonal",
 };
 
-const COMPOSITION_LABEL_MAP: Record<string, string> = {
-  centered: "居中对称 (Centered)",
-  "left-aligned": "左侧对齐 (Left-aligned)",
-  "split-layout": "左右/图文分栏 (Split)",
-  "full-bleed": "满版全屏 (Full-bleed)",
-  grid: "网格拼贴 (Grid)",
+const COMPOSITION_LABEL_MAP: Record<string, DictionaryKey> = {
+  centered: "caLayCentered",
+  "left-aligned": "caLayLeftAligned",
+  "split-layout": "caLaySplit",
+  "full-bleed": "caLayFullBleed",
+  grid: "caLayGrid",
 };
 
-const RATIO_LABEL_MAP: Record<string, string> = {
-  "text-heavy": "文字主导 (Text-heavy)",
-  balanced: "图文均衡 (Balanced)",
-  "image-heavy": "图片主导 (Image-heavy)",
+const RATIO_LABEL_MAP: Record<string, DictionaryKey> = {
+  "text-heavy": "caRatioTextHeavy",
+  balanced: "caRatioBalanced",
+  "image-heavy": "caRatioImageHeavy",
 };
 
-const CTA_POSITION_LABEL_MAP: Record<string, string> = {
-  top: "顶部 (Top)",
-  center: "居中 (Center)",
-  bottom: "底部 (Bottom)",
-  "bottom-right": "右下角 (Bottom-right)",
-  none: "未标明/无明显按钮 (None)",
+const CTA_POSITION_LABEL_MAP: Record<string, DictionaryKey> = {
+  top: "caCtaTop",
+  center: "caCtaCenter",
+  bottom: "caCtaBottom",
+  "bottom-right": "caCtaBottomRight",
+  none: "caCtaNone",
 };
+
+function labelText(map: Record<string, DictionaryKey>, key: string): string {
+  const dictKey = map[key];
+  return dictKey ? dictionary[dictKey][getCurrentLocale()] : key;
+}
 
 const REQUEST_TIMEOUT_MS = 60_000;
 
@@ -162,7 +168,15 @@ function isNotEnabledError(error: unknown): boolean {
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<T>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${label}请求超时（${ms / 1000} 秒）。`)), ms);
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            dictionary.caTimeout[getCurrentLocale()].replace("{label}", label).replace("{s}", String(ms / 1000)),
+          ),
+        ),
+      ms,
+    );
   });
   return Promise.race([promise, timeout]).finally(() => {
     if (timer !== undefined) clearTimeout(timer);
@@ -266,7 +280,7 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
     tactics: Array.from(tacticCountMap.entries())
       .map(([key, count]) => ({
         key,
-        label: TACTIC_LABEL_MAP[key] || key,
+        label: labelText(TACTIC_LABEL_MAP, key),
         count,
         percentage: Math.round((count / analyzedCount) * 100),
       }))
@@ -359,11 +373,11 @@ function aggregateBannerAnalysis(results: BannerAnalysis[]): BannerSummary {
     }
   }
 
-  const toMetric = (map: Map<string, number>, labels: Record<string, string>): MetricCount[] =>
+  const toMetric = (map: Map<string, number>, labels: Record<string, DictionaryKey>): MetricCount[] =>
     Array.from(map.entries())
       .map(([key, count]) => ({
         key,
-        label: labels[key] || key,
+        label: labelText(labels, key),
         count,
         percentage: Math.round((count / analyzedCount) * 100),
       }))
@@ -402,6 +416,7 @@ function HorizontalProgressBar({
   percentage: number;
   total: number;
 }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
@@ -409,7 +424,7 @@ function HorizontalProgressBar({
           {label}
         </span>
         <span className="tabular-nums text-[var(--text-secondary)] shrink-0 ml-2">
-          {count} 封 ({percentage}%)
+          {count} {t("marketUnitEmails")} ({percentage}%)
         </span>
       </div>
       <div
@@ -418,7 +433,7 @@ function HorizontalProgressBar({
         aria-valuenow={count}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label={`${label} 占比`}
+        aria-label={t("caShareAria").replace("{label}", label)}
       >
         <div
           className="h-full rounded-full bg-indigo-600 transition-all duration-300"
@@ -460,30 +475,33 @@ function OutcomeBreakdown({
   sample: number;
   extra?: string;
 }) {
+  const { t } = useLocale();
   const pct = (n: number) => (sample > 0 ? `${Math.round((n / sample) * 100)}%` : "—");
   return (
     <div className="space-y-1 text-xs">
       <p className="font-semibold text-[var(--text-heading)]">{label}</p>
       <p className="text-[var(--text-secondary)]">
-        成功 {counts.success} 封 ({pct(counts.success)}) · 排队中 {counts.queued} 封 (
-        {pct(counts.queued)}) · 失败 {counts.failed} 封 ({pct(counts.failed)}) · 未采集{" "}
-        {counts.missing} 封 ({pct(counts.missing)}) · 已跳过 {counts.skipped} 封 (
-        {pct(counts.skipped)})
+        {t("caOutcomeLine")
+          .replace("{s}", String(counts.success)).replace("{sp}", pct(counts.success))
+          .replace("{q}", String(counts.queued)).replace("{qp}", pct(counts.queued))
+          .replace("{f}", String(counts.failed)).replace("{fp}", pct(counts.failed))
+          .replace("{m}", String(counts.missing)).replace("{mp}", pct(counts.missing))
+          .replace("{sk}", String(counts.skipped)).replace("{skp}", pct(counts.skipped))}
       </p>
       <p className="text-[var(--text-secondary)]">
-        其中结果过期（成功但无分析时间）{counts.expired} 封
+        {t("caOutcomeExpired").replace("{n}", String(counts.expired))}
         {extra ? ` · ${extra}` : ""}
       </p>
     </div>
   );
 }
 
-const TREND_CATEGORY_LABEL_MAP: Record<string, string> = {
-  fashion: "时尚",
-  trend: "趋势",
-  hotspot: "热点",
-  seasonal: "季节",
-  marketing: "营销",
+const TREND_CATEGORY_LABEL_MAP: Record<string, DictionaryKey> = {
+  fashion: "caTrendFashion",
+  trend: "caTrendTrend",
+  hotspot: "caTrendHotspot",
+  seasonal: "caTrendSeasonal",
+  marketing: "caTrendMarketing",
 };
 
 /** 展开列表里的一封邮件（标题/副标题原文）。 */
@@ -511,9 +529,10 @@ function escapeRegExp(text: string): string {
  * 同一模板即同一句式。例："Up to 50% Off + Free Shipping" → "up to {n}% off + free shipping"。
  */
 function toSubjectTemplate(subject: string, brand: string): string {
+  const en = getCurrentLocale() === "en";
   let s = subject.trim();
-  if (brand) s = s.replace(new RegExp(escapeRegExp(brand), "gi"), "{品牌}");
-  s = s.replace(/[$£€]\s?\d[\d,]*(?:\.\d{1,2})?/g, "{价格}");
+  if (brand) s = s.replace(new RegExp(escapeRegExp(brand), "gi"), en ? "{brand}" : "{品牌}");
+  s = s.replace(/[$£€]\s?\d[\d,]*(?:\.\d{1,2})?/g, en ? "{price}" : "{价格}");
   s = s.replace(/\d+(?:\.\d+)?\s*%/g, "{n}%");
   s = s.replace(/\d[\d,]*(?:\.\d+)?/g, "{n}");
   return s.replace(/\s+/g, " ").trim().toLowerCase();
@@ -569,8 +588,9 @@ function minePatterns(items: SubjectListItem[]): { common: PatternGroup[]; fresh
 
 /** 展开区共用：某分类/词条下的全部标题/副标题列表（可滚动）。 */
 function SubjectEmailList({ items }: { items: SubjectListItem[] }) {
+  const { t } = useLocale();
   if (items.length === 0) {
-    return <p className="text-xs text-[var(--text-secondary)] italic">该分类下暂无可展示的标题</p>;
+    return <p className="text-xs text-[var(--text-secondary)] italic">{t("caNoSubjects")}</p>;
   }
   return (
     <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
@@ -593,6 +613,7 @@ function SubjectEmailList({ items }: { items: SubjectListItem[] }) {
 }
 
 export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisProps) {
+  const { t } = useLocale();
   const [period, setPeriod] = useState<AnalysisPeriod>("threeWeeks");
   const [brand, setBrand] = useState<string | null>(null);
   const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
@@ -622,24 +643,24 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
 
     (async () => {
       const [emailsResult, analysisResult] = await Promise.allSettled([
-        withTimeout(fetchEmailDataset(), REQUEST_TIMEOUT_MS, "邮件"),
+        withTimeout(fetchEmailDataset(), REQUEST_TIMEOUT_MS, t("caSrcEmails")),
         withTimeout(
           fetchContentAnalysis({ market: site, start: activeWindow.start, end: activeWindow.end, signal: controller.signal }),
           REQUEST_TIMEOUT_MS,
-          "内容分析",
+          t("caSrcAnalysis"),
         ),
       ]);
       // 取消后不回写状态（AbortController 已触发或组件已卸载）。
       if (cancelled || controller.signal.aborted) return;
 
       if (emailsResult.status === "rejected" && isNotEnabledError(emailsResult.reason)) {
-        setNotEnabledDetail(`emails 表缺少 subject / preheader / banner_url 列，迁移尚未执行：${String(emailsResult.reason)}`);
+        setNotEnabledDetail(t("caNotEnabledCol").replace("{detail}", String(emailsResult.reason)));
         setLoading(false);
         return;
       }
       if (analysisResult.status === "rejected" && isNotEnabledError(analysisResult.reason)) {
         setNotEnabledDetail(
-          `内容分析视图 email_content_analysis_current 不存在或未迁移：${String(analysisResult.reason)}`,
+          t("caNotEnabledView").replace("{detail}", String(analysisResult.reason)),
         );
         setLoading(false);
         return;
@@ -821,16 +842,16 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   // 周期切换（与词云同款式）：默认三周，可切三个月（数据窗口）。
   const periodToggle = (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm font-bold text-[var(--text-control)]">时间范围</span>
+      <span className="text-sm font-bold text-[var(--text-control)]">{t("caRangeLabel")}</span>
       <div
         role="group"
-        aria-label="选择内容分析统计周期"
+        aria-label={t("caRangeAria")}
         className="grid grid-cols-2 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] p-1"
       >
         {([
-          ["threeWeeks", "三周"],
-          ["threeMonths", "三个月"],
-        ] as const).map(([value, label]) => {
+          ["threeWeeks", "caPeriod3w"],
+          ["threeMonths", "caPeriod3m"],
+        ] as const).map(([value, labelKey]) => {
           const isSelected = period === value;
           return (
             <button
@@ -844,7 +865,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   : "text-[var(--text-label)] hover:bg-[var(--surface-wordcloud-hover)] hover:text-[var(--text-control)]"
               }`}
             >
-              {label}
+              {t(labelKey)}
             </button>
           );
         })}
@@ -856,14 +877,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   const brandSelect =
     brandOptions.length > 0 ? (
       <label className="flex flex-wrap items-center gap-3 text-sm font-bold text-[var(--text-control)]">
-        品牌
+        {t("efColBrand")}
         <select
-          aria-label="选择品牌"
+          aria-label={t("caBrandAria")}
           value={activeBrand ?? ""}
           onChange={(e) => setBrand(e.target.value === "" ? null : e.target.value)}
           className="min-h-10 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-bold text-[var(--text-control)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
         >
-          <option value="">全部品牌</option>
+          <option value="">{t("caAllBrands")}</option>
           {brandOptions.map((b) => (
             <option key={b} value={b}>
               {b}
@@ -881,9 +902,9 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         role="status"
         aria-live="polite"
       >
-        <h3 className="text-base font-semibold text-[var(--text-heading)]">请选择单个市场查看内容 AI 分析</h3>
+        <h3 className="text-base font-semibold text-[var(--text-heading)]">{t("caPickMarketTitle")}</h3>
         <p className="mt-2 max-w-xl text-xs leading-relaxed text-[var(--text-secondary)]">
-          覆盖率按同市场同窗口的 emails 样本计算；当前为全部市场视图，请先在顶部站点选择器选一个市场。
+          {t("caPickMarketDesc")}
         </p>
       </div>
     );
@@ -899,10 +920,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       >
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
         <p className="mt-4 text-sm font-medium text-[var(--text-body)]">
-          正在加载 {site} 市场内容 AI 分析数据...
+          {t("caLoading").replace("{site}", site)}
         </p>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">
-          窗口范围：{activeWindow.start} 至 {activeWindow.end}
+          {t("caWindowLine").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
         </p>
       </div>
     );
@@ -912,16 +933,16 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   if (notEnabledDetail !== null) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-        <h3 className="text-base font-semibold">内容 AI 分析尚未启用</h3>
+        <h3 className="text-base font-semibold">{t("caNotEnabledTitle")}</h3>
         <p className="mt-2 text-xs leading-relaxed opacity-90 break-words">
-          {notEnabledDetail}完成迁移后刷新即可查看；已有原始内容仍按未采集计入覆盖率。
+          {t("caNotEnabledDesc").replace("{detail}", notEnabledDetail)}
         </p>
         <button
           type="button"
           onClick={() => setRetryKey((k) => k + 1)}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-amber-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-amber-800 transition"
         >
-          重新尝试
+          {t("caRetryBtn")}
         </button>
       </div>
     );
@@ -931,14 +952,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   if (error) {
     return (
       <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
-        <h3 className="text-base font-semibold">内容 AI 分析数据拉取失败</h3>
+        <h3 className="text-base font-semibold">{t("caFailedTitle")}</h3>
         <p className="mt-2 text-xs leading-relaxed opacity-90 break-words">{error}</p>
         <button
           type="button"
           onClick={() => setRetryKey((k) => k + 1)}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-rose-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-800 transition"
         >
-          重新尝试
+          {t("caRetryBtn")}
         </button>
       </div>
     );
@@ -954,12 +975,12 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             {brandSelect}
           </div>
           <span className="text-xs text-[var(--text-secondary)]">
-            日期窗口：{activeWindow.start} ~ {activeWindow.end}
+            {t("caMetaWindow").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
           </span>
         </div>
         <EmptyState
-          title="窗口内无邮件"
-          description={`市场 ${site} 在所选日期窗口（${activeWindow.start} ~ ${activeWindow.end}）内暂无邮件样本，无法计算覆盖率。`}
+          title={t("caEmptyWindowTitle")}
+          description={t("caEmptyWindowDesc").replace("{site}", site).replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
         />
       </div>
     );
@@ -973,18 +994,18 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-5 py-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-            市场：{site}
+            {t("caMetaMarket").replace("{site}", site)}
           </span>
           {activeBrand !== null && (
             <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-              品牌：{activeBrand}
+              {t("caMetaBrand").replace("{brand}", activeBrand)}
             </span>
           )}
           <span className="text-xs text-[var(--text-secondary)]">
-            日期窗口：{activeWindow.start} ~ {activeWindow.end}
+            {t("caMetaWindow").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            （同市场同窗口{activeBrand !== null ? "同品牌" : ""} emails 样本：{totalEmails} 封）
+            {t(activeBrand !== null ? "caMetaSampleBrand" : "caMetaSampleAll").replace("{n}", String(totalEmails))}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -993,17 +1014,17 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         </div>
         <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
           <span>
-            采集覆盖：
+            {t("caCovCollected")}
             <strong className="text-[var(--text-heading)]">{coverage.collectionRate}%</strong>
           </span>
           <span className="text-[var(--border-default)]">|</span>
           <span>
-            标题成功：
+            {t("caCovSubject")}
             <strong className="text-[var(--text-heading)]">{coverage.subjectSuccessRate}%</strong>
           </span>
           <span className="text-[var(--border-default)]">|</span>
           <span>
-            Banner 成功：
+            {t("caCovBanner")}
             <strong className="text-[var(--text-heading)]">{coverage.bannerSuccessRate}%</strong>
           </span>
         </div>
@@ -1011,41 +1032,43 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
 
       {/* 覆盖率：三个率分开显示，分母统一为 emails 样本数；缺失不算成“无 CTA”“零 Emoji”。 */}
       <Card
-        title="覆盖率"
-        hint={`分母统一为同市场同窗口 emails 样本 ${totalEmails} 封；标题/Banner 分布占比的分母是各自已分析封数，缺失行不计入分布。`}
+        title={t("caCovTitle")}
+        hint={t("caCovHint").replace("{n}", String(totalEmails))}
       >
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <StatPill
-              title="采集覆盖率"
+              title={t("caCovCollectedTitle")}
               value={`${coverage.collectionRate}%`}
-              subtext={`${coverage.collected} / ${totalEmails} 封已采集任一原始内容`}
+              subtext={t("caCovCollectedSub").replace("{c}", String(coverage.collected)).replace("{n}", String(totalEmails))}
             />
             <StatPill
-              title="标题成功率"
+              title={t("caCovSubjectTitle")}
               value={`${coverage.subjectSuccessRate}%`}
-              subtext={`${coverage.subject.success} / ${totalEmails} 封标题分析成功`}
+              subtext={t("caCovSubjectSub").replace("{c}", String(coverage.subject.success)).replace("{n}", String(totalEmails))}
             />
             <StatPill
-              title="Banner 成功率"
+              title={t("caCovBannerTitle")}
               value={`${coverage.bannerSuccessRate}%`}
-              subtext={`${coverage.banner.success} / ${totalEmails} 封 Banner 分析成功`}
+              subtext={t("caCovBannerSub").replace("{c}", String(coverage.banner.success)).replace("{n}", String(totalEmails))}
             />
           </div>
           <div className="space-y-4">
             <p className="text-xs text-[var(--text-secondary)]">
-              原始内容采集：有标题 {coverage.withSubject} 封 · 有副标题 {coverage.withPreheader} 封 ·
-              有 Banner 图 {coverage.withBanner} 封 · 无任一原始内容 {totalEmails - coverage.collected} 封
-              （未采集的邮件不进入分析，标题成功率也不把它们算成“无 CTA”）。
+              {t("caRawLine")
+                .replace("{a}", String(coverage.withSubject))
+                .replace("{b}", String(coverage.withPreheader))
+                .replace("{c}", String(coverage.withBanner))
+                .replace("{d}", String(totalEmails - coverage.collected))}
             </p>
-            <OutcomeBreakdown label="标题分析状态" counts={coverage.subject} sample={totalEmails} />
+            <OutcomeBreakdown label={t("caOutcomeSubject")} counts={coverage.subject} sample={totalEmails} />
             <OutcomeBreakdown
-              label="Banner 分析状态"
+              label={t("caOutcomeBanner")}
               counts={coverage.banner}
               sample={totalEmails}
-              extra={`无 Banner 图 ${totalEmails - coverage.withBanner} 封${
+              extra={`${t("caOutcomeBannerExtra").replace("{n}", String(totalEmails - coverage.withBanner))}${
                 coverage.bannerSuccessRateAmongWithBanner !== null
-                  ? ` · 在有 Banner 图的邮件中成功率 ${coverage.bannerSuccessRateAmongWithBanner}%`
+                  ? t("caOutcomeBannerRate").replace("{r}", String(coverage.bannerSuccessRateAmongWithBanner))
                   : ""
               }`}
             />
@@ -1058,40 +1081,40 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         {/* ================= (a) 主副标题分析 ================= */}
         <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
-          title="主副标题策略分析"
-          hint={`已分析 ${subjectSummary?.analyzedCount ?? 0} 封（分布占比按已分析计） · 未采集/排队/失败见覆盖率`}
+          title={t("caSubjectTitle")}
+          hint={t("caAnalyzedHint").replace("{n}", String(subjectSummary?.analyzedCount ?? 0))}
         >
           {subjectSummary && subjectSummary.analyzedCount > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <StatPill
-                  title="标题平均字符"
+                  title={t("caLenTitle")}
                   value={subjectSummary.lengthStats.avg}
-                  subtext={`范围 ${subjectSummary.lengthStats.min} ~ ${subjectSummary.lengthStats.max}`}
+                  subtext={t("caLenRange").replace("{min}", String(subjectSummary.lengthStats.min)).replace("{max}", String(subjectSummary.lengthStats.max))}
                 />
                 <StatPill
-                  title="平均 Emoji"
+                  title={t("caEmojiAvgTitle")}
                   value={subjectSummary.emojiStats.avgCount}
-                  subtext={`含 Emoji 占比 ${subjectSummary.emojiStats.withEmojiRate}%`}
+                  subtext={t("caEmojiRate").replace("{r}", String(subjectSummary.emojiStats.withEmojiRate))}
                 />
                 <StatPill
-                  title="个性化元素"
+                  title={t("caPersTitle")}
                   value={`${subjectSummary.personalizationRate}%`}
-                  subtext="强信号：模板变量/为你定制"
+                  subtext={t("caPersSub")}
                 />
                 <StatPill
-                  title="含 Emoji 封数"
+                  title={t("caEmojiCountTitle")}
                   value={subjectSummary.emojiStats.withEmojiCount}
-                  subtext={`共 ${subjectSummary.analyzedCount} 封已分析样本`}
+                  subtext={t("caAnalyzedSamples").replace("{n}", String(subjectSummary.analyzedCount))}
                 />
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
-                  标题策略分布 (Tactics)
+                  {t("caTacticsHeading")}
                 </h3>
                 <p className="mb-3 text-[11px] text-[var(--text-secondary)]">
-                  点击某个分类，展开该类型下的全部标题/副标题与句式总结
+                  {t("caTacticsHint")}
                 </p>
                 {subjectSummary.tactics.length > 0 ? (
                   <div className="space-y-1">
@@ -1121,16 +1144,16 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    暂未标记任何策略标签
+                    {t("caNoTactics")}
                   </p>
                 )}
                 {tacticDetail && effectiveTactic !== null ? (
                   <div className="mt-4 space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
-                        {subjectSummary.tactics.find((t) => t.key === effectiveTactic)?.label ?? effectiveTactic}
+                        {subjectSummary.tactics.find((tac) => tac.key === effectiveTactic)?.label ?? effectiveTactic}
                         <span className="ml-2 font-normal text-[var(--text-secondary)]">
-                          共 {tacticDetail.items.length} 封
+                          {t("caDetailCount").replace("{n}", String(tacticDetail.items.length))}
                         </span>
                       </p>
                       <button
@@ -1138,13 +1161,13 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         onClick={() => setSelectedTactic(null)}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
-                        收起
+                        {t("efCollapse")}
                       </button>
                     </div>
                     {tacticDetail.patterns.common.length > 0 ? (
                       <div>
                         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                          常用句式（数字/价格已抽象为占位符）
+                          {t("caCommonPatterns")}
                         </h4>
                         <ul className="space-y-1.5">
                           {tacticDetail.patterns.common.map((g) => (
@@ -1152,7 +1175,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                               <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
                               <span className="ml-1.5 text-[var(--text-secondary)]">×{g.count}</span>
                               <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
-                                例：{g.example}
+                                {t("caExamplePrefix")}{g.example}
                               </span>
                             </li>
                           ))}
@@ -1162,15 +1185,15 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     {tacticDetail.patterns.fresh.length > 0 ? (
                       <div>
                         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                          新句式（最近 7 天内首次出现）
+                          {t("caNewPatterns")}
                         </h4>
                         <ul className="space-y-1.5">
                           {tacticDetail.patterns.fresh.map((g) => (
                             <li key={g.template} className="text-xs leading-relaxed">
                               <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
-                              <span className="ml-1.5 text-[var(--text-secondary)]">首见 {g.firstSeen}</span>
+                              <span className="ml-1.5 text-[var(--text-secondary)]">{t("caFirstSeen").replace("{d}", g.firstSeen)}</span>
                               <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
-                                例：{g.example}
+                                {t("caExamplePrefix")}{g.example}
                               </span>
                             </li>
                           ))}
@@ -1179,12 +1202,12 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     ) : null}
                     {tacticDetail.patterns.common.length === 0 && tacticDetail.patterns.fresh.length === 0 ? (
                       <p className="text-xs text-[var(--text-secondary)] italic">
-                        该分类样本较少，未形成可归纳的句式
+                        {t("caFewSamples")}
                       </p>
                     ) : null}
                     <div>
                       <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                        全部标题 / 副标题
+                        {t("caAllSubjectsHeading")}
                       </h4>
                       <SubjectEmailList items={tacticDetail.items} />
                     </div>
@@ -1194,7 +1217,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
-                  CTA 高频动词 Top
+                  {t("caCtaVerbsHeading")}
                 </h3>
                 {subjectSummary.topCtaVerbs.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1212,14 +1235,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    已分析样本中无提取到的行动召唤动词（未分析行不计入）
+                    {t("caNoCtaVerbs")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
-                  折扣促销话术 (去重收录)
+                  {t("caDiscountHeading")}
                 </h3>
                 {subjectSummary.discountFramings.length > 0 ? (
                   <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1">
@@ -1227,7 +1250,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       <span
                         key={text}
                         className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-xs text-amber-900 dark:text-amber-200"
-                        title={`出现 ${count} 次`}
+                        title={t("caOccurTitle").replace("{n}", String(count))}
                       >
                         <span>{text}</span>
                         {count > 1 ? (
@@ -1238,14 +1261,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    已分析样本中未检测到明确的折扣短语
+                    {t("caNoDiscount")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
-                  趋势 · 热点 · 季节词 (去重收录)
+                  {t("caTrendHeading")}
                 </h3>
                 {subjectSummary.trendTerms.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1263,10 +1286,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                               ? "border-violet-500 bg-violet-100 text-violet-950 dark:border-violet-400 dark:bg-violet-900/60 dark:text-violet-100"
                               : "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200 dark:hover:bg-violet-900/50"
                           }`}
-                          title={`出现 ${count} 次，点击查看相关邮件`}
+                          title={t("caTrendChipTitle").replace("{n}", String(count))}
                         >
                           <span className="rounded-sm bg-violet-200/70 px-1 text-[10px] font-semibold text-violet-800 dark:bg-violet-800/70 dark:text-violet-200">
-                            {TREND_CATEGORY_LABEL_MAP[category] ?? category}
+                            {labelText(TREND_CATEGORY_LABEL_MAP, category)}
                           </span>
                           <span>{term}</span>
                           {count > 1 ? <span className="text-[10px] opacity-75">×{count}</span> : null}
@@ -1276,17 +1299,17 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    已分析样本中暂未抽取到趋势/热点词（新版分析补跑后自动填充）
+                    {t("caNoTrend")}
                   </p>
                 )}
                 {trendDetail && effectiveTrend !== null ? (
                   <div className="mt-3 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
-                        {subjectSummary.trendTerms.find((t) => t.term.toLowerCase() === effectiveTrend)?.term ??
+                        {subjectSummary.trendTerms.find((tt) => tt.term.toLowerCase() === effectiveTrend)?.term ??
                           effectiveTrend}
                         <span className="ml-2 font-normal text-[var(--text-secondary)]">
-                          共 {trendDetail.length} 封
+                          {t("caDetailCount").replace("{n}", String(trendDetail.length))}
                         </span>
                       </p>
                       <button
@@ -1294,7 +1317,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         onClick={() => setSelectedTrend(null)}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
-                        收起
+                        {t("efCollapse")}
                       </button>
                     </div>
                     <SubjectEmailList items={trendDetail} />
@@ -1304,7 +1327,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             </div>
           ) : (
             <div className="py-8 text-center text-xs text-[var(--text-secondary)]">
-              该窗口内 {totalEmails} 封邮件尚无标题分析成功结果（成功 0 封；排队/失败/未采集见上方覆盖率）。
+              {t("caNoSubjectResults").replace("{n}", String(totalEmails))}
             </div>
           )}
         </Card>
@@ -1313,27 +1336,27 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         {/* ================= (b) Banner 视觉分析 ================= */}
         <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
-          title="Banner 视觉风格分析"
-          hint={`已分析 ${bannerSummary?.analyzedCount ?? 0} 封（分布占比按已分析计） · 未采集/排队/失败见覆盖率`}
+          title={t("caBannerTitle")}
+          hint={t("caAnalyzedHint").replace("{n}", String(bannerSummary?.analyzedCount ?? 0))}
         >
           {bannerSummary && bannerSummary.analyzedCount > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-2">
                 <StatPill
-                  title="Banner CTA 包含率（视觉）"
+                  title={t("caBannerCtaTitle")}
                   value={`${bannerSummary.ctaPresenceRate}%`}
-                  subtext={`共 ${bannerSummary.ctaPresenceCount} / ${bannerSummary.analyzedCount} 封已分析；仅指视觉可见按钮，不代表可点击`}
+                  subtext={t("caBannerCtaSub").replace("{a}", String(bannerSummary.ctaPresenceCount)).replace("{b}", String(bannerSummary.analyzedCount))}
                 />
                 <StatPill
-                  title="识别主色族种类"
+                  title={t("caColorKindsTitle")}
                   value={bannerSummary.dominantColors.length}
-                  subtext="色族标签按频次降序 Top（模型不直接编 Hex）"
+                  subtext={t("caColorKindsSub")}
                 />
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                  视觉主色族分布 (Dominant Colors)
+                  {t("caColorsHeading")}
                 </h3>
                 {bannerSummary.dominantColors.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
@@ -1346,14 +1369,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           <span
                             className="h-6 w-6 shrink-0 rounded-md border border-slate-300 shadow-2xs"
                             style={{ backgroundColor: hex }}
-                            aria-label={`颜色 ${hex}`}
+                            aria-label={t("caColorAria").replace("{hex}", hex)}
                           />
                         ) : (
                           <span
                             className="h-6 w-6 shrink-0 rounded-md border border-slate-300 bg-[var(--surface-card)] text-center text-[10px] leading-6 text-[var(--text-secondary)]"
                             aria-hidden="true"
                           >
-                            色
+                            {t("caColorGlyph")}
                           </span>
                         )}
                         <div className="min-w-0">
@@ -1361,7 +1384,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                             {hex ?? label}
                           </p>
                           <p className="text-[10px] tabular-nums text-[var(--text-secondary)]">
-                            {count}次 ({percentage}%)
+                            {t("caColorCount").replace("{count}", String(count)).replace("{percentage}", String(percentage))}
                           </p>
                         </div>
                       </div>
@@ -1369,14 +1392,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    暂无色彩提取数据
+                    {t("caNoColors")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                  构图风格分布 (Composition)
+                  {t("caCompositionHeading")}
                 </h3>
                 {bannerSummary.composition.length > 0 ? (
                   <div className="space-y-3">
@@ -1392,14 +1415,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    暂无构图风格标签
+                    {t("caNoComposition")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                  图文比例分布 (Text-Image Ratio)
+                  {t("caRatioHeading")}
                 </h3>
                 {bannerSummary.textImageRatio.length > 0 ? (
                   <div className="space-y-3">
@@ -1415,14 +1438,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    暂无图文比例数据
+                    {t("caNoRatio")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                  CTA 引导位置分布（视觉位置）
+                  {t("caCtaPlacementHeading")}
                 </h3>
                 {bannerSummary.ctaPositions.length > 0 ? (
                   <div className="space-y-3">
@@ -1438,14 +1461,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    暂无 CTA 位置数据
+                    {t("caNoCtaPlacement")}
                   </p>
                 )}
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
-                  季节与节日氛围 (Seasonal Cues)
+                  {t("caSeasonalHeading")}
                 </h3>
                 {bannerSummary.seasonalCues.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1463,14 +1486,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
-                    已分析样本中无可见季节/节日氛围标签（标题里的季节词不计入）
+                    {t("caNoSeasonal")}
                   </p>
                 )}
               </div>
             </div>
           ) : (
             <div className="py-8 text-center text-xs text-[var(--text-secondary)]">
-              该窗口内 {totalEmails} 封邮件尚无 Banner 视觉分析成功结果（成功 0 封；排队/失败/未采集/无 Banner 见上方覆盖率）。
+              {t("caNoBannerResults").replace("{n}", String(totalEmails))}
             </div>
           )}
         </Card>

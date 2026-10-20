@@ -1,4 +1,5 @@
 import type { SnapshotResult } from "../snapshot";
+import { useLocale } from "../i18n";
 import { EmptyState } from "./EmptyState";
 
 function isConfigError(error: string | null | undefined): boolean {
@@ -26,13 +27,14 @@ export function SnapshotState({
   actionLabel,
   onAction,
 }: SnapshotStateProps) {
+  const { t } = useLocale();
   // 1. P0-06 空态判断：使用 EmptyState 组件
   if (isEmpty) {
     return (
       <EmptyState
-        title={emptyTitle ?? "暂无快照数据"}
-        description={emptyDescription ?? "当前无可用快照记录。"}
-        actionLabel={actionLabel ?? (onAction ? "重置筛选" : "重新拉取")}
+        title={emptyTitle ?? t("ssEmptyTitle")}
+        description={emptyDescription ?? t("ssEmptyDesc")}
+        actionLabel={actionLabel ?? (onAction ? t("emptyStateReset") : t("stRetryFetch"))}
         onAction={onAction ?? retry}
       />
     );
@@ -76,10 +78,10 @@ export function SnapshotState({
           </svg>
         </div>
         <h3 className="mt-4 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          {loadingText || "正在加载快照数据…"}
+          {loadingText || t("ssLoadingDefault")}
         </h3>
         <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-          正在拉取数据视图，请稍候。
+          {t("ssLoadingDesc")}
         </p>
       </div>
     );
@@ -112,13 +114,13 @@ export function SnapshotState({
           </svg>
         </div>
         <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-warning-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-warning)]">
-          配置缺失
+          {t("stConfigBadge")}
         </span>
         <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          快照环境配置缺失
+          {t("ssConfigTitle")}
         </h3>
         <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-          {error || "缺少必要的环境变量配置，请检查相关设置。"}
+          {error || t("ssConfigDesc")}
         </p>
         {retry ? (
           <button
@@ -126,7 +128,7 @@ export function SnapshotState({
             onClick={retry}
             className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
-            重新检测配置
+            {t("stRecheck")}
           </button>
         ) : null}
       </div>
@@ -160,13 +162,13 @@ export function SnapshotState({
           </svg>
         </div>
         <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-warning-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-warning)]">
-          数据未取齐
+          {t("stIncompleteBadge")}
         </span>
         <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-          快照数据不完整
+          {t("ssIncompleteTitle")}
         </h3>
         <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-          {error || "快照数据未能完全拉取，请重试以重新同步完整数据。"}
+          {error || t("ssIncompleteDesc")}
         </p>
         {retry ? (
           <button
@@ -174,7 +176,7 @@ export function SnapshotState({
             onClick={retry}
             className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
-            重新拉取
+            {t("stRetryFetch")}
           </button>
         ) : null}
       </div>
@@ -207,13 +209,13 @@ export function SnapshotState({
         </svg>
       </div>
       <span className="mt-3 inline-flex items-center rounded-full border border-[var(--status-error-border)] bg-[var(--surface-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-error)]">
-        网络请求失败
+        {t("stNetworkBadge")}
       </span>
       <h3 className="mt-2 text-base font-bold text-[var(--text-heading)] sm:text-lg">
-        快照加载失败
+        {t("ssErrorTitle")}
       </h3>
       <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-        {error || "网络连接异常，未能获取快照数据，请重试。"}
+        {error || t("ssErrorDesc")}
       </p>
       {retry ? (
         <button
@@ -221,7 +223,7 @@ export function SnapshotState({
           onClick={retry}
           className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
-          重试加载
+          {t("stRetryLoad")}
         </button>
       ) : null}
     </div>
