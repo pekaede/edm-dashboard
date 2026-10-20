@@ -119,8 +119,8 @@ function sortEmails(emails: EmailRecord[]): EmailRecord[] {
   );
 }
 
-async function supabaseAdapter(): Promise<ExtendedEmailsData> {
-  const { rows, exactTotal } = await fetchEmailDataset();
+async function supabaseAdapter(force = false): Promise<ExtendedEmailsData> {
+  const { rows, exactTotal } = await fetchEmailDataset(force);
   const emails = sortEmails(rows.map((row) => ({
     brand: row.brand,
     date: row.sent_date,
@@ -163,7 +163,7 @@ function requestExtendedEmails(source: EmailDataSource, force = false): Promise<
     (!force && (cached.updatedAt === null || Date.now() - cached.updatedAt < STALE_TIME))
   )) return cached.request;
 
-  const fetchDataset = () => source === "json" ? jsonAdapter() : supabaseAdapter();
+  const fetchDataset = () => source === "json" ? jsonAdapter() : supabaseAdapter(force);
   const request = pending ? pending.then(fetchDataset, fetchDataset) : fetchDataset();
   const entry: EmailCacheEntry = { request, updatedAt: null };
   promiseCache.set(source, entry);

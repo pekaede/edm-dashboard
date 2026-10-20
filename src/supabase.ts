@@ -123,7 +123,7 @@ function isEmailRow(value: unknown): value is SupabaseEmailRow {
   );
 }
 
-export async function fetchEmailDataset(): Promise<EmailDataset> {
+async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
   const { baseUrl, publishableKey } = getSupabaseConfig();
 
   let endpoint: URL;
@@ -195,4 +195,34 @@ export async function fetchEmailDataset(): Promise<EmailDataset> {
 
 export async function fetchAllEmails(): Promise<SupabaseEmailRow[]> {
   return (await fetchEmailDataset()).rows;
+}
+
+// 全量结果共享缓存（与 email-data.ts 的 5 分钟口径一致）：看板与内容分析同页
+// 并行调用时只真正拉取一次。失败不缓存；force 绕过缓存重新拉取。
+const EMAIL_DATASET_STALE_MS = 5 * 60 * 1000;
+let emailDatasetCache: { request: Promise<EmailDataset>; updatedAt: number | null } | null = null;
+
+export function fetchEmailDataset(force = false): Promise<EmailDataset> {
+  const cached = emailDatasetCache;
+  if (
+    !force &&
+    cached &&
+    (cached.updatedAt === null || Date.now() - cached.updatedAt < EMAIL_DATASET_STALE_MS)
+  ) {
+    return cached.request;
+  }
+  const entry: { request: Promise<EmailDataset>; updatedAt: number | null } = {
+    request: fetchEmailDatasetUncached(),
+    updatedAt: null,
+  };
+  emailDatasetCache = entry;
+  entry.request.then(
+    () => {
+      if (emailDatasetCache === entry) entry.updatedAt = Date.now();
+    },
+    () => {
+      if (emailDatasetCache === entry) emailDatasetCache = null;
+    },
+  );
+  return entry.request;
 }
