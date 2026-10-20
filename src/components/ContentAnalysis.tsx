@@ -1054,8 +1054,9 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       </Card>
 
       {/* 两大核心板块 Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ================= (a) 主副标题分析 ================= */}
+        <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
           title="主副标题策略分析"
           hint={`已分析 ${subjectSummary?.analyzedCount ?? 0} 封（分布占比按已分析计） · 未采集/排队/失败见覆盖率`}
@@ -1307,8 +1308,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             </div>
           )}
         </Card>
+        </div>
 
         {/* ================= (b) Banner 视觉分析 ================= */}
+        <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
           title="Banner 视觉风格分析"
           hint={`已分析 ${bannerSummary?.analyzedCount ?? 0} 封（分布占比按已分析计） · 未采集/排队/失败见覆盖率`}
@@ -1471,6 +1474,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             </div>
           )}
         </Card>
+        </div>
       </div>
     </div>
   );
