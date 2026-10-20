@@ -6,6 +6,7 @@ import {
   type BannerAnalysis,
   type EmailContentAnalysisRow,
   type SubjectAnalysis,
+  type TrendTerm,
 } from "../email-content-analysis";
 import { fetchEmailDataset } from "../supabase";
 import { EXTENDED_EMAIL_META } from "../email-data";
@@ -39,6 +40,7 @@ interface SubjectSummary {
   analyzedCount: number;
   tactics: MetricCount[];
   discountFramings: { text: string; count: number }[];
+  trendTerms: { term: string; category: string; count: number }[];
   lengthStats: {
     avg: number;
     min: number;
@@ -203,6 +205,7 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
       analyzedCount: 0,
       tactics: [],
       discountFramings: [],
+      trendTerms: [],
       lengthStats: { avg: 0, min: 0, max: 0 },
       emojiStats: { avgCount: 0, withEmojiCount: 0, withEmojiRate: 0 },
       topCtaVerbs: [],
@@ -212,6 +215,7 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
 
   const tacticCountMap = new Map<string, number>();
   const discountMap = new Map<string, number>();
+  const trendMap = new Map<string, { term: string; category: string; count: number }>();
   let minLength = Infinity;
   let maxLength = -Infinity;
   let totalLength = 0;
@@ -230,6 +234,16 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
     if (s.discount_framing) {
       const framing = s.discount_framing.trim();
       if (framing) discountMap.set(framing, (discountMap.get(framing) ?? 0) + 1);
+    }
+    if (Array.isArray(s.trend_terms)) {
+      for (const item of s.trend_terms as TrendTerm[]) {
+        const term = item.term?.trim();
+        if (!term) continue;
+        const key = term.toLowerCase();
+        const prev = trendMap.get(key);
+        if (prev) prev.count += 1;
+        else trendMap.set(key, { term, category: item.category, count: 1 });
+      }
     }
     const len = typeof s.length_chars === "number" ? s.length_chars : 0;
     totalLength += len;
@@ -260,6 +274,9 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
     discountFramings: Array.from(discountMap.entries())
       .map(([text, count]) => ({ text, count }))
       .sort((a, b) => b.count - a.count),
+    trendTerms: Array.from(trendMap.values()).sort(
+      (a, b) => b.count - a.count || a.term.localeCompare(b.term),
+    ),
     lengthStats: {
       avg: Math.round(totalLength / analyzedCount),
       min: minLength === Infinity ? 0 : minLength,
@@ -461,9 +478,125 @@ function OutcomeBreakdown({
   );
 }
 
+const TREND_CATEGORY_LABEL_MAP: Record<string, string> = {
+  fashion: "时尚",
+  trend: "趋势",
+  hotspot: "热点",
+  seasonal: "季节",
+  marketing: "营销",
+};
+
+/** 展开列表里的一封邮件（标题/副标题原文）。 */
+interface SubjectListItem {
+  brand: string;
+  sent_date: string;
+  subject: string;
+  preheader: string | null;
+}
+
+interface PatternGroup {
+  template: string;
+  count: number;
+  /** 代表例（同模板中日期最新的一封的原标题）。 */
+  example: string;
+  firstSeen: string;
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 标题 → 句式模板：品牌名、价格、百分比、数字抽象为占位符后归一，
+ * 同一模板即同一句式。例："Up to 50% Off + Free Shipping" → "up to {n}% off + free shipping"。
+ */
+function toSubjectTemplate(subject: string, brand: string): string {
+  let s = subject.trim();
+  if (brand) s = s.replace(new RegExp(escapeRegExp(brand), "gi"), "{品牌}");
+  s = s.replace(/[$£€]\s?\d[\d,]*(?:\.\d{1,2})?/g, "{价格}");
+  s = s.replace(/\d+(?:\.\d+)?\s*%/g, "{n}%");
+  s = s.replace(/\d[\d,]*(?:\.\d+)?/g, "{n}");
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * 句式挖掘（纯前端确定性算法）：常用句式 = 出现 ≥2 次的模板（按次数降序取前 6）；
+ * 新句式 = 首次出现日期落在样本最近 7 天内、且未进常用榜的模板（按首见日期降序取前 6）。
+ */
+function minePatterns(items: SubjectListItem[]): { common: PatternGroup[]; fresh: PatternGroup[] } {
+  const map = new Map<string, PatternGroup & { exampleDate: string }>();
+  for (const item of items) {
+    const template = toSubjectTemplate(item.subject, item.brand);
+    if (!template) continue;
+    const prev = map.get(template);
+    if (prev) {
+      prev.count += 1;
+      if (item.sent_date < prev.firstSeen) prev.firstSeen = item.sent_date;
+      if (item.sent_date > prev.exampleDate) {
+        prev.exampleDate = item.sent_date;
+        prev.example = item.subject;
+      }
+    } else {
+      map.set(template, { template, count: 1, example: item.subject, firstSeen: item.sent_date, exampleDate: item.sent_date });
+    }
+  }
+  const groups = Array.from(map.values());
+  const common = groups
+    .filter((g) => g.count >= 2)
+    .sort((a, b) => b.count - a.count || a.template.localeCompare(b.template))
+    .slice(0, 6);
+  const maxDate = items.reduce((m, i) => (i.sent_date > m ? i.sent_date : m), "");
+  const cutoff = maxDate ? addDays(maxDate, -6) : "";
+  const commonKeys = new Set(common.map((g) => g.template));
+  const fresh = groups
+    .filter((g) => g.firstSeen >= cutoff && !commonKeys.has(g.template))
+    .sort((a, b) => b.firstSeen.localeCompare(a.firstSeen) || b.count - a.count)
+    .slice(0, 6);
+  const strip = ({ template, count, example, firstSeen }: PatternGroup & { exampleDate: string }): PatternGroup => ({
+    template,
+    count,
+    example,
+    firstSeen,
+  });
+  return { common: common.map(strip), fresh: fresh.map(strip) };
+}
+
+/** 展开区共用：某分类/词条下的全部标题/副标题列表（可滚动）。 */
+function SubjectEmailList({ items }: { items: SubjectListItem[] }) {
+  if (items.length === 0) {
+    return <p className="text-xs text-[var(--text-secondary)] italic">该分类下暂无可展示的标题</p>;
+  }
+  return (
+    <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
+      {items.map((item, idx) => (
+        <li
+          key={`${item.brand}|${item.sent_date}|${idx}`}
+          className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2"
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+            {item.brand} · {item.sent_date}
+          </p>
+          <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--text-heading)]">{item.subject}</p>
+          {item.preheader ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-[var(--text-secondary)]">{item.preheader}</p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisProps) {
   const [period, setPeriod] = useState<AnalysisPeriod>("threeWeeks");
   const [brand, setBrand] = useState<string | null>(null);
+  const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
+  const [selectedTrend, setSelectedTrend] = useState<string | null>(null);
   // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
   const activeWindow =
     period === "threeWeeks"
@@ -626,6 +759,57 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       joined.map((j) => j.analysis.subject.result).filter((r): r is SubjectAnalysis => r !== null),
     );
   }, [joined]);
+
+  // 策略分类展开：选中值不在当前样本（切市场/周期/品牌后）时自动失效，避免悬空展开。
+  const effectiveTactic =
+    selectedTactic !== null && (subjectSummary?.tactics.some((t) => t.key === selectedTactic) ?? false)
+      ? selectedTactic
+      : null;
+  const tacticDetail = useMemo(() => {
+    if (!joined || effectiveTactic === null) return null;
+    const items: SubjectListItem[] = [];
+    for (const { email, analysis } of joined) {
+      const result = analysis.subject.result;
+      if (analysis.subject.outcome !== "success" || !result || !email.subject) continue;
+      const tactics = Array.isArray(result.tactics)
+        ? result.tactics.map((t) => t.trim().toLowerCase())
+        : [];
+      if (!tactics.includes(effectiveTactic)) continue;
+      items.push({
+        brand: email.brand,
+        sent_date: email.sent_date,
+        subject: email.subject,
+        preheader: email.preheader,
+      });
+    }
+    items.sort((a, b) => b.sent_date.localeCompare(a.sent_date) || a.brand.localeCompare(b.brand));
+    return { items, patterns: minePatterns(items) };
+  }, [joined, effectiveTactic]);
+
+  // 趋势词展开：点词条看抽到该词的全部邮件。
+  const effectiveTrend =
+    selectedTrend !== null &&
+    (subjectSummary?.trendTerms.some((t) => t.term.toLowerCase() === selectedTrend) ?? false)
+      ? selectedTrend
+      : null;
+  const trendDetail = useMemo(() => {
+    if (!joined || effectiveTrend === null) return null;
+    const items: SubjectListItem[] = [];
+    for (const { email, analysis } of joined) {
+      const result = analysis.subject.result;
+      if (analysis.subject.outcome !== "success" || !result || !email.subject) continue;
+      const hit = (result.trend_terms ?? []).some((t) => t.term.trim().toLowerCase() === effectiveTrend);
+      if (!hit) continue;
+      items.push({
+        brand: email.brand,
+        sent_date: email.sent_date,
+        subject: email.subject,
+        preheader: email.preheader,
+      });
+    }
+    items.sort((a, b) => b.sent_date.localeCompare(a.sent_date) || a.brand.localeCompare(b.brand));
+    return items;
+  }, [joined, effectiveTrend]);
 
   const bannerSummary = useMemo(() => {
     if (!joined) return null;
@@ -902,26 +1086,109 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
                   标题策略分布 (Tactics)
                 </h3>
+                <p className="mb-3 text-[11px] text-[var(--text-secondary)]">
+                  点击某个分类，展开该类型下的全部标题/副标题与句式总结
+                </p>
                 {subjectSummary.tactics.length > 0 ? (
-                  <div className="space-y-3">
-                    {subjectSummary.tactics.map((item) => (
-                      <HorizontalProgressBar
-                        key={item.key}
-                        label={item.label}
-                        count={item.count}
-                        percentage={item.percentage}
-                        total={subjectSummary.analyzedCount}
-                      />
-                    ))}
+                  <div className="space-y-1">
+                    {subjectSummary.tactics.map((item) => {
+                      const isSelected = effectiveTactic === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          aria-expanded={isSelected}
+                          onClick={() => setSelectedTactic(isSelected ? null : item.key)}
+                          className={`block w-full rounded-lg px-2 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
+                            isSelected
+                              ? "bg-indigo-50 dark:bg-indigo-950/30"
+                              : "hover:bg-[var(--surface-subtle)]"
+                          }`}
+                        >
+                          <HorizontalProgressBar
+                            label={item.label}
+                            count={item.count}
+                            percentage={item.percentage}
+                            total={subjectSummary.analyzedCount}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--text-secondary)] italic">
                     暂未标记任何策略标签
                   </p>
                 )}
+                {tacticDetail && effectiveTactic !== null ? (
+                  <div className="mt-4 space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-[var(--text-heading)]">
+                        {subjectSummary.tactics.find((t) => t.key === effectiveTactic)?.label ?? effectiveTactic}
+                        <span className="ml-2 font-normal text-[var(--text-secondary)]">
+                          共 {tacticDetail.items.length} 封
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTactic(null)}
+                        className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
+                      >
+                        收起
+                      </button>
+                    </div>
+                    {tacticDetail.patterns.common.length > 0 ? (
+                      <div>
+                        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                          常用句式（数字/价格已抽象为占位符）
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {tacticDetail.patterns.common.map((g) => (
+                            <li key={g.template} className="text-xs leading-relaxed">
+                              <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
+                              <span className="ml-1.5 text-[var(--text-secondary)]">×{g.count}</span>
+                              <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
+                                例：{g.example}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {tacticDetail.patterns.fresh.length > 0 ? (
+                      <div>
+                        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                          新句式（最近 7 天内首次出现）
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {tacticDetail.patterns.fresh.map((g) => (
+                            <li key={g.template} className="text-xs leading-relaxed">
+                              <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
+                              <span className="ml-1.5 text-[var(--text-secondary)]">首见 {g.firstSeen}</span>
+                              <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
+                                例：{g.example}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {tacticDetail.patterns.common.length === 0 && tacticDetail.patterns.fresh.length === 0 ? (
+                      <p className="text-xs text-[var(--text-secondary)] italic">
+                        该分类样本较少，未形成可归纳的句式
+                      </p>
+                    ) : null}
+                    <div>
+                      <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        全部标题 / 副标题
+                      </h4>
+                      <SubjectEmailList items={tacticDetail.items} />
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -973,6 +1240,65 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     已分析样本中未检测到明确的折扣短语
                   </p>
                 )}
+              </div>
+
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
+                  趋势 · 热点 · 季节词 (去重收录)
+                </h3>
+                {subjectSummary.trendTerms.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {subjectSummary.trendTerms.map(({ term, category, count }) => {
+                      const key = term.toLowerCase();
+                      const isSelected = effectiveTrend === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-expanded={isSelected}
+                          onClick={() => setSelectedTrend(isSelected ? null : key)}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
+                            isSelected
+                              ? "border-violet-500 bg-violet-100 text-violet-950 dark:border-violet-400 dark:bg-violet-900/60 dark:text-violet-100"
+                              : "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200 dark:hover:bg-violet-900/50"
+                          }`}
+                          title={`出现 ${count} 次，点击查看相关邮件`}
+                        >
+                          <span className="rounded-sm bg-violet-200/70 px-1 text-[10px] font-semibold text-violet-800 dark:bg-violet-800/70 dark:text-violet-200">
+                            {TREND_CATEGORY_LABEL_MAP[category] ?? category}
+                          </span>
+                          <span>{term}</span>
+                          {count > 1 ? <span className="text-[10px] opacity-75">×{count}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--text-secondary)] italic">
+                    已分析样本中暂未抽取到趋势/热点词（新版分析补跑后自动填充）
+                  </p>
+                )}
+                {trendDetail && effectiveTrend !== null ? (
+                  <div className="mt-3 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-[var(--text-heading)]">
+                        {subjectSummary.trendTerms.find((t) => t.term.toLowerCase() === effectiveTrend)?.term ??
+                          effectiveTrend}
+                        <span className="ml-2 font-normal text-[var(--text-secondary)]">
+                          共 {trendDetail.length} 封
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTrend(null)}
+                        className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
+                      >
+                        收起
+                      </button>
+                    </div>
+                    <SubjectEmailList items={trendDetail} />
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : (

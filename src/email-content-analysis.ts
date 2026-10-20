@@ -20,6 +20,15 @@
 
 import { COLOR_FAMILIES } from "./banner-vision-prompt";
 
+/** 趋势词分类（与 pipeline 口径一致）：时尚 / 趋势 / 热点 / 季节 / 营销事件。 */
+export const TREND_CATEGORIES = ["fashion", "trend", "hotspot", "seasonal", "marketing"] as const;
+export type TrendCategory = (typeof TREND_CATEGORIES)[number];
+
+export interface TrendTerm {
+  term: string;
+  category: TrendCategory;
+}
+
 export interface SubjectAnalysis {
   tactics: string[];
   discount_framing: string | null;
@@ -27,6 +36,8 @@ export interface SubjectAnalysis {
   emoji_count: number;
   cta_verbs: string[];
   personalization: boolean;
+  /** v2 新增：趋势/热点/季节词抽取。v1 结果没有此字段，读取层按可选处理（缺失视为 []）。 */
+  trend_terms?: TrendTerm[];
 }
 
 export interface BannerAnalysis {
@@ -113,6 +124,24 @@ function isNonNegativeSafeInt(value: unknown): value is number {
  * 且无重复、length_chars / emoji_count 为非负安全整数。
  * 未知多余字段允许（向前兼容），不拒绝。
  */
+const TREND_CATEGORY_SET: ReadonlySet<string> = new Set(TREND_CATEGORIES);
+
+/** trend_terms 是 v2 可选字段：缺失合法；出现时必须是 {term, category} 数组、词不重复、分类在枚举内。 */
+function isValidTrendTerms(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value)) return false;
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (!isRecord(item)) return false;
+    if (typeof item.term !== "string" || item.term.trim().length === 0) return false;
+    if (typeof item.category !== "string" || !TREND_CATEGORY_SET.has(item.category)) return false;
+    const key = item.term.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+  }
+  return true;
+}
+
 export function validateSubjectAnalysis(v: unknown): v is SubjectAnalysis {
   if (!isRecord(v)) return false;
   return (
@@ -123,7 +152,8 @@ export function validateSubjectAnalysis(v: unknown): v is SubjectAnalysis {
     isNonNegativeSafeInt(v.emoji_count) &&
     isNonEmptyStringArray(v.cta_verbs) &&
     !hasDuplicates(v.cta_verbs) &&
-    typeof v.personalization === "boolean"
+    typeof v.personalization === "boolean" &&
+    isValidTrendTerms(v.trend_terms)
   );
 }
 
@@ -178,6 +208,15 @@ export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
 
 /** 读取边界归一化：数组去重、颜色统一小写色族（非色族值已由校验拒绝）、cta_presence=false 时强制位置为 null。 */
 function normalizeSubjectAnalysis(v: SubjectAnalysis): SubjectAnalysis {
+  const seenTerms = new Set<string>();
+  const trendTerms: TrendTerm[] = [];
+  for (const item of v.trend_terms ?? []) {
+    const term = item.term.trim();
+    const key = term.toLowerCase();
+    if (!term || seenTerms.has(key)) continue;
+    seenTerms.add(key);
+    trendTerms.push({ term, category: item.category });
+  }
   return {
     tactics: dedupe(v.tactics),
     discount_framing: v.discount_framing,
@@ -185,6 +224,7 @@ function normalizeSubjectAnalysis(v: SubjectAnalysis): SubjectAnalysis {
     emoji_count: v.emoji_count,
     cta_verbs: dedupe(v.cta_verbs),
     personalization: v.personalization,
+    trend_terms: trendTerms,
   };
 }
 

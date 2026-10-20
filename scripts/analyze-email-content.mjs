@@ -47,6 +47,9 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(SCRIPT_DIR, "..");
 
 // ---- 版本（与 SQL / TS 契约一致；可用环境变量覆盖 prompt/rules/schema） ----
+// 注意：subject 口径已升 v2（新增 trend_terms 抽取），跑 subject 时应以
+// CONTENT_ANALYSIS_PROMPT_VERSION=2 CONTENT_ANALYSIS_SCHEMA_VERSION=2 运行；
+// banner 仍为 v1。常驻补跑脚本 supabase-import/analyze-pending.mjs 内置同样的版本划分。
 const SCHEMA_VERSION = process.env.CONTENT_ANALYSIS_SCHEMA_VERSION ?? "1";
 const RULES_VERSION = process.env.CONTENT_ANALYSIS_RULES_VERSION ?? "1";
 const PROMPT_VERSION = process.env.CONTENT_ANALYSIS_PROMPT_VERSION ?? "1";
@@ -74,7 +77,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // ---- Prompt（与 Pi 的 src/banner-vision-prompt.ts 口径一致；模型必须只输出 JSON） ----
 const SUBJECT_PROMPT = `You are an expert email marketing (EDM) subject-line analyst.
 Analyze the email subject line and preheader. Output ONLY a valid JSON object, no Markdown fences, no extra text.
-Schema: {"tactics": string[] (subset of: urgency, discount, social_proof, newness, curiosity, personalization, other), "discount_framing": string | null (e.g. "40% off", "Free Shipping", "BOGO", or null), "length_chars": number (character count of the subject line), "emoji_count": number, "cta_verbs": string[] (lowercase CTA verbs like shop, discover, save), "personalization": boolean}`;
+Schema: {"tactics": string[] (subset of: urgency, discount, social_proof, newness, curiosity, personalization, other), "discount_framing": string | null (e.g. "40% off", "Free Shipping", "BOGO", or null), "length_chars": number (character count of the subject line), "emoji_count": number, "cta_verbs": string[] (lowercase CTA verbs like shop, discover, save), "personalization": boolean, "trend_terms": array of {"term": string, "category": string} — extract up to 8 words or short phrases from the subject/preheader that carry fashion, trend, hotspot, seasonal or marketing-event meaning. category is one of: fashion (garments, fabrics, styles, aesthetics), trend (emerging styles, viral aesthetics, social-media trends), hotspot (celebrities, pop culture, viral moments, trending topics), seasonal (seasons, weather, holidays, seasonal events), marketing (campaign or event hooks such as member days or anniversary events). Use the phrase as it appears in the text. Do NOT include generic discount words (sale, % off, save), CTA verbs, or brand names. Use [] when there are none.}`;
 
 const BANNER_PROMPT = `You are an expert marketing creative analyst specializing in email marketing (EDM) banner design.
 Analyze the provided email banner image. Output ONLY a valid JSON object, no Markdown fences, no extra text.
@@ -242,6 +245,24 @@ async function resolveDefaultWindow() {
 }
 
 // ---- 写库前校验（与 src/email-content-analysis.ts 的校验函数同一口径） ----
+const TREND_CATEGORIES = new Set(["fashion", "trend", "hotspot", "seasonal", "marketing"]);
+function sanitizeTrendTerms(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const term = typeof item.term === "string" ? item.term.trim() : "";
+    const category = typeof item.category === "string" ? item.category.trim().toLowerCase() : "";
+    if (!term || term.length > 40 || !TREND_CATEGORIES.has(category)) continue;
+    const key = term.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ term, category });
+    if (out.length >= 8) break;
+  }
+  return out;
+}
 function validateSubject(v) {
   if (!v || typeof v !== "object" || Array.isArray(v)) return "result 不是对象";
   const strArr = (x) => Array.isArray(x) && x.every((i) => typeof i === "string" && i.length > 0);
@@ -252,6 +273,14 @@ function validateSubject(v) {
   if (!Number.isSafeInteger(v.emoji_count) || v.emoji_count < 0) return "emoji_count 无效";
   if (!strArr(v.cta_verbs) || dup(v.cta_verbs)) return "cta_verbs 无效（非字符串数组或有重复）";
   if (typeof v.personalization !== "boolean") return "personalization 无效";
+  if (!Array.isArray(v.trend_terms)) return "trend_terms 无效";
+  const seenTerms = new Set();
+  for (const item of v.trend_terms) {
+    if (!item || typeof item !== "object" || typeof item.term !== "string" || !item.term || !TREND_CATEGORIES.has(item.category)) return "trend_terms 元素无效";
+    const k = item.term.toLowerCase();
+    if (seenTerms.has(k)) return "trend_terms 有重复";
+    seenTerms.add(k);
+  }
   return null;
 }
 
@@ -278,6 +307,7 @@ function normalizeSubject(v) {
     emoji_count: v.emoji_count,
     cta_verbs: dedupe(v.cta_verbs),
     personalization: v.personalization,
+    trend_terms: sanitizeTrendTerms(v.trend_terms),
   };
 }
 
@@ -296,7 +326,7 @@ function normalizeBanner(v) {
 const SUBJECT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["tactics", "discount_framing", "length_chars", "emoji_count", "cta_verbs", "personalization"],
+  required: ["tactics", "discount_framing", "length_chars", "emoji_count", "cta_verbs", "personalization", "trend_terms"],
   properties: {
     tactics: { type: "array", items: { type: "string" } },
     discount_framing: { type: ["string", "null"] },
@@ -304,6 +334,19 @@ const SUBJECT_JSON_SCHEMA = {
     emoji_count: { type: "integer", minimum: 0 },
     cta_verbs: { type: "array", items: { type: "string" } },
     personalization: { type: "boolean" },
+    trend_terms: {
+      type: "array",
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["term", "category"],
+        properties: {
+          term: { type: "string" },
+          category: { type: "string", enum: ["fashion", "trend", "hotspot", "seasonal", "marketing"] },
+        },
+      },
+    },
   },
 };
 
@@ -759,6 +802,7 @@ async function runJob(job, ctx) {
         emoji_count: rules.emoji_count,
         cta_verbs: dedupe([...(Array.isArray(modelOut.cta_verbs) ? modelOut.cta_verbs : []), ...rules.cta_verbs]),
         personalization: modelOut.personalization === true || rules.personalization,
+        trend_terms: sanitizeTrendTerms(modelOut.trend_terms),
       };
       const err = validateSubject(merged);
       if (err) { await fail("validation_failed", err); return; }
