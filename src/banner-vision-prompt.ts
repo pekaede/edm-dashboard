@@ -34,11 +34,7 @@ export const COLOR_FAMILIES = [
 ] as const;
 export type BannerColorFamily = (typeof COLOR_FAMILIES)[number];
 
-/**
- * 构图枚举（2026-10-20 起改为 8 类内容构图：大字报/时尚大片/单模特/多商品/群像/拼贴/细节特写/场景生活）。
- * 旧 5 类（centered 等）为 legacy 值：仅为让版本升级前的历史结果在重分析完成前仍可通过校验而保留，
- * 新分析（prompt v2）只产出新 8 类；待全量重分析完成后删除 legacy。
- */
+/** 构图枚举（2026-10-20 起为 8 类内容构图：大字报/时尚大片/单模特/多商品/群像/拼贴/细节特写/场景生活；旧 5 类已随全量重分析完成而移除）。 */
 export const BANNER_COMPOSITIONS = [
   "text-poster",
   "fashion-editorial",
@@ -48,11 +44,6 @@ export const BANNER_COMPOSITIONS = [
   "collage",
   "detail-closeup",
   "lifestyle-scene",
-  "centered",
-  "left-aligned",
-  "split-layout",
-  "full-bleed",
-  "grid",
 ] as const;
 
 /** CTA 视觉位置枚举（cta_presence 为 false 时必须为 null）。 */

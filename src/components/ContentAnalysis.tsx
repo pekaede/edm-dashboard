@@ -123,12 +123,6 @@ const COMPOSITION_LABEL_MAP: Record<string, DictionaryKey> = {
   collage: "caLayCollage",
   "detail-closeup": "caLayDetailCloseup",
   "lifestyle-scene": "caLayLifestyleScene",
-  // legacy（prompt v1）值：全量重分析完成后随枚举一并清理。
-  centered: "caLayCentered",
-  "left-aligned": "caLayLeftAligned",
-  "split-layout": "caLaySplit",
-  "full-bleed": "caLayFullBleed",
-  grid: "caLayGrid",
 };
 
 const RATIO_LABEL_MAP: Record<string, DictionaryKey> = {
