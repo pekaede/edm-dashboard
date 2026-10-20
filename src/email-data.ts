@@ -7,6 +7,8 @@ export interface EmailRecord {
   theme: string;
   keywords: string[];
   url?: string;
+  subject?: string;
+  preheader?: string;
   day_seq: number;
   source_index: number;
   market?: string;
@@ -124,6 +126,8 @@ async function supabaseAdapter(): Promise<ExtendedEmailsData> {
     theme: row.theme,
     keywords: [...row.keywords],
     url: row.original_url ?? undefined,
+    subject: row.subject ?? undefined,
+    preheader: row.preheader ?? undefined,
     day_seq: row.day_seq,
     source_index: row.source_index,
     market: row.market,

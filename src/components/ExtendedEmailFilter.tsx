@@ -1130,6 +1130,12 @@ export function ExtendedEmailFilter({
                   <th scope="col" className="w-36 px-5 py-4">
                     主题
                   </th>
+                  <th scope="col" className="min-w-56 px-5 py-4">
+                    标题
+                  </th>
+                  <th scope="col" className="min-w-56 px-5 py-4">
+                    副标题
+                  </th>
                   <th scope="col" className="px-5 py-4">
                     关键词
                   </th>
@@ -1220,6 +1226,28 @@ export function ExtendedEmailFilter({
                             query={searchQuery}
                           />
                         </span>
+                      </td>
+
+                      {/* Subject cell */}
+                      <td className="max-w-md border-b border-[var(--divider-email)] px-5 py-4 align-middle leading-6 text-[var(--text-detail)]">
+                        {email.subject ? (
+                          <span className="line-clamp-2" title={email.subject}>
+                            {email.subject}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">—</span>
+                        )}
+                      </td>
+
+                      {/* Preheader cell */}
+                      <td className="max-w-md border-b border-[var(--divider-email)] px-5 py-4 align-middle leading-6 text-[var(--text-detail)]">
+                        {email.preheader ? (
+                          <span className="line-clamp-2" title={email.preheader}>
+                            {email.preheader}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">—</span>
+                        )}
                       </td>
 
                       {/* Keywords cell with highlight and expandable truncation */}
