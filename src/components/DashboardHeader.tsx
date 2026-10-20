@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { DATA } from "../data";
 import { countEmailsByMarket, useExtendedEmails } from "../email-data";
 import { useLocale } from "../i18n";
+import { LanguageToggle } from "../i18n/LanguageToggle";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { MarketFilter } from "./MarketFilter";
 import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
@@ -38,9 +39,12 @@ export function DashboardHeader() {
             Email Marketing Intelligence
           </p>
         </div>
-        <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
-          <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{t("headerStudyPeriod")}</p>
-          <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
+        <div className="flex flex-col items-start gap-[calc(var(--card-padding)/2)] lg:items-end">
+          <LanguageToggle />
+          <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
+            <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{t("headerStudyPeriod")}</p>
+            <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
+          </div>
         </div>
       </div>
       <section

@@ -17,7 +17,6 @@ import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
 import type { MarketFilterValue } from "./components/MarketFilter";
 import type { Brand } from "./data";
-import { LanguageToggle } from "./i18n/LanguageToggle";
 import { LocaleProvider, useLocale } from "./i18n";
 import {
   SiteProvider,
@@ -285,16 +284,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-shell min-h-screen font-sans text-[var(--text-body)] antialiased">
-      <div className="relative">
-        <DashboardHeader />
-        <div className="pointer-events-none absolute inset-x-0 top-[var(--card-padding)] z-10">
-          <div className="dashboard-container flex justify-end">
-            <div className="pointer-events-auto">
-              <LanguageToggle />
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader />
 
       <main className="dashboard-container space-y-[var(--card-padding)] pb-[calc(var(--card-padding)*2)] sm:space-y-[var(--card-padding-sm)] sm:pb-[calc(var(--card-padding-sm)*2)]">
         {view === "dashboard" ? (
