@@ -150,6 +150,24 @@ function Dashboard() {
 
   useEffect(() => setSelectedBrand(null), [siteMarket]);
 
+  // 首屏渲染后趁空闲预取非默认视图（报告/邮件）的 chunk，切视图时免去加载等待；
+  // 省流模式与慢速网络（2G）跳过，不抢用户流量。
+  useEffect(() => {
+    const connection = (navigator as { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (connection?.saveData) return;
+    if (connection?.effectiveType && connection.effectiveType.includes("2g")) return;
+    const prefetch = () => {
+      void import("./components/MarkdownReport");
+      void import("./components/ExtendedEmailFilter");
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(prefetch, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // URL 市场为 null 时：显式写了市场段（marketSpecified，如 /all）→ 恢复全部市场；
   // 否则（旧链接/视图导航未写市场段）→ 保留当前站点并写回 URL（replace，不产生多余历史）。
   // 空/未知 hash 不碰 URL 与站点（旧行为：仅显示看板）。
