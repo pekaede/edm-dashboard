@@ -60,9 +60,16 @@ function formatMessage(template: string, values: TranslateValues | undefined, lo
     PLURAL_RE,
     (segment, name: string, one: string, other: string) => {
       const raw = values[name];
-      if (typeof raw !== "number") return segment;
-      const branch = pluralRules.select(raw) === "one" ? one : other;
-      return branch.replace(/#/g, numberFormat.format(raw));
+      // 调用点会传数字串（如周均 "3.4"）：与 ICU 一样按数值强制转换后再选分支。
+      const num =
+        typeof raw === "number"
+          ? raw
+          : typeof raw === "string" && raw.trim() !== ""
+            ? Number(raw)
+            : Number.NaN;
+      if (Number.isNaN(num)) return segment;
+      const branch = pluralRules.select(num) === "one" ? one : other;
+      return branch.replace(/#/g, numberFormat.format(num));
     },
   );
   return withPlurals.replace(VAR_RE, (placeholder, name: string) => {
