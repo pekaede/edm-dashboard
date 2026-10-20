@@ -8,6 +8,7 @@ import {
   type SubjectAnalysis,
 } from "../email-content-analysis";
 import { fetchEmailDataset } from "../supabase";
+import { EXTENDED_EMAIL_META } from "../email-data";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 
@@ -15,15 +16,17 @@ export interface ContentAnalysisProps {
   /** 市场代码，如 US / UK / AU / FR / DE / IT / ES / NL；null 表示未选单个市场 */
   site: string | null;
   /**
-   * 日期窗口，闭区间 [start, end]，格式为 YYYY-MM-DD。
-   * 唯一来源是调用方传入的 THREE_WEEK_WINDOW（src/three-week-aggregation.ts），
-   * 本组件不另行定义窗口。
+   * 三周窗口（默认周期），闭区间 [start, end]，格式为 YYYY-MM-DD。
+   * 来源是调用方传入的 THREE_WEEK_WINDOW（src/three-week-aggregation.ts）。
+   * 组件内可切换到三个月周期，其窗口取数据窗口 EXTENDED_EMAIL_META。
    */
   window: {
     start: string;
     end: string;
   };
 }
+
+type AnalysisPeriod = "threeWeeks" | "threeMonths";
 
 interface MetricCount {
   key: string;
@@ -459,6 +462,12 @@ function OutcomeBreakdown({
 }
 
 export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisProps) {
+  const [period, setPeriod] = useState<AnalysisPeriod>("threeWeeks");
+  // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
+  const activeWindow =
+    period === "threeWeeks"
+      ? dateWindow
+      : { start: EXTENDED_EMAIL_META.windowStart, end: EXTENDED_EMAIL_META.windowEnd };
   const [emails, setEmails] = useState<WindowEmail[] | null>(null);
   const [analysisRows, setAnalysisRows] = useState<EmailContentAnalysisRow[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -481,7 +490,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       const [emailsResult, analysisResult] = await Promise.allSettled([
         withTimeout(fetchEmailDataset(), REQUEST_TIMEOUT_MS, "邮件"),
         withTimeout(
-          fetchContentAnalysis({ market: site, start: dateWindow.start, end: dateWindow.end, signal: controller.signal }),
+          fetchContentAnalysis({ market: site, start: activeWindow.start, end: activeWindow.end, signal: controller.signal }),
           REQUEST_TIMEOUT_MS,
           "内容分析",
         ),
@@ -513,7 +522,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       }
 
       const rows = emailsResult.value.rows.filter(
-        (row) => row.market === site && row.sent_date >= dateWindow.start && row.sent_date <= dateWindow.end,
+        (row) => row.market === site && row.sent_date >= activeWindow.start && row.sent_date <= activeWindow.end,
       );
       setEmails(
         rows.map((row) => ({
@@ -528,7 +537,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       );
       setAnalysisRows(
         analysisResult.value.filter(
-          (row) => row.market === site && row.sent_date >= dateWindow.start && row.sent_date <= dateWindow.end,
+          (row) => row.market === site && row.sent_date >= activeWindow.start && row.sent_date <= activeWindow.end,
         ),
       );
       setLoading(false);
@@ -543,7 +552,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       cancelled = true;
       controller.abort();
     };
-  }, [site, dateWindow.start, dateWindow.end, retryKey]);
+  }, [site, activeWindow.start, activeWindow.end, retryKey]);
 
   const joined = useMemo(() => {
     if (emails === null) return null;
@@ -616,6 +625,40 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     );
   }, [joined]);
 
+  // 周期切换（与词云同款式）：默认三周，可切三个月（数据窗口）。
+  const periodToggle = (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="text-sm font-bold text-[var(--text-control)]">时间范围</span>
+      <div
+        role="group"
+        aria-label="选择内容分析统计周期"
+        className="grid grid-cols-2 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] p-1"
+      >
+        {([
+          ["threeWeeks", "三周"],
+          ["threeMonths", "三个月"],
+        ] as const).map(([value, label]) => {
+          const isSelected = period === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => setPeriod(value)}
+              className={`min-h-10 rounded-full px-5 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
+                isSelected
+                  ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
+                  : "text-[var(--text-label)] hover:bg-[var(--surface-wordcloud-hover)] hover:text-[var(--text-control)]"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   // 0. 未选单个市场：覆盖率分母是同市场样本，多市场聚合无意义，提示选市场而非报错。
   if (site === null) {
     return (
@@ -645,7 +688,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           正在加载 {site} 市场内容 AI 分析数据...
         </p>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">
-          窗口范围：{dateWindow.start} 至 {dateWindow.end}
+          窗口范围：{activeWindow.start} 至 {activeWindow.end}
         </p>
       </div>
     );
@@ -690,10 +733,18 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   // 4. 零行空态：窗口内无邮件（与“有邮件但未采集”区分，后者走覆盖率面板）。
   if (!coverage || coverage.sample === 0) {
     return (
-      <EmptyState
-        title="窗口内无邮件"
-        description={`市场 ${site} 在所选日期窗口（${dateWindow.start} ~ ${dateWindow.end}）内暂无邮件样本，无法计算覆盖率。`}
-      />
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-5 py-3 shadow-xs">
+          {periodToggle}
+          <span className="text-xs text-[var(--text-secondary)]">
+            日期窗口：{activeWindow.start} ~ {activeWindow.end}
+          </span>
+        </div>
+        <EmptyState
+          title="窗口内无邮件"
+          description={`市场 ${site} 在所选日期窗口（${activeWindow.start} ~ ${activeWindow.end}）内暂无邮件样本，无法计算覆盖率。`}
+        />
+      </div>
     );
   }
 
@@ -708,12 +759,13 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             市场：{site}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            日期窗口：{dateWindow.start} ~ {dateWindow.end}
+            日期窗口：{activeWindow.start} ~ {activeWindow.end}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
             （同市场同窗口 emails 样本：{totalEmails} 封）
           </span>
         </div>
+        {periodToggle}
         <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
           <span>
             采集覆盖：

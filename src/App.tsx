@@ -322,7 +322,7 @@ function Dashboard() {
             </div>
 
             <div id="content-analysis" className="scroll-mt-20 min-w-0">
-              {/* 内容 AI 分析：窗口唯一来源 THREE_WEEK_WINDOW（22 天），不另行定义 */}
+              {/* 内容 AI 分析：默认三周窗口 THREE_WEEK_WINDOW，组件内可切三个月（数据窗口） */}
               <ContentAnalysis site={siteMarket} window={THREE_WEEK_WINDOW} />
             </div>
             <DashboardFooter />
