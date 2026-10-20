@@ -1,4 +1,3 @@
-import { useId } from "react";
 import { translate, useLocale, type DictionaryKey } from "../i18n";
 
 export const MARKET_OPTIONS = [
@@ -34,61 +33,56 @@ export function MarketFilter({
 }: {
   value: MarketFilterValue;
   onChange: (market: MarketFilterValue) => void;
-  /** 各市场封数（market 代码 → 封数），用于下拉选项展示；缺失按 0 计。 */
+  /** 各市场封数（market 代码 → 封数），用于选项展示；缺失按 0 计。 */
   counts: Record<string, number>;
   /** 全部市场总封数。 */
   total: number;
   label?: string;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const resolvedLabel = label ?? t("marketFilterLabel");
-  const selectId = useId();
-  // 下拉外的新市场（如未来导入 JP）：有封数时追加为 extra 选项，避免其封数在下拉中不可见。
+  // 选项外的新市场（如未来导入 JP）：有封数时追加为 extra 选项，避免其封数不可见。
   const extraMarkets = Object.keys(counts)
     .filter((code) => counts[code] > 0 && !MARKET_OPTIONS.some((option) => option.code === code))
     .sort();
-  const formatOption = (name: string, count: number) =>
-    locale === "zh" ? `${name}（${count}${t("marketUnitEmails", { count })}）` : `${name} (${count} ${t("marketUnitEmails", { count })})`;
+  const options: Array<{ code: MarketFilterValue; name: string; count: number }> = [
+    { code: null, name: t("marketAll"), count: total },
+    ...MARKET_OPTIONS.map((option) => ({
+      code: option.code as MarketFilterValue,
+      name: t(option.labelKey),
+      count: counts[option.code] ?? 0,
+    })),
+    ...extraMarkets.map((code) => ({ code: code as MarketFilterValue, name: code, count: counts[code] })),
+  ];
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <label
-        htmlFor={selectId}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]"
-      >
+    <div className="space-y-2">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
         {resolvedLabel}
-      </label>
-      <select
-        id={selectId}
-        value={value ?? ""}
-        onChange={(event) => {
-          const next = event.target.value;
-          // 白名单校验：只接受空串（全部市场）或 MARKET_OPTIONS / 有封数的 extra 市场码；
-          // 被篡改的 DOM 值落入 null（全部市场），不进入非法筛选。
-          const isKnown =
-            next === "" ||
-            MARKET_OPTIONS.some((option) => option.code === next) ||
-            (counts[next] ?? 0) > 0;
-          onChange(next === "" || !isKnown ? null : next);
-        }}
-        aria-label={resolvedLabel}
-        className="min-h-11 max-w-full rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:border-[var(--control-filter-hover-border)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
-      >
-        <option value="">{formatOption(t("marketAll"), total)}</option>
-        {MARKET_OPTIONS.map((option) => (
-          <option key={option.code} value={option.code}>
-            {formatOption(t(option.labelKey), counts[option.code] ?? 0)}
-          </option>
-        ))}
-        {extraMarkets.map((code) => (
-          <option key={code} value={code}>
-            {formatOption(code, counts[code])}
-          </option>
-        ))}
-      </select>
-      <span className="text-xs text-[var(--text-description)]" aria-live="polite" aria-atomic="true">
-        {t("marketCurrent")}{getMarketLabel(value)}
-      </span>
+      </p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={resolvedLabel}>
+        {options.map((option) => {
+          const isSelected = value === option.code;
+          return (
+            <button
+              key={option.code ?? "all"}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onChange(option.code)}
+              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)] ${
+                isSelected
+                  ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
+                  : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
+              }`}
+            >
+              {option.name}
+              <span className={`text-xs font-semibold ${isSelected ? "text-white/70" : "text-[var(--text-description)]"}`}>
+                {option.count} {t("marketUnitEmails", { count: option.count })}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

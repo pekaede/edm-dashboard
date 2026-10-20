@@ -54,7 +54,7 @@ export function DashboardHeader() {
               {meta.market}
             </p>
           </div>
-          <div className="dashboard-site-filter [&_select]:min-h-[calc(var(--card-padding)*3)] [&_select]:rounded-[var(--card-radius)] [&_select]:border-[var(--control-filter-active-bg)] [&_select]:text-[length:var(--type-h3-size)]">
+          <div className="dashboard-site-filter min-w-0">
             <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label={t("globalSiteThreeMonths")} />
           </div>
         </div>
