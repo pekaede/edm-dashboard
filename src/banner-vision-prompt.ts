@@ -173,7 +173,7 @@ Output ONLY a valid JSON object without any Markdown formatting, fences (no \`\`
 JSON Schema:
 {
   "dominant_colors": string[], // Up to 5 color FAMILY labels, e.g. ["white", "red", "black"]. NEVER hex codes.
-  "composition": string,       // Must be one of: "centered", "left-aligned", "split-layout", "full-bleed", "grid"
+  "composition": string,       // Must be one of: ${BANNER_COMPOSITIONS.map((c) => `"${c}"`).join(", ")}
   "cta_presence": boolean,     // true only if a visually distinct CTA button-like element is VISIBLE in the image
   "cta_position": string | null, // "top" | "center" | "bottom" | "bottom-right", or null when cta_presence is false
   "text_image_ratio": string,  // Must be one of: "text-heavy", "balanced", "image-heavy"
