@@ -120,7 +120,7 @@ function renderInline(content: string): ReactNode[] {
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={index} className="font-bold text-slate-950">
+        <strong key={index} className="font-bold text-[var(--text-heading)]">
           {part.slice(2, -2)}
         </strong>
       );
@@ -128,7 +128,7 @@ function renderInline(content: string): ReactNode[] {
 
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={index} className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-700">
+        <code key={index} className="rounded bg-[var(--surface-subtle)] px-1.5 py-0.5 font-mono text-[0.9em] text-[var(--text-body)]">
           {part.slice(1, -1)}
         </code>
       );
@@ -159,7 +159,7 @@ export function MarkdownReport() {
 
   if (status !== "ready" || emails.length === 0) {
     return (
-      <div className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
+      <div className="markdown-report overflow-hidden rounded-2xl border border-[var(--border-default)]">
         <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
         <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
           {status !== "ready" ? <ExtendedEmailsState {...emailData} /> : (
@@ -180,7 +180,7 @@ export function MarkdownReport() {
   }
 
   return (
-    <article className="markdown-report overflow-hidden rounded-2xl border border-slate-200">
+    <article className="markdown-report overflow-hidden rounded-2xl border border-[var(--border-default)]">
       <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         <header className="mb-6">
@@ -217,11 +217,11 @@ export function MarkdownReport() {
           if (block.type === "heading") {
             if (block.level === 1) {
               return (
-                <header key={blockIndex} className="mb-9 border-b border-slate-200 pb-7 sm:mb-10 sm:pb-8">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
+                <header key={blockIndex} className="mb-9 border-b border-[var(--border-default)] pb-7 sm:mb-10 sm:pb-8">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-body)]">
                     {t("mrFullReport")}
                   </p>
-                  <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-slate-950 sm:text-3xl">
+                  <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-[var(--text-heading)] sm:text-3xl">
                     {renderInline(block.content)}
                   </h2>
                 </header>
@@ -232,7 +232,7 @@ export function MarkdownReport() {
               return (
                 <h5
                   key={blockIndex}
-                  className="mb-3 mt-8 text-lg font-bold leading-snug text-slate-950"
+                  className="mb-3 mt-8 text-lg font-bold leading-snug text-[var(--text-heading)]"
                 >
                   {renderInline(block.content)}
                 </h5>
@@ -242,7 +242,7 @@ export function MarkdownReport() {
             return (
               <h4
                 key={blockIndex}
-                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--accent)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-slate-950 sm:mt-12 sm:text-2xl"
+                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--accent)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-[var(--text-heading)] sm:mt-12 sm:text-2xl"
               >
                 {renderInline(block.content)}
               </h4>
@@ -253,7 +253,7 @@ export function MarkdownReport() {
             return (
               <blockquote
                 key={blockIndex}
-                className="my-6 space-y-2 rounded-xl border-l-4 border-[var(--theme-behavior)] bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700 sm:px-5"
+                className="my-6 space-y-2 rounded-xl border-l-4 border-[var(--theme-behavior)] bg-[var(--surface-subtle)] px-4 py-4 text-sm leading-7 text-[var(--text-body)] sm:px-5"
               >
                 {block.lines.map((line, lineIndex) => (
                   <p key={lineIndex}>{renderInline(line)}</p>
@@ -267,7 +267,7 @@ export function MarkdownReport() {
             return (
               <List
                 key={blockIndex}
-                className={`my-5 space-y-3 pl-6 text-[length:var(--type-body-report-size)] leading-7 text-slate-700 marker:font-bold marker:text-slate-700 ${
+                className={`my-5 space-y-3 pl-6 text-[length:var(--type-body-report-size)] leading-7 text-[var(--text-body)] marker:font-bold marker:text-[var(--text-body)] ${
                   block.type === "ordered-list" ? "list-decimal" : "list-disc"
                 }`}
               >
@@ -290,25 +290,25 @@ export function MarkdownReport() {
                 tabIndex={0}
               >
                 <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-6">
-                  <thead className="bg-slate-100 text-slate-950">
+                  <thead className="bg-[var(--surface-subtle)] text-[var(--text-heading)]">
                     <tr>
                       {block.headers.map((header, cellIndex) => (
                         <th
                           key={cellIndex}
                           scope="col"
-                          className="border-b border-slate-200 px-4 py-3.5 font-bold"
+                          className="border-b border-[var(--border-default)] px-4 py-3.5 font-bold"
                         >
                           {renderInline(header)}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--divider)] text-slate-700">
+                  <tbody className="divide-y divide-[var(--divider)] text-[var(--text-body)]">
                     {block.rows.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="align-top transition-colors even:bg-slate-50/70 hover:bg-slate-100/80">
+                      <tr key={rowIndex} className="align-top transition-colors even:bg-[var(--surface-subtle)] hover:bg-[var(--surface-subtle)]">
                         {row.map((cell, cellIndex) =>
                           cellIndex === 0 ? (
-                            <th key={cellIndex} scope="row" className="px-4 py-4 font-bold text-slate-950">
+                            <th key={cellIndex} scope="row" className="px-4 py-4 font-bold text-[var(--text-heading)]">
                               {renderInline(cell)}
                             </th>
                           ) : (
@@ -326,7 +326,7 @@ export function MarkdownReport() {
           }
 
           return (
-            <p key={blockIndex} className="my-5 text-[15px] leading-7 text-slate-700 sm:text-base sm:leading-8">
+            <p key={blockIndex} className="my-5 text-[15px] leading-7 text-[var(--text-body)] sm:text-base sm:leading-8">
               {renderInline(block.content)}
             </p>
           );

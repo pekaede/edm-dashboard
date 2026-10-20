@@ -2,7 +2,7 @@
  * 品牌营销触达趋势看板 - 90天日历视图数据层
  *
  * 数据源：统一适配后的逐封邮件记录
- * 覆盖窗口：2026-07-16 至 2026-10-15（共 92 天）
+ * 覆盖窗口：由 EXTENDED_EMAIL_META 派生（live 93 天 / JSON 快照 92 天）
  * 品牌和市场计数均来自传入的数据源，不维护静态样本总数。
  *
  * 注：仅提供数据模型与导出接口，不含 UI 组件。
@@ -74,7 +74,7 @@ export interface BrandCalendarData {
     days: number;
   };
   totalEmails: number;
-  /** 每品牌每日封数（date → count，覆盖整个窗口 2026-07-16 ~ 2026-10-15，共 92 天） */
+  /** 每品牌每日封数（date → count，覆盖整个窗口） */
   dailyCounts: Record<string, number>;
   /** 关键词索引（keyword → 该关键词出现的去重日期列表，按升序排列） */
   keywordIndex: Record<string, string[]>;
@@ -107,7 +107,7 @@ export interface OverlapComparisonItem {
 }
 
 // ==========================================
-// 日期序列工具（生成 2026-07-16 至 2026-10-15 全部 92 天）
+// 日期序列工具（生成窗口内全部日期）
 // ==========================================
 
 export const CALENDAR_START_DATE = EXTENDED_EMAIL_META.windowStart;
@@ -128,7 +128,7 @@ function generateDateRange(startStr: string, endStr: string): string[] {
 export const CALENDAR_DATES: readonly string[] = Object.freeze(
   generateDateRange(CALENDAR_START_DATE, CALENDAR_END_DATE)
 );
-export const CALENDAR_TOTAL_DAYS = CALENDAR_DATES.length; // 92 天
+export const CALENDAR_TOTAL_DAYS = CALENDAR_DATES.length; // 窗口总天数（由日期序列派生）
 
 // ==========================================
 // 数据转换与索引构建
@@ -144,7 +144,7 @@ function processBrand(
     keywords: [...email.keywords],
   }));
 
-  // 1. 每品牌每日封数（date → count，覆盖整个 92 天窗口，未发信日期置 0）
+  // 1. 每品牌每日封数（date → count，覆盖整个窗口，未发信日期置 0）
   const dailyCounts: Record<string, number> = {};
   for (const date of CALENDAR_DATES) {
     dailyCounts[date] = 0;
@@ -350,7 +350,7 @@ export interface CalendarValidationResult {
  * 1. 总封数与调用方传入的数据源精确总数一致
  * 2. 6 品牌封数各自分别与传入邮件一致
  * 3. 6 品牌主题分布各自分别与传入邮件一致
- * 4. 每日封数完整覆盖 92 天窗口，无缺失日期，各日封数累加与总量守恒
+ * 4. 每日封数完整覆盖整个窗口，无缺失日期，各日封数累加与总量守恒
  * 5. 关键词索引日期在窗口内升序排列
  */
 export function validateCalendarData(emails: EmailRecord[], built: CalendarData, expectedTotalEmails: number): CalendarValidationResult {
@@ -394,7 +394,7 @@ export function validateCalendarData(emails: EmailRecord[], built: CalendarData,
       );
     }
 
-    // 每日封数覆盖检查（92天全量日期）
+    // 每日封数覆盖检查（全窗口日期）
     let dailySum = 0;
     let dailyCoverageDays = 0;
     for (const date of CALENDAR_DATES) {
