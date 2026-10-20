@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocale } from "../i18n";
 
 export interface PageNavSection {
   id: string;
@@ -85,13 +86,15 @@ export function PageNav({ sections }: PageNavProps) {
     }
   };
 
+  const { t } = useLocale();
+
   if (!sections || sections.length === 0) {
     return null;
   }
 
   return (
     <nav
-      aria-label="页面内容导航"
+      aria-label={t("pageNavAriaLabel")}
       className="sticky top-0 z-20 border-b border-[var(--border-default)] bg-[var(--surface-card)]/95 backdrop-blur-sm shadow-xs transition-colors"
     >
       <div className="dashboard-container">

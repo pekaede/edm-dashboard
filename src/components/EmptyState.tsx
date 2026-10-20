@@ -1,3 +1,5 @@
+import { useLocale } from "../i18n";
+
 export interface EmptyStateProps {
   title: string;
   description?: string;
@@ -8,9 +10,10 @@ export interface EmptyStateProps {
 export function EmptyState({
   title,
   description,
-  actionLabel = "重置筛选",
+  actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const { t } = useLocale();
   return (
     <div
       role="status"
@@ -53,7 +56,7 @@ export function EmptyState({
           onClick={onAction}
           className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
-          {actionLabel}
+          {actionLabel ?? t("emptyStateReset")}
         </button>
       ) : null}
     </div>

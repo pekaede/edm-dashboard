@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import { DATA } from "../data";
 import { countEmailsByMarket, useExtendedEmails } from "../email-data";
+import { useLocale } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { MarketFilter } from "./MarketFilter";
 import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 
 export function DashboardHeader() {
+  const { t } = useLocale();
   const { status, emails, meta } = useSiteEmails();
   const allEmails = useExtendedEmails();
   const { market, setMarket } = useSiteSelection();
@@ -18,9 +20,9 @@ export function DashboardHeader() {
   const tags = [
     { label: meta.market, theme: "price" },
     { label: meta.source, theme: "behavior" },
-    { label: `${data ? data.total : "—"} 封样本（3 周）`, theme: "new" },
+    { label: `${data ? data.total : "—"} ${t("headerSamplesThreeWeeks")}`, theme: "new" },
     {
-      label: `3 个月有记录品牌 ${data ? meta.brandCount : "—"} · 研究周期 ${meta.weekCount} 周`,
+      label: `${t("headerThreeMonthBrands")} ${data ? meta.brandCount : "—"} · ${t("headerStudyPeriod")} ${meta.weekCount} ${t("headerWeeks")}`,
       theme: "lifestyle",
     },
   ];
@@ -37,7 +39,7 @@ export function DashboardHeader() {
           </p>
         </div>
         <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
-          <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">研究周期</p>
+          <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{t("headerStudyPeriod")}</p>
           <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
         </div>
       </div>
@@ -47,16 +49,16 @@ export function DashboardHeader() {
       >
         <div className="flex flex-col gap-[var(--card-padding)] lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h2 id="global-site-title" className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">当前全局站点</h2>
+            <h2 id="global-site-title" className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{t("globalSite")}</h2>
             <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-h2-size)] font-[number:var(--type-h2-weight)] leading-[var(--type-h2-leading)] text-[var(--text-heading)] sm:text-[length:var(--type-h2-size-sm)]">
               {meta.market}
             </p>
           </div>
           <div className="dashboard-site-filter [&_select]:min-h-[calc(var(--card-padding)*3)] [&_select]:rounded-[var(--card-radius)] [&_select]:border-[var(--control-filter-active-bg)] [&_select]:text-[length:var(--type-h3-size)]">
-            <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label="全局站点（三个月）" />
+            <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label={t("globalSiteThreeMonths")} />
           </div>
         </div>
-        <ul className="flex flex-wrap gap-[calc(var(--card-padding)/2)]" aria-label="数据范围摘要">
+        <ul className="flex flex-wrap gap-[calc(var(--card-padding)/2)]" aria-label={t("headerDataScopeSummary")}>
           {tags.map(({ label, theme }) => (
             <li
               key={label}
@@ -71,8 +73,8 @@ export function DashboardHeader() {
           ))}
         </ul>
         <p className="text-[length:var(--type-helper-size)] leading-[var(--type-body-leading)] text-[var(--text-secondary)]">
-          {meta.source} · 查询固定至 {meta.windowEnd}。站点联动看板、OnePage、邮件、日历和词云；跨市场对比独立选择。
-          {status === "loading" ? " 计数加载中。" : null}
+          {meta.source} · {t("headerQueryFixedTo")} {meta.windowEnd}{t("headerSiteLinkedDescription")}
+          {status === "loading" ? t("headerCountLoading") : null}
         </p>
       </section>
     </header>

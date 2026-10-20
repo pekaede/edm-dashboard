@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useLocale } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { aggregateThreeWeek, buildSiteInsights, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { Card } from "./Card";
@@ -10,6 +11,7 @@ import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 const INSIGHT_THEMES = ["price", "behavior", "new", "lifestyle"];
 
 export function Insights() {
+  const { t } = useLocale();
   const emailData = useSiteEmails();
   const { market, setMarket } = useSiteSelection();
 
@@ -25,7 +27,7 @@ export function Insights() {
 
   if (emailData.status !== "ready") {
     return (
-      <Card title="关键洞察">
+      <Card title={t("insightsTitle")}>
         <ExtendedEmailsState {...emailData} />
       </Card>
     );
@@ -35,12 +37,12 @@ export function Insights() {
     const marketLabel = getMarketLabel(market);
     const windowText = aggregated ? formatWindowRange(aggregated.window) : formatWindowRange(THREE_WEEK_WINDOW);
     return (
-      <Card title="关键洞察" hint={`${emailData.meta.market} · 三周实时聚合`}>
+      <Card title={t("insightsTitle")} hint={`${emailData.meta.market} · ${t("insightsHint")}`}>
         <div className="py-4">
           <EmptyState
-            title={`${marketLabel}暂无三周洞察`}
-            description={`该市场在三周聚合窗口（${windowText}）内暂无公开邮件收录记录，不推断主题偏好或触达策略。看板统计总量均为 Milled 公开收录样本，非品牌私域全量投递。`}
-            actionLabel={market ? "切换至全部市场" : "重新拉取"}
+            title={`${marketLabel}${t("insightsEmptyTitle")}`}
+            description={`${t("insightsEmptyDesc1")}${windowText}${t("insightsEmptyDesc2")}`}
+            actionLabel={market ? t("insightsSwitchAll") : t("insightsRetry")}
             onAction={market ? () => setMarket(null) : emailData.retry}
           />
         </div>
@@ -49,7 +51,7 @@ export function Insights() {
   }
 
   return (
-    <Card title="关键洞察" hint={`${emailData.meta.market} · 三周实时聚合`}>
+    <Card title={t("insightsTitle")} hint={`${emailData.meta.market} · ${t("insightsHint")}`}>
       <ol className="grid h-full auto-rows-fr gap-3 text-sm leading-6 sm:grid-cols-2 xl:grid-cols-1">
         {insights.map((s, i) => (
           <li
