@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { translateIn, type DictionaryKey } from "./i18n";
 import {
   DEFAULT_PAGE_STATE,
   PageState,
@@ -9,6 +10,14 @@ import {
   parseHash,
   URL_SYNC_EVENT,
 } from "./url-state";
+
+/** aria-label 随语言切换：就绪探针的选择器须同时匹配中英取值，文案以字典为单一来源。 */
+function ariaLabelSelectors(element: string, key: DictionaryKey, suffix: string, contains = false): string {
+  const op = contains ? "*=" : "=";
+  return (["zh", "en"] as const)
+    .map((locale) => `${element}[aria-label${op}"${translateIn(locale, key)}"]${suffix}`)
+    .join(", ");
+}
 
 const SCROLL_STORAGE_PREFIX = "edm_reading_scroll_";
 const scrollPositionCache = new Map<string, number>();
@@ -198,7 +207,7 @@ function isTargetViewReady(
     case "emails": {
       // 必须有数据行 tbody tr
       const row =
-        main.querySelector('section[aria-label="邮件视图"] table tbody tr') ||
+        main.querySelector(ariaLabelSelectors("section", "viewEmails", " table tbody tr")) ||
         main.querySelector("table tbody tr");
       return Boolean(row);
     }
@@ -218,14 +227,14 @@ function isTargetViewReady(
       if (!calendar) return false;
       return Boolean(
         calendar.querySelector('[role="group"]') ||
-          calendar.querySelector('[aria-label*="品牌"]') ||
+          calendar.querySelector(ariaLabelSelectors("", "calBrandFilterAria", "", true)) ||
           calendar.querySelector(".calendar-heatmap") ||
           calendar.querySelector("table"),
       );
     }
     case "dashboard": {
       return Boolean(
-        main.querySelector('section[aria-label="OnePage 摘要"]') ||
+        main.querySelector(ariaLabelSelectors("section", "sectionSummary", "")) ||
           main.querySelector(".dashboard-overview-grid") ||
           main.querySelector('section[aria-labelledby="kpi-title"]'),
       );
