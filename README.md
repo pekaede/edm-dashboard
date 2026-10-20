@@ -53,7 +53,7 @@ npm run build
 
 ## 部署到 Cloudflare Pages
 
-线上地址：[https://edm-dashboard.pages.dev](https://edm-dashboard.pages.dev)。
+线上地址：[https://edmwatch.com](https://edmwatch.com)。
 
 - 构建命令：`npm run build`
 - 构建输出目录：`dist`
