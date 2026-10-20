@@ -1,3 +1,5 @@
+import { LIVE_WINDOW } from "./data-window";
+
 export interface SupabaseEmailRow {
   [column: string]: unknown;
   brand: string;
@@ -133,8 +135,8 @@ export async function fetchEmailDataset(): Promise<EmailDataset> {
   const keyColumns = await getEmailKeyColumns(baseUrl, publishableKey);
   const columns = new Set(["brand", "sent_date", "day_seq", "source_index", "theme", "keywords", "original_url", "market", "subject", "preheader", "banner_url", ...keyColumns]);
   endpoint.searchParams.set("select", [...columns].join(","));
-  endpoint.searchParams.append("sent_date", "gte.2026-07-18");
-  endpoint.searchParams.append("sent_date", "lte.2026-10-18");
+  endpoint.searchParams.append("sent_date", `gte.${LIVE_WINDOW.start}`);
+  endpoint.searchParams.append("sent_date", `lte.${LIVE_WINDOW.end}`);
   const orderColumns = [...new Set(["sent_date", "brand", "day_seq", ...keyColumns])];
   endpoint.searchParams.set("order", orderColumns.map((column) => `${column}.${column === "sent_date" ? "desc" : "asc"}`).join(","));
   endpoint.searchParams.set("limit", String(PAGE_SIZE));
