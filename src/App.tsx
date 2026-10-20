@@ -312,12 +312,12 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="grid items-start gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] lg:grid-cols-2">
+            <div className="grid gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] lg:grid-cols-2">
               <div id="keywords" className="scroll-mt-20 min-w-0">
                 <WordCloud />
               </div>
               <div id="calendar" className="scroll-mt-20 min-w-0">
-                <CalendarView key={siteMarket ?? "all"} />
+                <CalendarView key={siteMarket ?? "all"} className="h-full" />
               </div>
             </div>
 
