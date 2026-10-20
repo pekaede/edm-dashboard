@@ -41,7 +41,7 @@ export function ExtendedEmailsState({
     const marketName = meta?.market;
     return (
       <EmptyState
-        title={emptyTitle ?? (marketName ? t("stEmptyMarketTitle").replace("{market}", marketName) : t("stEmptyNoMatch"))}
+        title={emptyTitle ?? (marketName ? t("stEmptyMarketTitle", { market: marketName }) : t("stEmptyNoMatch"))}
         description={
           emptyDescription ??
           (marketName ? t("stEmptyMarketDesc") : t("stEmptyFilterDesc"))
@@ -154,7 +154,7 @@ export function ExtendedEmailsState({
     const description = error
       ? error
       : safeExpected !== null
-        ? t("stIncompleteDescToken").replace("{loaded}", String(safeLoaded)).replace("{expected}", String(safeExpected))
+        ? t("stIncompleteDescToken", { loaded: safeLoaded, expected: safeExpected })
         : t("stIncompleteDescPlain");
 
     return (

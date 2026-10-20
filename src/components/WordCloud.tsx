@@ -157,14 +157,13 @@ export function WordCloud() {
   const displayedWords = groupedWords.flatMap((category) => category.words);
   const sampleTotal = isThreeWeeks ? threeWeekEmails.length : marketFilteredEmails.length;
   const catName = (key: string, fallback: string) => (WC_CATEGORY_KEYS[key] ? t(WC_CATEGORY_KEYS[key]) : fallback);
-  const fillTokens = (template: string, count: number) =>
-    template.replace("{market}", marketLabel).replace("{count}", String(count));
+  const fillTokens = (key: DictionaryKey, count: number) => t(key, { market: marketLabel, count });
   const title = isThreeWeeks
-    ? `${t("wcTitleBase")}${t("wcTitleWeeks")}${status === "ready" ? fillTokens(t("wcTitleSuffixWeeks"), threeWeekEmails.length) : ""}`
-    : `${t("wcTitleBase")}${t("wcTitleMonths")}${status === "ready" ? fillTokens(t("wcTitleSuffixMonths"), marketFilteredEmails.length) : ""}`;
+    ? `${t("wcTitleBase")}${t("wcTitleWeeks")}${status === "ready" ? fillTokens("wcTitleSuffixWeeks", threeWeekEmails.length) : ""}`
+    : `${t("wcTitleBase")}${t("wcTitleMonths")}${status === "ready" ? fillTokens("wcTitleSuffixMonths", marketFilteredEmails.length) : ""}`;
   const hint = isThreeWeeks
-    ? t("wcHintWeeks").replace("{range}", THREE_WEEK_RANGE).replace("{market}", marketLabel)
-    : t("wcHintMonths").replace("{range}", meta.range).replace("{market}", marketLabel);
+    ? t("wcHintWeeks", { range: THREE_WEEK_RANGE, market: marketLabel })
+    : t("wcHintMonths", { range: meta.range, market: marketLabel });
 
   return (
     <Card title={title} hint={hint}>
@@ -209,7 +208,7 @@ export function WordCloud() {
           <div className={`p-[var(--card-padding)] sm:p-[var(--card-padding-sm)] ${EMPTY_STATE_CLASS_NAME}`}>
             <EmptyState
               title={t("wcEmptyMarketTitle")}
-              description={t("wcEmptyMarketDesc").replace("{market}", marketLabel)}
+              description={t("wcEmptyMarketDesc", { market: marketLabel })}
               actionLabel={selectedMarket === null ? t("wcRetry") : t("wcSwitchAll")}
               onAction={selectedMarket === null ? retry : () => setMarket(null)}
             />
@@ -255,8 +254,8 @@ export function WordCloud() {
                     </h3>
                     <span className="shrink-0 text-xs tabular-nums text-[var(--text-caption)]">
                       {category.total > MAX_WORDS_PER_CATEGORY
-                        ? t("wcShowing").replace("{shown}", String(category.words.length)).replace("{total}", String(category.total))
-                        : t("wcWordCount").replace("{n}", String(category.words.length))}
+                        ? t("wcShowing", { shown: category.words.length, total: category.total })
+                        : t("wcWordCount", { n: category.words.length })}
                     </span>
                   </div>
 
@@ -264,11 +263,11 @@ export function WordCloud() {
                     {category.words.map((word) => (
                       <li key={word.text} className="min-w-0">
                         <Tooltip
-                          label={t("wcWordLabel").replace("{word}", word.text).replace("{count}", String(word.count)).replace("{category}", catName(category.key, category.label)).replace("{pct}", (word.count / sampleTotal * 100).toFixed(1))}
+                          label={t("wcWordLabel", { word: word.text, count: word.count, category: catName(category.key, category.label), pct: (word.count / sampleTotal * 100).toFixed(1) })}
                           content={<>
                             <div className="font-semibold">{word.text} · {catName(category.key, category.label)}</div>
-                            <div className="mt-1 font-mono font-bold">{word.count} {t("marketUnitEmails")} · {t("wcSampleShare")} {(word.count / sampleTotal * 100).toFixed(1)}%</div>
-                            <div className="mt-1">{marketLabel} · {isThreeWeeks ? THREE_WEEK_RANGE : meta.range} · {t("wcDenominator")} {sampleTotal} {t("marketUnitEmails")}</div>
+                            <div className="mt-1 font-mono font-bold">{word.count} {t("marketUnitEmails", { count: word.count })} · {t("wcSampleShare")} {(word.count / sampleTotal * 100).toFixed(1)}%</div>
+                            <div className="mt-1">{marketLabel} · {isThreeWeeks ? THREE_WEEK_RANGE : meta.range} · {t("wcDenominator")} {sampleTotal} {t("marketUnitEmails", { count: sampleTotal })}</div>
                           </>}
                           className="inline-block max-w-full break-words rounded px-1 py-1 font-semibold tracking-tight hover:bg-[var(--surface-wordcloud-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                           style={{

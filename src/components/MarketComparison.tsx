@@ -238,7 +238,7 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
         <thead className="bg-[var(--surface-subtle)] text-[var(--text-heading)]">
           <tr className="border-b border-[var(--border-default)]">
             <th scope="col" className="px-3 py-3 text-left">{isTheme ? t("mcColTheme") : t("mcColBrand")}</th>
-            {selected.map((market) => <th key={market} scope="col" className="min-w-40 px-3 py-3 text-left">{getMarketLabel(market)} · {market}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcMarketSample").replace("{n}", String(data.marketTotals.get(market) ?? 0))}</span></th>)}
+            {selected.map((market) => <th key={market} scope="col" className="min-w-40 px-3 py-3 text-left">{getMarketLabel(market)} · {market}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcMarketSample", { n: data.marketTotals.get(market) ?? 0 })}</span></th>)}
             <th scope="col" className="min-w-32 px-3 py-3 text-right">{t("mcColAllMarkets")}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcColAllMarketsSub")}</span></th>
           </tr>
         </thead>
@@ -262,21 +262,21 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
                     <td key={market} className={"px-2 py-2 align-top " + (highest ? "bg-[var(--accent-tint)]" : "")}>
                       <Tooltip
                         className={"rounded-lg p-2 hover:ring-2 hover:ring-[var(--control-focus)] " + FOCUS_CLASS_NAME}
-                        label={t("mcCellLabel").replace("{label}", row.label).replace("{market}", market).replace("{count}", String(count)).replace("{share}", share).replace("{avg}", average) + (highest ? t("mcHighestSuffix") : "")}
+                        label={t("mcCellLabel", { label: row.label, market: market, count: count, share: share, avg: average }) + (highest ? t("mcHighestSuffix") : "")}
                         content={<>
                           <div className="font-semibold">{row.label} · {getMarketLabel(market)}（{market}）</div>
-                          <div className="mt-1 font-mono font-bold">{t("mcCellLine").replace("{count}", String(count)).replace("{share}", share).replace("{avg}", average)}</div>
-                          <div className="mt-1">{data.windowStart} – {data.windowEnd} · {t("mcMarketDenominator")} {marketTotal} {t("marketUnitEmails")} · {t("mcVisible")}</div>
+                          <div className="mt-1 font-mono font-bold">{t("mcCellLine", { count: count, share: share, avg: average })}</div>
+                          <div className="mt-1">{data.windowStart} – {data.windowEnd} · {t("mcMarketDenominator")} {marketTotal} {t("marketUnitEmails", { count: marketTotal })} · {t("mcVisible")}</div>
                         </>}
                       >
-                        <div className="flex flex-wrap items-baseline justify-between gap-1 text-[var(--text-heading)]"><strong className="font-mono tabular-nums">{isTheme ? share : `${count} ${t("marketUnitEmails")}`}</strong>{highest ? <span className="text-xs font-bold text-[var(--accent-ink)]">{t("mcHighest")}</span> : null}</div>
+                        <div className="flex flex-wrap items-baseline justify-between gap-1 text-[var(--text-heading)]"><strong className="font-mono tabular-nums">{isTheme ? share : `${count} ${t("marketUnitEmails", { count })}`}</strong>{highest ? <span className="text-xs font-bold text-[var(--accent-ink)]">{t("mcHighest")}</span> : null}</div>
                         <div className="my-2 h-2 overflow-hidden rounded-full bg-[var(--chart-empty)]" aria-hidden="true"><div className="h-full rounded-full" style={{ width: width + "%", backgroundColor: isTheme ? themeColor(row.key) : "var(--control-active-bg)" }} /></div>
-                        <div className="text-xs tabular-nums text-[var(--text-secondary)]">{isTheme ? `${count} ${t("marketUnitEmails")} / ${marketTotal} ${t("marketUnitEmails")}` : `${t("mcWeeklyAvg")} ${average} ${t("marketUnitEmails")}`}</div>
+                        <div className="text-xs tabular-nums text-[var(--text-secondary)]">{isTheme ? `${count} ${t("marketUnitEmails", { count })} / ${marketTotal} ${t("marketUnitEmails", { count: marketTotal })}` : `${t("mcWeeklyAvg")} ${average} ${t("marketUnitEmails", { count: average })}`}</div>
                       </Tooltip>
                     </td>
                   );
                 })}
-                <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--text-heading)]">{total} {t("marketUnitEmails")}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{isTheme ? shareLabel(total, data.grandTotal) : `${t("mcWeeklyAvg")} ${weeklyAvg(total, data.windowDays)} ${t("marketUnitEmails")}`}</span></td>
+                <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--text-heading)]">{total} {t("marketUnitEmails", { count: total })}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{isTheme ? shareLabel(total, data.grandTotal) : `${t("mcWeeklyAvg")} ${weeklyAvg(total, data.windowDays)} ${t("marketUnitEmails", { count: weeklyAvg(total, data.windowDays) })}`}</span></td>
               </tr>
             );
           })}
@@ -288,14 +288,14 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
               const total = data.marketTotals.get(market) ?? 0;
               return (
                 <td key={market} className="px-3 py-3 font-mono tabular-nums">
-                  {total} {t("marketUnitEmails")}
-                  {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails")}</span> : null}
+                  {total} {t("marketUnitEmails", { count: total })}
+                  {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails", { count: weeklyAvg(total, data.windowDays) })}</span> : null}
                 </td>
               );
             })}
             <td className="px-3 py-3 text-right font-mono tabular-nums">
-              {data.grandTotal} {t("marketUnitEmails")}
-              {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(data.grandTotal, data.windowDays)} {t("marketUnitEmails")}</span> : null}
+              {data.grandTotal} {t("marketUnitEmails", { count: data.grandTotal })}
+              {!isTheme ? <span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcWeeklyAvg")} {weeklyAvg(data.grandTotal, data.windowDays)} {t("marketUnitEmails", { count: weeklyAvg(data.grandTotal, data.windowDays) })}</span> : null}
             </td>
           </tr>
         </tfoot>
@@ -313,15 +313,15 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label htmlFor={id} className="text-sm font-bold text-[var(--text-heading)]">{t("mcFocusBrand")}</label>
         <select id={id} value={brand} onChange={(event) => onBrandChange(event.target.value)} className={"min-h-11 max-w-full rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] " + FOCUS_CLASS_NAME}>{data.brands.map((name) => <option key={name}>{name}</option>)}</select>
-        <span className="text-xs text-[var(--text-secondary)]">{t("mcScaleNote").replace("{max}", String(maximum))}</span>
+        <span className="text-xs text-[var(--text-secondary)]">{t("mcScaleNote", { max: maximum })}</span>
       </div>
-      <div role="region" tabIndex={0} aria-label={t("mcFreqRegionAria").replace("{brand}", brand)} className={"overflow-x-auto rounded-xl border border-[var(--border-default)] p-2 " + FOCUS_CLASS_NAME}>
+      <div role="region" tabIndex={0} aria-label={t("mcFreqRegionAria", { brand: brand })} className={"overflow-x-auto rounded-xl border border-[var(--border-default)] p-2 " + FOCUS_CLASS_NAME}>
         <div className="space-y-5 p-2" style={{ minWidth: Math.max(480, data.weeks.length * 48) + "px" }}>
           {series.map(({ market, weekly }) => {
             const total = weekly.reduce((sum, count) => sum + count, 0);
             return (
-              <section key={market} aria-label={t("mcFreqSectionAria").replace("{brand}", brand).replace("{market}", market)}>
-                <h4 className="mb-2 flex flex-wrap items-baseline gap-x-3 text-sm font-bold text-[var(--text-heading)]">{getMarketLabel(market)} · {market}<span className="text-xs font-normal text-[var(--text-secondary)]">{total} {t("marketUnitEmails")} · {t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails")}</span></h4>
+              <section key={market} aria-label={t("mcFreqSectionAria", { brand: brand, market: market })}>
+                <h4 className="mb-2 flex flex-wrap items-baseline gap-x-3 text-sm font-bold text-[var(--text-heading)]">{getMarketLabel(market)} · {market}<span className="text-xs font-normal text-[var(--text-secondary)]">{total} {t("marketUnitEmails", { count: total })} · {t("mcWeeklyAvg")} {weeklyAvg(total, data.windowDays)} {t("marketUnitEmails", { count: weeklyAvg(total, data.windowDays) })}</span></h4>
                 <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }}>
                   {weekly.map((count, index) => {
                     const week = data.weeks[index];
@@ -331,11 +331,11 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
                       <Tooltip
                         key={week.label}
                         className={"rounded-md px-1 py-2 hover:ring-2 hover:ring-[var(--control-focus)] " + FOCUS_CLASS_NAME}
-                        label={t("mcFreqLabel").replace("{brand}", brand).replace("{market}", market).replace("{week}", week.label).replace("{start}", week.start).replace("{end}", week.end).replace("{count}", String(count)).replace("{days}", String(days)) + (highest ? t("mcFreqHighestSuffix") : "")}
+                        label={t("mcFreqLabel", { brand: brand, market: market, week: week.label, start: week.start, end: week.end, count: count, days: days }) + (highest ? t("mcFreqHighestSuffix") : "")}
                         content={<>
                           <div className="font-semibold">{brand} · {market} · {week.label}（{week.range}）</div>
-                          <div className="mt-1 font-mono font-bold">{t("mcFreqLine").replace("{count}", String(count)).replace("{days}", String(days)).replace("{perDay}", (count / days).toFixed(2))}</div>
-                          <div className="mt-1">{t("mcFreqLine3").replace("{start}", week.start).replace("{end}", week.end).replace("{max}", String(maximum))}</div>
+                          <div className="mt-1 font-mono font-bold">{t("mcFreqLine", { count: count, days: days, perDay: (count / days).toFixed(2) })}</div>
+                          <div className="mt-1">{t("mcFreqLine3", { start: week.start, end: week.end, max: maximum })}</div>
                         </>}
                       >
                         <div className={"h-9 text-center font-mono text-xs tabular-nums " + (highest ? "font-bold text-[var(--accent-ink)]" : "text-[var(--text-heading)]")}>{count}<span className="block text-xs">{highest ? t("mcHighest") : ""}</span></div>
@@ -401,7 +401,7 @@ export function MarketComparison({
   const id = useId();
   const data = useMemo(() => emails.length > 0 ? aggregateComparison(emails) : null, [emails]);
   const hint = data
-    ? t("mcHint").replace("{start}", data.windowStart).replace("{end}", data.windowEnd).replace("{total}", String(data.grandTotal))
+    ? t("mcHint", { start: data.windowStart, end: data.windowEnd, total: data.grandTotal })
     : t("mcHintFallback");
 
   if (status === "ready" && !data) return <Card title={t("mcTitle")} hint={hint}><p className="py-6 text-center text-sm text-[var(--text-secondary)]" role="status">{t("mcEmpty")}</p></Card>;
@@ -414,11 +414,11 @@ export function MarketComparison({
 
   return (
     <Card title={t("mcTitle")} hint={hint}>
-      {status === "incomplete" ? <p className="mb-4 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3 text-sm text-[var(--status-warning)]" role="alert">{t("mcIncomplete").replace("{got}", String(emailTotal)).replace("{expected}", String(meta.total))}</p> : null}
+      {status === "incomplete" ? <p className="mb-4 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3 text-sm text-[var(--status-warning)]" role="alert">{t("mcIncomplete", { got: emailTotal, expected: meta.total })}</p> : null}
       <fieldset className="mb-5">
         <legend className="mb-2 text-sm font-bold text-[var(--text-heading)]">{t("mcSelectLegend")}</legend>
         <div className="flex flex-wrap gap-2">
-          {data.markets.map((market) => <label key={market} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] hover:border-[var(--control-hover-border)]"><input type="checkbox" checked={selected.includes(market)} onChange={() => setSelected((previous) => previous.includes(market) ? previous.filter((code) => code !== market) : [...previous, market])} className={"size-4 accent-[var(--control-active-bg)] " + FOCUS_CLASS_NAME} />{getMarketLabel(market)} · {market}<span className="text-xs text-[var(--text-secondary)]">{data.marketTotals.get(market) ?? 0} {t("marketUnitEmails")}</span></label>)}
+          {data.markets.map((market) => <label key={market} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] px-3 text-sm text-[var(--text-body)] hover:border-[var(--control-hover-border)]"><input type="checkbox" checked={selected.includes(market)} onChange={() => setSelected((previous) => previous.includes(market) ? previous.filter((code) => code !== market) : [...previous, market])} className={"size-4 accent-[var(--control-active-bg)] " + FOCUS_CLASS_NAME} />{getMarketLabel(market)} · {market}<span className="text-xs text-[var(--text-secondary)]">{data.marketTotals.get(market) ?? 0} {t("marketUnitEmails", { count: data.marketTotals.get(market) ?? 0 })}</span></label>)}
         </div>
       </fieldset>
       <div role="tablist" aria-label={t("mcTablistAria")} className="mb-4 flex flex-wrap gap-2 rounded-xl bg-[var(--surface-subtle)] p-2">
@@ -439,7 +439,7 @@ export function MarketComparison({
       <section id={id + "-panel"} role="tabpanel" aria-labelledby={id + "-tab-" + view} tabIndex={0} className={"rounded-lg p-1 " + FOCUS_CLASS_NAME}>
         <h3 className="text-base font-bold text-[var(--text-heading)]">{t(task.questionKey)}</h3>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{t(task.descKey)}</p>
-        <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]" role="status">{t("mcStatusLine").replace("{n}", String(effectiveSelected.length)).replace("{sample}", String(selectedTotal)).replace("{total}", String(data.grandTotal)).replace("{days}", String(data.windowDays))}</p>
+        <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]" role="status">{t("mcStatusLine", { n: effectiveSelected.length, sample: selectedTotal, total: data.grandTotal, days: data.windowDays })}</p>
         {effectiveSelected.length < 2 ? <p className="py-6 text-sm text-[var(--text-secondary)]" role="status">{t("mcNeedTwo")}</p> : <>
           <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">{t("mcHighestNote")}</p>
           {view === "frequency" ? <FrequencyComparison data={data} selected={effectiveSelected} brand={brand} onBrandChange={setFocusedBrand} id={id + "-brand"} /> : <ComparisonMatrix data={data} selected={effectiveSelected} view={view} />}

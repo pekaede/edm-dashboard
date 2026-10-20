@@ -9,7 +9,7 @@ import {
   type BrandKey,
 } from "../data-calendar";
 import { getEmailMarket } from "../email-data";
-import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
+import { getCurrentLocale, translate, useLocale, type DictionaryKey } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import { THEME_LABEL_KEYS } from "./dashboard";
 import { EmptyState } from "./EmptyState";
@@ -42,15 +42,16 @@ function deriveMonths(start: string, end: string): MonthDef[] {
   return months;
 }
 
-const MONTH_SHORT_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTH_LONG_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
 function formatMonthLabel(month: MonthDef): string {
-  return getCurrentLocale() === "zh" ? `${month.month} 月` : MONTH_SHORT_EN[month.month - 1];
+  const locale = getCurrentLocale() === "zh" ? "zh-CN" : "en-US";
+  const date = new Date(Date.UTC(month.year, month.month - 1, 1));
+  return new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(date);
 }
 
 function formatMonthFullLabel(month: MonthDef): string {
-  return getCurrentLocale() === "zh" ? `${month.year}年${month.month}月` : `${MONTH_LONG_EN[month.month - 1]} ${month.year}`;
+  const locale = getCurrentLocale() === "zh" ? "zh-CN" : "en-US";
+  const date = new Date(Date.UTC(month.year, month.month - 1, 1));
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
 }
 const MONTHS = deriveMonths(WINDOW_START, WINDOW_END);
 // 初始/回退选中月份：窗口第二个月（与此前默认 8 月一致），窗口不足两个月时取首月。
@@ -122,12 +123,11 @@ const WINDOW_DATES = CALENDAR_DATES;
 
 function formatDate(date: string, includeYear = false): string {
   const parsed = parseDate(date);
-  const month = parsed.getUTCMonth() + 1;
-  const day = parsed.getUTCDate();
-  if (!includeYear) return `${month}/${day}`;
-  return getCurrentLocale() === "zh"
-    ? `${parsed.getUTCFullYear()}年${month}月${day}日`
-    : `${MONTH_SHORT_EN[month - 1]} ${day}, ${parsed.getUTCFullYear()}`;
+  const locale = getCurrentLocale() === "zh" ? "zh-CN" : "en-US";
+  const options: Intl.DateTimeFormatOptions = includeYear
+    ? { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }
+    : { month: "numeric", day: "numeric", timeZone: "UTC" };
+  return new Intl.DateTimeFormat(locale, options).format(parsed);
 }
 
 function getHeatColor(count: number, minimum: number, maximum: number): string {
@@ -146,7 +146,7 @@ function getHeatColor(count: number, minimum: number, maximum: number): string {
 
 function getThemeLabel(theme: string): string {
   const key = THEME_LABEL_KEYS[theme];
-  return key ? dictionary[key][getCurrentLocale()] : theme;
+  return key ? translate(key) : theme;
 }
 
 function getOriginalUrl(url: string | undefined): string | null {
@@ -366,7 +366,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           {t("calTitle")}
         </h2>
         <p className="mt-1 text-sm leading-5 text-[var(--text-calendar-secondary)]">
-          {t("calSubtitle").replace("{range}", meta.range).replace("{market}", meta.market).replace("{brands}", String(meta.brandCount)).replace("{total}", String(total))}
+          {t("calSubtitle", { range: meta.range, market: meta.market, brands: meta.brandCount, total: total })}
         </p>
       </div>
 
@@ -424,14 +424,14 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="section-title text-[var(--text-calendar-heading)]">{t("calDailyTitle").replace("{month}", formatMonthFullLabel(activeMonth))}</h3>
+            <h3 className="section-title text-[var(--text-calendar-heading)]">{t("calDailyTitle", { month: formatMonthFullLabel(activeMonth) })}</h3>
             <p className="mt-0.5 text-sm text-[var(--text-calendar-secondary)]" aria-live="polite">
-              {t("calScopeLine").replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(filteredEmails.length))}
+              {t("calScopeLine", { brand: displayBrand, market: getMarketLabel(selectedMarket), count: filteredEmails.length })}
             </p>
           </div>
           <div
             className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-calendar-secondary)]"
-            aria-label={t("calLegendAria").replace("{min}", String(heatRange.minimum)).replace("{max}", String(heatRange.maximum))}
+            aria-label={t("calLegendAria", { min: heatRange.minimum, max: heatRange.maximum })}
           >
             <span>{t("calLegendLow")}</span>
             <span className="flex items-center gap-1" aria-hidden="true">
@@ -446,7 +446,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             </span>
             <span>{t("calLegendHigh")}</span>
             <span className="ml-1 text-[var(--text-calendar-muted)]">
-              {t("calLegendRange").replace("{min}", String(heatRange.minimum)).replace("{max}", String(heatRange.maximum))}
+              {t("calLegendRange", { min: heatRange.minimum, max: heatRange.maximum })}
             </span>
           </div>
         </div>
@@ -463,7 +463,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             <div className={EMPTY_STATE_CLASS_NAME}>
               <EmptyState
                 title={t("calEmptyTitle")}
-                description={t("calEmptyDesc").replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{range}", meta.range)}
+                description={t("calEmptyDesc", { brand: displayBrand, market: getMarketLabel(selectedMarket), range: meta.range })}
                 actionLabel={selectedBrand === ALL_BRANDS && selectedMarket === null ? t("calRetry") : t("calResetFilters")}
                 onAction={resetCalendarFilters}
               />
@@ -471,7 +471,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           ) : (
             <table className="w-full table-fixed border-separate border-spacing-[3px] text-center">
               <caption className="sr-only">
-                {t("calCaption").replace("{month}", formatMonthFullLabel(activeMonth)).replace("{start}", formatDate(WINDOW_START, true)).replace("{end}", formatDate(WINDOW_END, true))}
+                {t("calCaption", { month: formatMonthFullLabel(activeMonth), start: formatDate(WINDOW_START, true), end: formatDate(WINDOW_END, true) })}
               </caption>
               <thead>
                 <tr>
@@ -504,7 +504,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           <td key={day.date} className="p-0">
                             <div
                               className="h-12 rounded-md border border-[var(--border-calendar-outside)] bg-[var(--surface-calendar-outside)] p-1 text-left text-xs font-medium leading-4 text-[var(--text-calendar-outside)]"
-                              aria-label={t("calOutsideAria").replace("{date}", formatDate(day.date, true))}
+                              aria-label={t("calOutsideAria", { date: formatDate(day.date, true) })}
                             >
                               {dayNumber}
                             </div>
@@ -521,10 +521,10 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                           <button
                             type="button"
                             onClick={(event) => toggleDate(day.date, event.currentTarget)}
-                            aria-label={t("calDayAria").replace("{date}", formatDate(day.date, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(count))}
+                            aria-label={t("calDayAria", { date: formatDate(day.date, true), brand: displayBrand, market: getMarketLabel(selectedMarket), count: count })}
                             aria-expanded={isSelected}
                             aria-controls={detailId}
-                            title={t("calDayTitle").replace("{date}", formatDate(day.date, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket)).replace("{count}", String(count))}
+                            title={t("calDayTitle", { date: formatDate(day.date, true), brand: displayBrand, market: getMarketLabel(selectedMarket), count: count })}
                             className={`calendar-day-button group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-[var(--border-calendar-legend)] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
                               usesWhiteText ? "text-[var(--text-inverse)]" : "text-[var(--text-calendar-heading)]"
                             } ${
@@ -536,7 +536,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                               {dayNumber}
                             </span>
                             <span className="text-xs font-bold leading-4">
-                              {count}<span className="hidden sm:inline"> {t("marketUnitEmails")}</span>
+                              {count}<span className="hidden sm:inline"> {t("marketUnitEmails", { count })}</span>
                             </span>
                           </button>
                         </td>
@@ -565,7 +565,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${detailId}-title`} ref={detailHeadingRef} tabIndex={-1} className="rounded-md font-bold text-[var(--text-calendar-heading)]">
-                  {formatDate(selectedDate, true)} · {selectedEmails.length} {t("marketUnitEmails")}
+                  {formatDate(selectedDate, true)} · {selectedEmails.length} {t("marketUnitEmails", { count: selectedEmails.length })}
                 </h3>
                 <button
                   type="button"
@@ -605,7 +605,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                                 href={originalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                aria-label={t("calOpenOriginalAria").replace("{brand}", email.brand).replace("{date}", email.date).replace("{market}", getMarketLabel(getEmailMarket(email))).replace("{n}", String(index + 1))}
+                                aria-label={t("calOpenOriginalAria", { brand: email.brand, date: email.date, market: getMarketLabel(getEmailMarket(email)), n: index + 1 })}
                                 className="inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-[var(--accent-ink)] underline underline-offset-4"
                               >
                                 {t("calOpenOriginal")} <span aria-hidden="true">↗</span>
@@ -623,7 +623,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 <div className={`mt-[var(--card-padding)] ${EMPTY_STATE_CLASS_NAME}`}>
                   <EmptyState
                     title={t("calDayEmptyTitle")}
-                    description={t("calDayEmptyDesc").replace("{date}", formatDate(selectedDate, true)).replace("{brand}", displayBrand).replace("{market}", getMarketLabel(selectedMarket))}
+                    description={t("calDayEmptyDesc", { date: formatDate(selectedDate, true), brand: displayBrand, market: getMarketLabel(selectedMarket) })}
                     actionLabel={t("calBackToCalendar")}
                     onAction={closeDetails}
                   />
@@ -655,7 +655,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
               {searchResults.length > 0 ? (
                 <>
                   <p className="text-sm font-semibold text-[var(--text-calendar-label)]">
-                    {t("calSearchFound").replace("{n}", String(searchResults.length))}
+                    {t("calSearchFound", { n: searchResults.length })}
                   </p>
                   <ul className="mt-2 divide-y divide-[var(--divider-calendar)] rounded-xl border border-[var(--border-calendar)] bg-[var(--surface-calendar-item)]">
                     {searchResults.map((result) => (
@@ -668,11 +668,11 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                         </time>
                         <span className="font-semibold text-[var(--text-calendar-heading)]">{result.brand}</span>
                         <span className="text-[var(--text-calendar-secondary)]">{getMarketLabel(result.market)}</span>
-                        <span className="text-[var(--text-calendar-secondary)]">{result.count} {t("marketUnitEmails")}</span>
+                        <span className="text-[var(--text-calendar-secondary)]">{result.count} {t("marketUnitEmails", { count: result.count })}</span>
                         <button
                           type="button"
                           onClick={(event) => openSearchResult(result.date, event.currentTarget)}
-                          aria-label={t("calViewDayAria").replace("{date}", formatDate(result.date, true)).replace("{brand}", result.brand).replace("{market}", getMarketLabel(result.market))}
+                          aria-label={t("calViewDayAria", { date: formatDate(result.date, true), brand: result.brand, market: getMarketLabel(result.market) })}
                           aria-controls={detailId}
                           aria-expanded={selectedDate === result.date}
                           className="min-h-11 rounded-lg border border-[var(--border-calendar-control)] bg-[var(--surface-calendar)] px-2 py-1 font-semibold text-[var(--accent-ink)] transition-colors hover:bg-[var(--surface-calendar-hover)]"
@@ -687,7 +687,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 <div className={EMPTY_STATE_CLASS_NAME}>
                   <EmptyState
                     title={t("calNoMatchTitle")}
-                    description={t("calNoMatchDesc").replace("{term}", searchTerm.trim())}
+                    description={t("calNoMatchDesc", { term: searchTerm.trim() })}
                     actionLabel={t("calClearSearch")}
                     onAction={() => setSearchTerm("")}
                   />

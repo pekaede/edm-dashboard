@@ -74,13 +74,9 @@ export function ThemeDistribution() {
   const active = slices.find((slice) => slice.theme.key === hoveredKey)?.theme;
   const activeName = active ? themeName(active) : null;
   const centerLabel = activeName && activeName.length > 8 ? `${activeName.slice(0, 7)}…` : activeName;
-  const chartLabel = t("tdChartLabel")
-    .replace("{market}", meta.market)
-    .replace("{range}", formatWindowRange(data.window))
-    .replace("{total}", String(data.total))
-    .replace("{parts}", slices.map(({ theme }) => t("tdChartPart").replace("{label}", themeName(theme)).replace("{count}", String(theme.count)).replace("{pct}", String(theme.pct))).join("；"));
+  const chartLabel = t("tdChartLabel", { market: meta.market, range: formatWindowRange(data.window), total: data.total, parts: slices.map(({ theme }) => t("tdChartPart", { label: themeName(theme), count: theme.count, pct: theme.pct })).join("；") });
   const sliceAria = (theme: { key: string; labelZh: string; count: number; pct: number }) =>
-    t("tdSliceAria").replace("{label}", themeName(theme)).replace("{count}", String(theme.count)).replace("{pct}", String(theme.pct));
+    t("tdSliceAria", { label: themeName(theme), count: theme.count, pct: theme.pct });
 
   return (
     <Card title={t("tdTitle")} hint={hint}>
@@ -98,8 +94,8 @@ export function ThemeDistribution() {
           }}
           content={<>
             <div className="font-semibold">{activeName ?? t("tdAllThemes")} · {meta.market}</div>
-            <div className="mt-1 font-mono font-bold">{active?.count ?? data.total} {t("marketUnitEmails")} · {t("tdTooltipShare")} {active?.pct ?? 100}%</div>
-            <div className="mt-1">{formatWindowRange(data.window)} · {t("tdDenominator")} {data.total} {t("marketUnitEmails")} · {t("tdVisible")}</div>
+            <div className="mt-1 font-mono font-bold">{active?.count ?? data.total} {t("marketUnitEmails", { count: active?.count ?? data.total })} · {t("tdTooltipShare")} {active?.pct ?? 100}%</div>
+            <div className="mt-1">{formatWindowRange(data.window)} · {t("tdDenominator")} {data.total} {t("marketUnitEmails", { count: data.total })} · {t("tdVisible")}</div>
           </>}
         >
           <svg viewBox="0 0 240 240" className="h-auto w-full" role="group" aria-label={t("tdSliceGroupAria")}>
@@ -160,7 +156,7 @@ export function ThemeDistribution() {
                 <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: themeColor(theme.key) }} />
                 <span className="break-words font-semibold">{themeName(theme)}</span>
               </span>
-              <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--text-secondary)]"><strong className="text-[var(--text-heading)]">{theme.count} {t("marketUnitEmails")}</strong> · {theme.pct}%</span>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--text-secondary)]"><strong className="text-[var(--text-heading)]">{theme.count} {t("marketUnitEmails", { count: theme.count })}</strong> · {theme.pct}%</span>
             </a>
           ))}
         </div>

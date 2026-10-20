@@ -102,7 +102,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
               <p className="text-sm font-medium text-slate-600">{t("bddTotalLabel")}</p>
               <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-950">
                 {brand.total}
-                <span className="ml-1 text-sm font-medium text-slate-500">{t("marketUnitEmails")}</span>
+                <span className="ml-1 text-sm font-medium text-slate-500">{t("marketUnitEmails", { count: brand.total })}</span>
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
@@ -125,7 +125,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           <h3 id="brand-weekly-title" className="dialog-section-title">
             {t("bddWeeklyTitle")}
           </h3>
-          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("bddWeeklyNote").replace("{max}", String(maxWeekly))}</p>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("bddWeeklyNote", { max: maxWeekly })}</p>
           <div className="mt-4 space-y-4">
             {brand.weekly.map((count, index) => (
               <div key={weeks[index].id} className="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)_4rem] items-center gap-3">
@@ -143,7 +143,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                   />
                 </div>
                 <span className="text-right font-mono text-sm font-bold tabular-nums text-slate-900">
-                  {count} {t("marketUnitEmails")}
+                  {count} {t("marketUnitEmails", { count })}
                 </span>
               </div>
             ))}
@@ -180,7 +180,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
                       {themeName(theme)}
                     </span>
                     <span className="font-mono text-sm font-bold tabular-nums text-slate-950">
-                      {count} {t("marketUnitEmails")}
+                      {count} {t("marketUnitEmails", { count })}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-3">

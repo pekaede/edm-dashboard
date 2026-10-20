@@ -14,7 +14,7 @@ import {
   matchesMarket,
 } from "../email-data";
 import { downloadFile, EmailExportRow, emailsToCSV } from "../export";
-import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
+import { translate, translateIn, useLocale, type DictionaryKey } from "../i18n";
 import {
   createFavoriteKey,
   loadFavorites,
@@ -56,7 +56,7 @@ type FilterBrand = (typeof FILTER_BRANDS)[number];
 
 function themeLabelOf(theme: string): string {
   const key = THEME_LABEL_KEYS[theme];
-  return key ? dictionary[key][getCurrentLocale()] : theme;
+  return key ? translate(key) : theme;
 }
 
 const THEME_BADGE_STYLES: Record<string, string> = {
@@ -200,7 +200,7 @@ function ExpandableKeywords({
           type="button"
           onClick={onToggle}
           aria-expanded={isExpanded}
-          aria-label={t("efKwAria").replace("{action}", isExpanded ? t("efCollapse") : t("efExpand")).replace("{brand}", email.brand).replace("{date}", email.date)}
+          aria-label={t("efKwAria", { action: isExpanded ? t("efCollapse") : t("efExpand"), brand: email.brand, date: email.date })}
           className="inline-flex rounded-xs text-xs font-semibold text-[var(--accent-ink)] underline underline-offset-2 hover:underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
         >
           {isExpanded ? t("efCollapse") : t("efExpandAllBtn")}
@@ -750,11 +750,10 @@ export function ExtendedEmailFilter({
       if (q) {
         const matchesBrand = email.brand.toLowerCase().includes(q);
         const matchesDate = email.date.toLowerCase().includes(q);
-        const themeEntry = THEME_LABEL_KEYS[email.theme]
-          ? dictionary[THEME_LABEL_KEYS[email.theme]]
-          : null;
-        const matchesTheme = themeEntry
-          ? themeEntry.zh.toLowerCase().includes(q) || themeEntry.en.toLowerCase().includes(q)
+        const themeKey = THEME_LABEL_KEYS[email.theme];
+        const matchesTheme = themeKey
+          ? translateIn("zh", themeKey).toLowerCase().includes(q) ||
+            translateIn("en", themeKey).toLowerCase().includes(q)
           : email.theme.toLowerCase().includes(q);
         const matchesKeywords = email.keywords.some((kw) =>
           kw.toLowerCase().includes(q),
@@ -800,15 +799,9 @@ export function ExtendedEmailFilter({
   const selectedMarketLabel = getMarketLabel(selectedMarket);
   const dateRangeLabel =
     dateFrom || dateTo
-      ? t("efDateRange").replace("{from}", dateFrom || t("efUnlimited")).replace("{to}", dateTo || t("efUnlimited"))
+      ? t("efDateRange", { from: dateFrom || t("efUnlimited"), to: dateTo || t("efUnlimited") })
       : t("efRangeAll");
-  const filterSummary = t("efFilterSummary")
-    .replace("{market}", selectedMarketLabel)
-    .replace("{brand}", selectedBrandLabel)
-    .replace("{theme}", selectedThemeLabel)
-    .replace("{date}", dateFrom || dateTo ? t("efSummaryDate").replace("{range}", dateRangeLabel) : "")
-    .replace("{fav}", showOnlyFavorites ? t("efSummaryFav") : "")
-    .replace("{search}", searchQuery.trim() ? t("efSummarySearch").replace("{q}", searchQuery.trim()) : "");
+  const filterSummary = t("efFilterSummary", { market: selectedMarketLabel, brand: selectedBrandLabel, theme: selectedThemeLabel, date: dateFrom || dateTo ? t("efSummaryDate", { range: dateRangeLabel }) : "", fav: showOnlyFavorites ? t("efSummaryFav") : "", search: searchQuery.trim() ? t("efSummarySearch", { q: searchQuery.trim() }) : "" });
   const hasMore = visibleEmails.length < filteredEmails.length;
 
   // Load more without layout jump / scroll position loss
@@ -857,7 +850,7 @@ export function ExtendedEmailFilter({
     setVisibleCount(PAGE_SIZE);
   };
 
-  const hint = t("efHint").replace("{range}", meta.range).replace("{market}", meta.market);
+  const hint = t("efHint", { range: meta.range, market: meta.market });
 
   if (status !== "ready") {
     return (
@@ -872,8 +865,8 @@ export function ExtendedEmailFilter({
       <Card title={t("efTitle")} hint={hint}>
         <div className="py-6">
           <EmptyState
-            title={t("stEmptyMarketTitle").replace("{market}", selectedMarketLabel)}
-            description={t("efEmptyMarketDesc").replace("{range}", meta.range)}
+            title={t("stEmptyMarketTitle", { market: selectedMarketLabel })}
+            description={t("efEmptyMarketDesc", { range: meta.range })}
             actionLabel={selectedMarket ? t("efSwitchAll") : t("efRetry")}
             onAction={selectedMarket ? () => setMarket(null) : emailData.retry}
           />
@@ -902,7 +895,7 @@ export function ExtendedEmailFilter({
               <strong className="text-3xl font-extrabold leading-none tracking-tight tabular-nums sm:text-4xl">
                 {filteredEmails.length}
               </strong>
-              <span className="pb-1 text-sm font-semibold">{t("efUnitEmails")}</span>
+              <span className="pb-1 text-sm font-semibold">{t("efUnitEmails", { count: filteredEmails.length })}</span>
             </div>
           </div>
 
@@ -945,7 +938,7 @@ export function ExtendedEmailFilter({
                       key={brand}
                       onClick={() => selectBrand(brand)}
                       aria-pressed={isSelected}
-                      aria-label={t("efBrandChipAria").replace("{brand}", brand).replace("{selected}", isSelected ? t("efChipSelectedSuffix") : "")}
+                      aria-label={t("efBrandChipAria", { brand: brand, selected: isSelected ? t("efChipSelectedSuffix") : "" })}
                       className={`flex min-h-12 items-center justify-center rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isSelected
                           ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
@@ -1000,7 +993,7 @@ export function ExtendedEmailFilter({
                       key={theme.key}
                       onClick={() => selectTheme(theme.key)}
                       aria-pressed={isSelected}
-                      aria-label={t("efThemeChipAria").replace("{label}", t(theme.labelKey)).replace("{selected}", isSelected ? t("efChipSelectedSuffix") : "")}
+                      aria-label={t("efThemeChipAria", { label: t(theme.labelKey), selected: isSelected ? t("efChipSelectedSuffix") : "" })}
                       className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isSelected
                           ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
@@ -1179,7 +1172,7 @@ export function ExtendedEmailFilter({
                 >
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-                <span>{t("efFavOnly").replace("{n}", String(favoriteCount))}</span>
+                <span>{t("efFavOnly", { n: favoriteCount })}</span>
               </button>
 
               <button
@@ -1195,7 +1188,7 @@ export function ExtendedEmailFilter({
                 type="button"
                 onClick={handleExportCSV}
                 disabled={filteredEmails.length === 0}
-                aria-label={t("efExportAria").replace("{n}", String(filteredEmails.length))}
+                aria-label={t("efExportAria", { n: filteredEmails.length })}
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] sm:text-sm ${
                   filteredEmails.length > 0
                     ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-[var(--text-inverse)] hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)]"
@@ -1216,7 +1209,7 @@ export function ExtendedEmailFilter({
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span>{t("efExportLabel").replace("{n}", String(filteredEmails.length))}</span>
+                <span>{t("efExportLabel", { n: filteredEmails.length })}</span>
               </button>
             </div>
           </div>
@@ -1227,7 +1220,7 @@ export function ExtendedEmailFilter({
           <div className="border-y border-[var(--border-strong)] bg-[var(--surface-card)] p-4 sm:p-6">
             <EmptyState
               title={t("efNoResultTitle")}
-              description={t("efNoResultDesc").replace("{summary}", filterSummary)}
+              description={t("efNoResultDesc", { summary: filterSummary })}
               actionLabel={t("efResetFilterSearch")}
               onAction={() => {
                 setSelectedBrand(null);
@@ -1248,11 +1241,11 @@ export function ExtendedEmailFilter({
             onScroll={handleContainerScroll}
             className="max-h-[min(42rem,65dvh)] overflow-auto border-y border-[var(--border-strong)] bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent-ink)]"
             tabIndex={0}
-            aria-label={t("efTableAria").replace("{summary}", filterSummary)}
+            aria-label={t("efTableAria", { summary: filterSummary })}
           >
             <table className="w-full min-w-[48rem] border-separate border-spacing-0 text-left text-sm text-[var(--text-email-table)]">
               <caption className="sr-only">
-                {t("efCaption").replace("{summary}", filterSummary)}
+                {t("efCaption", { summary: filterSummary })}
               </caption>
               <thead className="sticky top-0 z-10 bg-[var(--surface-table-header)] text-xs font-bold uppercase tracking-[0.08em] text-[var(--surface-table-stripe)] shadow-[var(--shadow-table-header)]">
                 <tr>
@@ -1308,7 +1301,7 @@ export function ExtendedEmailFilter({
                         <button
                           type="button"
                           onClick={() => handleToggleFavorite(email)}
-                          aria-label={t("efFavAria").replace("{action}", isFav ? t("efFavRemove") : t("efFavAdd")).replace("{brand}", email.brand).replace("{date}", email.date)}
+                          aria-label={t("efFavAria", { action: isFav ? t("efFavRemove") : t("efFavAdd"), brand: email.brand, date: email.date })}
                           aria-pressed={isFav}
                           className={`inline-flex size-8 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] ${
                             isFav
@@ -1414,7 +1407,7 @@ export function ExtendedEmailFilter({
                             href={email.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={t("efOriginalAria").replace("{brand}", email.brand).replace("{date}", email.date)}
+                            aria-label={t("efOriginalAria", { brand: email.brand, date: email.date })}
                             className="rounded-xs font-semibold text-[var(--accent-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
                           >
                             {t("efColOriginal")}
@@ -1442,7 +1435,7 @@ export function ExtendedEmailFilter({
               <strong className="text-[var(--text-control)]">
                 {visibleEmails.length}
               </strong>{" "}
-              / {filteredEmails.length} {t("marketUnitEmails")}
+              / {filteredEmails.length} {t("marketUnitEmails", { count: filteredEmails.length })}
               <span className="mx-2" aria-hidden="true">
                 ·
               </span>
@@ -1456,7 +1449,7 @@ export function ExtendedEmailFilter({
                 aria-controls={listId}
                 className="min-h-11 rounded-full border border-[var(--text-control)] bg-[var(--text-control)] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-[var(--accent-ink)] hover:bg-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
               >
-                {t("efLoadMore").replace("{n}", String(filteredEmails.length - visibleEmails.length))}
+                {t("efLoadMore", { n: filteredEmails.length - visibleEmails.length })}
               </button>
             ) : (
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">

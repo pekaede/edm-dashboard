@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
+import { translate, useLocale, type DictionaryKey } from "../i18n";
 
 export const MARKET_OPTIONS = [
   { code: "US", labelKey: "marketUS" },
@@ -20,10 +20,9 @@ export const MARKET_OPTIONS = [
 export type MarketFilterValue = string | null;
 
 export function getMarketLabel(market: MarketFilterValue): string {
-  const locale = getCurrentLocale();
-  if (market === null) return dictionary.marketAll[locale];
+  if (market === null) return translate("marketAll");
   const option = MARKET_OPTIONS.find((item) => item.code === market);
-  return option ? dictionary[option.labelKey][locale] : market;
+  return option ? translate(option.labelKey) : market;
 }
 
 export function MarketFilter({
@@ -49,7 +48,7 @@ export function MarketFilter({
     .filter((code) => counts[code] > 0 && !MARKET_OPTIONS.some((option) => option.code === code))
     .sort();
   const formatOption = (name: string, count: number) =>
-    locale === "zh" ? `${name}（${count}${t("marketUnitEmails")}）` : `${name} (${count} ${t("marketUnitEmails")})`;
+    locale === "zh" ? `${name}（${count}${t("marketUnitEmails", { count })}）` : `${name} (${count} ${t("marketUnitEmails", { count })})`;
 
   return (
     <div className="flex flex-wrap items-center gap-3">

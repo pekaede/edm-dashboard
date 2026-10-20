@@ -166,11 +166,11 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
                       key={seg.key}
                       className={`relative h-full hover:z-10 hover:ring-2 hover:ring-[var(--control-focus)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] ${roundingClass}`}
                       style={{ width: `${seg.widthPct}%` }}
-                      label={t("btbSegLabel").replace("{brand}", b.name).replace("{theme}", themeName(seg)).replace("{count}", String(seg.themeCount)).replace("{pct}", String(seg.pct)).replace("{total}", String(b.total))}
+                      label={t("btbSegLabel", { brand: b.name, theme: themeName(seg), count: seg.themeCount, pct: seg.pct, total: b.total })}
                       content={<>
                         <div className="font-semibold">{b.name} · {themeName(seg)}</div>
-                        <div className="mt-1 font-mono font-bold">{seg.themeCount} {t("marketUnitEmails")} · {t("btbBrandShare")} {seg.pct}%</div>
-                        <div className="mt-1">{meta.market} · {formatWindowRange(data.window)} · {t("btbDenominator")} {b.total} {t("marketUnitEmails")}</div>
+                        <div className="mt-1 font-mono font-bold">{seg.themeCount} {t("marketUnitEmails", { count: seg.themeCount })} · {t("btbBrandShare")} {seg.pct}%</div>
+                        <div className="mt-1">{meta.market} · {formatWindowRange(data.window)} · {t("btbDenominator")} {b.total} {t("marketUnitEmails", { count: b.total })}</div>
                       </>}
                     >
                       <div
@@ -201,7 +201,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
               {/* Total volume label */}
               <div className="w-11 shrink-0 text-right font-mono text-xs font-semibold text-slate-600 tabular-nums sm:w-12">
-                {b.total} {t("marketUnitEmails")}
+                {b.total} {t("marketUnitEmails", { count: b.total })}
               </div>
 
               {b.total === 0 ? <p className="order-4 col-span-2 text-xs text-[var(--text-secondary)] sm:sr-only">{t("btbZeroNote")}</p> : null}

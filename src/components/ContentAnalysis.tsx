@@ -10,7 +10,7 @@ import {
 } from "../email-content-analysis";
 import { fetchEmailDataset } from "../supabase";
 import { EXTENDED_EMAIL_META } from "../email-data";
-import { dictionary, getCurrentLocale, useLocale, type DictionaryKey } from "../i18n";
+import { getCurrentLocale, translate, useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 
@@ -138,7 +138,7 @@ const CTA_POSITION_LABEL_MAP: Record<string, DictionaryKey> = {
 
 function labelText(map: Record<string, DictionaryKey>, key: string): string {
   const dictKey = map[key];
-  return dictKey ? dictionary[dictKey][getCurrentLocale()] : key;
+  return dictKey ? translate(dictKey) : key;
 }
 
 const REQUEST_TIMEOUT_MS = 60_000;
@@ -169,12 +169,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<T>((_, reject) => {
     timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            dictionary.caTimeout[getCurrentLocale()].replace("{label}", label).replace("{s}", String(ms / 1000)),
-          ),
-        ),
+      () => reject(new Error(translate("caTimeout", { label, s: ms / 1000 }))),
       ms,
     );
   });
@@ -424,7 +419,7 @@ function HorizontalProgressBar({
           {label}
         </span>
         <span className="tabular-nums text-[var(--text-secondary)] shrink-0 ml-2">
-          {count} {t("marketUnitEmails")} ({percentage}%)
+          {count} {t("marketUnitEmails", { count })} ({percentage}%)
         </span>
       </div>
       <div
@@ -433,7 +428,7 @@ function HorizontalProgressBar({
         aria-valuenow={count}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label={t("caShareAria").replace("{label}", label)}
+        aria-label={t("caShareAria", { label: label })}
       >
         <div
           className="h-full rounded-full bg-indigo-600 transition-all duration-300"
@@ -481,15 +476,10 @@ function OutcomeBreakdown({
     <div className="space-y-1 text-xs">
       <p className="font-semibold text-[var(--text-heading)]">{label}</p>
       <p className="text-[var(--text-secondary)]">
-        {t("caOutcomeLine")
-          .replace("{s}", String(counts.success)).replace("{sp}", pct(counts.success))
-          .replace("{q}", String(counts.queued)).replace("{qp}", pct(counts.queued))
-          .replace("{f}", String(counts.failed)).replace("{fp}", pct(counts.failed))
-          .replace("{m}", String(counts.missing)).replace("{mp}", pct(counts.missing))
-          .replace("{sk}", String(counts.skipped)).replace("{skp}", pct(counts.skipped))}
+        {t("caOutcomeLine", { s: counts.success, sp: pct(counts.success), q: counts.queued, qp: pct(counts.queued), f: counts.failed, fp: pct(counts.failed), m: counts.missing, mp: pct(counts.missing), sk: counts.skipped, skp: pct(counts.skipped) })}
       </p>
       <p className="text-[var(--text-secondary)]">
-        {t("caOutcomeExpired").replace("{n}", String(counts.expired))}
+        {t("caOutcomeExpired", { n: counts.expired })}
         {extra ? ` · ${extra}` : ""}
       </p>
     </div>
@@ -654,13 +644,13 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       if (cancelled || controller.signal.aborted) return;
 
       if (emailsResult.status === "rejected" && isNotEnabledError(emailsResult.reason)) {
-        setNotEnabledDetail(t("caNotEnabledCol").replace("{detail}", String(emailsResult.reason)));
+        setNotEnabledDetail(t("caNotEnabledCol", { detail: emailsResult.reason }));
         setLoading(false);
         return;
       }
       if (analysisResult.status === "rejected" && isNotEnabledError(analysisResult.reason)) {
         setNotEnabledDetail(
-          t("caNotEnabledView").replace("{detail}", String(analysisResult.reason)),
+          t("caNotEnabledView", { detail: analysisResult.reason }),
         );
         setLoading(false);
         return;
@@ -920,10 +910,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       >
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
         <p className="mt-4 text-sm font-medium text-[var(--text-body)]">
-          {t("caLoading").replace("{site}", site)}
+          {t("caLoading", { site: site })}
         </p>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">
-          {t("caWindowLine").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
+          {t("caWindowLine", { start: activeWindow.start, end: activeWindow.end })}
         </p>
       </div>
     );
@@ -935,7 +925,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
         <h3 className="text-base font-semibold">{t("caNotEnabledTitle")}</h3>
         <p className="mt-2 text-xs leading-relaxed opacity-90 break-words">
-          {t("caNotEnabledDesc").replace("{detail}", notEnabledDetail)}
+          {t("caNotEnabledDesc", { detail: notEnabledDetail })}
         </p>
         <button
           type="button"
@@ -975,12 +965,12 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             {brandSelect}
           </div>
           <span className="text-xs text-[var(--text-secondary)]">
-            {t("caMetaWindow").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
+            {t("caMetaWindow", { start: activeWindow.start, end: activeWindow.end })}
           </span>
         </div>
         <EmptyState
           title={t("caEmptyWindowTitle")}
-          description={t("caEmptyWindowDesc").replace("{site}", site).replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
+          description={t("caEmptyWindowDesc", { site: site, start: activeWindow.start, end: activeWindow.end })}
         />
       </div>
     );
@@ -994,18 +984,18 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] px-5 py-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-            {t("caMetaMarket").replace("{site}", site)}
+            {t("caMetaMarket", { site: site })}
           </span>
           {activeBrand !== null && (
             <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-              {t("caMetaBrand").replace("{brand}", activeBrand)}
+              {t("caMetaBrand", { brand: activeBrand })}
             </span>
           )}
           <span className="text-xs text-[var(--text-secondary)]">
-            {t("caMetaWindow").replace("{start}", activeWindow.start).replace("{end}", activeWindow.end)}
+            {t("caMetaWindow", { start: activeWindow.start, end: activeWindow.end })}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            {t(activeBrand !== null ? "caMetaSampleBrand" : "caMetaSampleAll").replace("{n}", String(totalEmails))}
+            {t(activeBrand !== null ? "caMetaSampleBrand" : "caMetaSampleAll", { n: totalEmails })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -1033,42 +1023,38 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       {/* 覆盖率：三个率分开显示，分母统一为 emails 样本数；缺失不算成“无 CTA”“零 Emoji”。 */}
       <Card
         title={t("caCovTitle")}
-        hint={t("caCovHint").replace("{n}", String(totalEmails))}
+        hint={t("caCovHint", { n: totalEmails })}
       >
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <StatPill
               title={t("caCovCollectedTitle")}
               value={`${coverage.collectionRate}%`}
-              subtext={t("caCovCollectedSub").replace("{c}", String(coverage.collected)).replace("{n}", String(totalEmails))}
+              subtext={t("caCovCollectedSub", { c: coverage.collected, n: totalEmails })}
             />
             <StatPill
               title={t("caCovSubjectTitle")}
               value={`${coverage.subjectSuccessRate}%`}
-              subtext={t("caCovSubjectSub").replace("{c}", String(coverage.subject.success)).replace("{n}", String(totalEmails))}
+              subtext={t("caCovSubjectSub", { c: coverage.subject.success, n: totalEmails })}
             />
             <StatPill
               title={t("caCovBannerTitle")}
               value={`${coverage.bannerSuccessRate}%`}
-              subtext={t("caCovBannerSub").replace("{c}", String(coverage.banner.success)).replace("{n}", String(totalEmails))}
+              subtext={t("caCovBannerSub", { c: coverage.banner.success, n: totalEmails })}
             />
           </div>
           <div className="space-y-4">
             <p className="text-xs text-[var(--text-secondary)]">
-              {t("caRawLine")
-                .replace("{a}", String(coverage.withSubject))
-                .replace("{b}", String(coverage.withPreheader))
-                .replace("{c}", String(coverage.withBanner))
-                .replace("{d}", String(totalEmails - coverage.collected))}
+              {t("caRawLine", { a: coverage.withSubject, b: coverage.withPreheader, c: coverage.withBanner, d: totalEmails - coverage.collected })}
             </p>
             <OutcomeBreakdown label={t("caOutcomeSubject")} counts={coverage.subject} sample={totalEmails} />
             <OutcomeBreakdown
               label={t("caOutcomeBanner")}
               counts={coverage.banner}
               sample={totalEmails}
-              extra={`${t("caOutcomeBannerExtra").replace("{n}", String(totalEmails - coverage.withBanner))}${
+              extra={`${t("caOutcomeBannerExtra", { n: totalEmails - coverage.withBanner })}${
                 coverage.bannerSuccessRateAmongWithBanner !== null
-                  ? t("caOutcomeBannerRate").replace("{r}", String(coverage.bannerSuccessRateAmongWithBanner))
+                  ? t("caOutcomeBannerRate", { r: coverage.bannerSuccessRateAmongWithBanner })
                   : ""
               }`}
             />
@@ -1082,7 +1068,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
           title={t("caSubjectTitle")}
-          hint={t("caAnalyzedHint").replace("{n}", String(subjectSummary?.analyzedCount ?? 0))}
+          hint={t("caAnalyzedHint", { n: subjectSummary?.analyzedCount ?? 0 })}
         >
           {subjectSummary && subjectSummary.analyzedCount > 0 ? (
             <div className="space-y-6">
@@ -1090,12 +1076,12 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                 <StatPill
                   title={t("caLenTitle")}
                   value={subjectSummary.lengthStats.avg}
-                  subtext={t("caLenRange").replace("{min}", String(subjectSummary.lengthStats.min)).replace("{max}", String(subjectSummary.lengthStats.max))}
+                  subtext={t("caLenRange", { min: subjectSummary.lengthStats.min, max: subjectSummary.lengthStats.max })}
                 />
                 <StatPill
                   title={t("caEmojiAvgTitle")}
                   value={subjectSummary.emojiStats.avgCount}
-                  subtext={t("caEmojiRate").replace("{r}", String(subjectSummary.emojiStats.withEmojiRate))}
+                  subtext={t("caEmojiRate", { r: subjectSummary.emojiStats.withEmojiRate })}
                 />
                 <StatPill
                   title={t("caPersTitle")}
@@ -1105,7 +1091,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                 <StatPill
                   title={t("caEmojiCountTitle")}
                   value={subjectSummary.emojiStats.withEmojiCount}
-                  subtext={t("caAnalyzedSamples").replace("{n}", String(subjectSummary.analyzedCount))}
+                  subtext={t("caAnalyzedSamples", { n: subjectSummary.analyzedCount })}
                 />
               </div>
 
@@ -1153,7 +1139,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
                         {subjectSummary.tactics.find((tac) => tac.key === effectiveTactic)?.label ?? effectiveTactic}
                         <span className="ml-2 font-normal text-[var(--text-secondary)]">
-                          {t("caDetailCount").replace("{n}", String(tacticDetail.items.length))}
+                          {t("caDetailCount", { n: tacticDetail.items.length })}
                         </span>
                       </p>
                       <button
@@ -1191,7 +1177,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           {tacticDetail.patterns.fresh.map((g) => (
                             <li key={g.template} className="text-xs leading-relaxed">
                               <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
-                              <span className="ml-1.5 text-[var(--text-secondary)]">{t("caFirstSeen").replace("{d}", g.firstSeen)}</span>
+                              <span className="ml-1.5 text-[var(--text-secondary)]">{t("caFirstSeen", { d: g.firstSeen })}</span>
                               <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
                                 {t("caExamplePrefix")}{g.example}
                               </span>
@@ -1250,7 +1236,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       <span
                         key={text}
                         className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-xs text-amber-900 dark:text-amber-200"
-                        title={t("caOccurTitle").replace("{n}", String(count))}
+                        title={t("caOccurTitle", { n: count })}
                       >
                         <span>{text}</span>
                         {count > 1 ? (
@@ -1286,7 +1272,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                               ? "border-violet-500 bg-violet-100 text-violet-950 dark:border-violet-400 dark:bg-violet-900/60 dark:text-violet-100"
                               : "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200 dark:hover:bg-violet-900/50"
                           }`}
-                          title={t("caTrendChipTitle").replace("{n}", String(count))}
+                          title={t("caTrendChipTitle", { n: count })}
                         >
                           <span className="rounded-sm bg-violet-200/70 px-1 text-[10px] font-semibold text-violet-800 dark:bg-violet-800/70 dark:text-violet-200">
                             {labelText(TREND_CATEGORY_LABEL_MAP, category)}
@@ -1309,7 +1295,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         {subjectSummary.trendTerms.find((tt) => tt.term.toLowerCase() === effectiveTrend)?.term ??
                           effectiveTrend}
                         <span className="ml-2 font-normal text-[var(--text-secondary)]">
-                          {t("caDetailCount").replace("{n}", String(trendDetail.length))}
+                          {t("caDetailCount", { n: trendDetail.length })}
                         </span>
                       </p>
                       <button
@@ -1327,7 +1313,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             </div>
           ) : (
             <div className="py-8 text-center text-xs text-[var(--text-secondary)]">
-              {t("caNoSubjectResults").replace("{n}", String(totalEmails))}
+              {t("caNoSubjectResults", { n: totalEmails })}
             </div>
           )}
         </Card>
@@ -1337,7 +1323,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         <div className="min-w-0 lg:h-[860px] lg:[&_.dashboard-card-content]:min-h-0 lg:[&_.dashboard-card-content]:overflow-y-auto lg:[&_.dashboard-card-content]:pr-1">
         <Card
           title={t("caBannerTitle")}
-          hint={t("caAnalyzedHint").replace("{n}", String(bannerSummary?.analyzedCount ?? 0))}
+          hint={t("caAnalyzedHint", { n: bannerSummary?.analyzedCount ?? 0 })}
         >
           {bannerSummary && bannerSummary.analyzedCount > 0 ? (
             <div className="space-y-6">
@@ -1345,7 +1331,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                 <StatPill
                   title={t("caBannerCtaTitle")}
                   value={`${bannerSummary.ctaPresenceRate}%`}
-                  subtext={t("caBannerCtaSub").replace("{a}", String(bannerSummary.ctaPresenceCount)).replace("{b}", String(bannerSummary.analyzedCount))}
+                  subtext={t("caBannerCtaSub", { a: bannerSummary.ctaPresenceCount, b: bannerSummary.analyzedCount })}
                 />
                 <StatPill
                   title={t("caColorKindsTitle")}
@@ -1369,7 +1355,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           <span
                             className="h-6 w-6 shrink-0 rounded-md border border-slate-300 shadow-2xs"
                             style={{ backgroundColor: hex }}
-                            aria-label={t("caColorAria").replace("{hex}", hex)}
+                            aria-label={t("caColorAria", { hex: hex })}
                           />
                         ) : (
                           <span
@@ -1384,7 +1370,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                             {hex ?? label}
                           </p>
                           <p className="text-[10px] tabular-nums text-[var(--text-secondary)]">
-                            {t("caColorCount").replace("{count}", String(count)).replace("{percentage}", String(percentage))}
+                            {t("caColorCount", { count: count, percentage: percentage })}
                           </p>
                         </div>
                       </div>
@@ -1493,7 +1479,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
             </div>
           ) : (
             <div className="py-8 text-center text-xs text-[var(--text-secondary)]">
-              {t("caNoBannerResults").replace("{n}", String(totalEmails))}
+              {t("caNoBannerResults", { n: totalEmails })}
             </div>
           )}
         </Card>

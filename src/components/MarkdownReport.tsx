@@ -166,8 +166,8 @@ export function MarkdownReport() {
             <>
               <div className={EMPTY_STATE_CLASS_NAME}>
                 <EmptyState
-                  title={t("mrEmptyTitle").replace("{market}", meta.market)}
-                  description={t("mrEmptyDesc").replace("{range}", meta.range)}
+                  title={t("mrEmptyTitle", { market: meta.market })}
+                  description={t("mrEmptyDesc", { range: meta.range })}
                   actionLabel={market === null ? t("mrRetry") : t("mrSwitchAll")}
                   onAction={market === null ? retry : () => setMarket(null)}
                 />
@@ -184,9 +184,9 @@ export function MarkdownReport() {
       <div className="h-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--theme-behavior)]" />
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
         <header className="mb-6">
-          <p className="text-xs font-bold tracking-wide text-[var(--text-secondary)]">{t("mrEyebrow").replace("{market}", meta.market)}</p>
+          <p className="text-xs font-bold tracking-wide text-[var(--text-secondary)]">{t("mrEyebrow", { market: meta.market })}</p>
           <h2 className="mt-2 text-2xl font-extrabold leading-snug text-[var(--text-heading)]">{t("mrTitle")}</h2>
-          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mrSubNote").replace("{range}", meta.range).replace("{end}", meta.windowEnd)}</p>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mrSubNote", { range: meta.range, end: meta.windowEnd })}</p>
         </header>
         {summary ? (
           <section aria-label={t("mrSummaryTitle")} className="space-y-5">
@@ -286,7 +286,7 @@ export function MarkdownReport() {
                 key={blockIndex}
                 className="report-table-scroll my-7 overflow-x-auto rounded-xl border border-[var(--border-default)] p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                 role="region"
-                aria-label={t("mrTableAria").replace("{headers}", block.headers.join(locale === "zh" ? "、" : ", "))}
+                aria-label={t("mrTableAria", { headers: block.headers.join(locale === "zh" ? "、" : ", ") })}
                 tabIndex={0}
               >
                 <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-6">
