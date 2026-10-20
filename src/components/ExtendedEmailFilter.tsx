@@ -232,6 +232,17 @@ export function ExtendedEmailFilter({
       : null,
   );
   const [selectedBrand, setSelectedBrand] = useState<FilterBrand | null>(null);
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  const handleDateFromChange = (value: string) => {
+    setDateFrom(value);
+    setVisibleCount(PAGE_SIZE);
+  };
+  const handleDateToChange = (value: string) => {
+    setDateTo(value);
+    setVisibleCount(PAGE_SIZE);
+  };
 
   // Restore visibleCount from storage so returning to list does not reset to PAGE_SIZE and lose position
   const [visibleCount, setVisibleCount] = useState<number>(() => {
@@ -696,6 +707,8 @@ export function ExtendedEmailFilter({
       if (!matchesMarket(email, selectedMarket)) return false;
       if (selectedBrand && email.brand !== selectedBrand) return false;
       if (selectedTheme && email.theme !== selectedTheme) return false;
+      if (dateFrom && email.date < dateFrom) return false;
+      if (dateTo && email.date > dateTo) return false;
       if (showOnlyFavorites) {
         const key = getEmailKey(email);
         if (!favoriteKeys.has(key)) return false;
@@ -720,6 +733,8 @@ export function ExtendedEmailFilter({
     selectedMarket,
     selectedBrand,
     selectedTheme,
+    dateFrom,
+    dateTo,
     showOnlyFavorites,
     favoriteKeys,
     searchQuery,
@@ -746,9 +761,11 @@ export function ExtendedEmailFilter({
   const selectedThemeLabel = selectedTheme ? THEME_LABELS[selectedTheme] : "全部";
   const selectedBrandLabel = selectedBrand ?? "全部";
   const selectedMarketLabel = getMarketLabel(selectedMarket);
+  const dateRangeLabel =
+    dateFrom || dateTo ? `${dateFrom || "不限"} 至 ${dateTo || "不限"}` : "全部日期";
   const filterSummary = `市场：${selectedMarketLabel}，品牌：${selectedBrandLabel}，主题：${selectedThemeLabel}${
-    showOnlyFavorites ? "，仅看收藏" : ""
-  }${searchQuery.trim() ? `，搜索：“${searchQuery.trim()}”` : ""}`;
+    dateFrom || dateTo ? `，日期：${dateRangeLabel}` : ""
+  }${showOnlyFavorites ? "，仅看收藏" : ""}${searchQuery.trim() ? `，搜索：“${searchQuery.trim()}”` : ""}`;
   const hasMore = visibleEmails.length < filteredEmails.length;
 
   // Load more without layout jump / scroll position loss
@@ -957,6 +974,61 @@ export function ExtendedEmailFilter({
                 })}
               </div>
             </div>
+
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
+                  按日期筛选
+                </p>
+                <p
+                  className="text-xs text-[var(--text-description)]"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  当前：{dateRangeLabel}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-description)]">
+                  起始
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    min={meta.windowStart}
+                    max={dateTo || meta.windowEnd}
+                    onChange={(e) => handleDateFromChange(e.target.value)}
+                    className="rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
+                  />
+                </label>
+                <span aria-hidden="true" className="text-[var(--text-muted)]">
+                  —
+                </span>
+                <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-description)]">
+                  结束
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || meta.windowStart}
+                    max={meta.windowEnd}
+                    onChange={(e) => handleDateToChange(e.target.value)}
+                    className="rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
+                  />
+                </label>
+                {dateFrom || dateTo ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                      setVisibleCount(PAGE_SIZE);
+                    }}
+                    className="rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:bg-[var(--control-filter-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
+                  >
+                    清除日期
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
 
           {/* Interactive Toolbar: Search, Favorites filter, Expand all, Export CSV */}
@@ -1093,6 +1165,8 @@ export function ExtendedEmailFilter({
               onAction={() => {
                 setSelectedBrand(null);
                 setSelectedTheme(null);
+                setDateFrom("");
+                setDateTo("");
                 setShowOnlyFavorites(false);
                 handleClearSearch();
                 setVisibleCount(PAGE_SIZE);
@@ -1124,9 +1198,11 @@ export function ExtendedEmailFilter({
                   <th scope="col" className="w-40 px-5 py-4">
                     品牌
                   </th>
-                  <th scope="col" className="w-24 px-5 py-4">
-                    市场
-                  </th>
+                  {selectedMarket === null && (
+                    <th scope="col" className="w-24 px-5 py-4">
+                      市场
+                    </th>
+                  )}
                   <th scope="col" className="w-36 px-5 py-4">
                     主题
                   </th>
@@ -1206,10 +1282,12 @@ export function ExtendedEmailFilter({
                         </span>
                       </td>
 
-                      {/* Market cell */}
-                      <td className="border-b border-[var(--divider-email)] px-5 py-4 align-middle text-[var(--text-detail)]">
-                        {getMarketLabel(getEmailMarket(email))}
-                      </td>
+                      {/* Market cell: shown only in all-markets mode, redundant when a single site is selected */}
+                      {selectedMarket === null && (
+                        <td className="border-b border-[var(--divider-email)] px-5 py-4 align-middle text-[var(--text-detail)]">
+                          {getMarketLabel(getEmailMarket(email))}
+                        </td>
+                      )}
 
                       {/* Theme cell */}
                       <td className="border-b border-[var(--divider-email)] px-5 py-4 align-middle">
