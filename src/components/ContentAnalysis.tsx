@@ -605,7 +605,7 @@ function SubjectEmailList({ items }: { items: SubjectListItem[] }) {
 export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisProps) {
   const { t } = useLocale();
   const [period, setPeriod] = useState<AnalysisPeriod>("threeWeeks");
-  const [brand, setBrand] = useState<string | null>(null);
+  const [selectedBrands, setSelectedBrands] = useState<ReadonlySet<string>>(new Set());
   const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
   const [selectedTrend, setSelectedTrend] = useState<string | null>(null);
   // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
@@ -699,12 +699,25 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     };
   }, [site, activeWindow.start, activeWindow.end, retryKey]);
 
-  // 品牌筛选：选项来自当前市场+窗口的 emails 样本；选中的品牌不在样本中时回落全部品牌。
+  // 品牌多选筛选：选项来自当前市场+窗口的 emails 样本；未选任何品牌即全部；
+  // 选中的品牌不在当前样本中时自动忽略（切市场/周期后不悬空）。
   const brandOptions = useMemo(() => {
     if (emails === null) return [];
     return [...new Set(emails.map((e) => e.brand))].sort();
   }, [emails]);
-  const activeBrand = brand !== null && brandOptions.includes(brand) ? brand : null;
+  const effectiveBrands = useMemo(
+    () => brandOptions.filter((b) => selectedBrands.has(b)),
+    [brandOptions, selectedBrands],
+  );
+  const brandFilterActive = effectiveBrands.length > 0;
+  const toggleBrand = (name: string) => {
+    setSelectedBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
 
   const joined = useMemo(() => {
     if (emails === null) return null;
@@ -716,7 +729,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       if (row.analysis_type === "banner" && !slot.banner) slot.banner = row;
       byKey.set(key, slot);
     }
-    const visibleEmails = activeBrand === null ? emails : emails.filter((e) => e.brand === activeBrand);
+    const visibleEmails = brandFilterActive ? emails.filter((e) => effectiveBrands.includes(e.brand)) : emails;
     return visibleEmails.map((email) => {
       const slot = byKey.get(analysisKey(email.market, email.brand, email.sent_date, email.day_seq));
       return {
@@ -727,7 +740,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         } as EmailAnalysis,
       };
     });
-  }, [emails, analysisRows, activeBrand]);
+  }, [emails, analysisRows, effectiveBrands, brandFilterActive]);
 
   const coverage = useMemo<Coverage | null>(() => {
     if (joined === null) return null;
@@ -863,25 +876,44 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     </div>
   );
 
-  // 品牌筛选：默认全部品牌；选项随当前市场+窗口样本变化。
+  // 品牌多选：紧凑胶囊组（不占高）；未选任何品牌即全部，"全部品牌"胶囊清空选择。
   const brandSelect =
     brandOptions.length > 0 ? (
-      <label className="flex flex-wrap items-center gap-3 text-sm font-bold text-[var(--text-control)]">
-        {t("efColBrand")}
-        <select
-          aria-label={t("caBrandAria")}
-          value={activeBrand ?? ""}
-          onChange={(e) => setBrand(e.target.value === "" ? null : e.target.value)}
-          className="min-h-10 rounded-full border border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-bold text-[var(--text-control)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
-        >
-          <option value="">{t("caAllBrands")}</option>
-          {brandOptions.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-bold text-[var(--text-control)]">{t("efColBrand")}</span>
+        <div className="flex flex-wrap gap-1" role="group" aria-label={t("caBrandAria")}>
+          <button
+            type="button"
+            aria-pressed={!brandFilterActive}
+            onClick={() => setSelectedBrands(new Set())}
+            className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
+              !brandFilterActive
+                ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
+                : "border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] text-[var(--text-control)] hover:bg-[var(--surface-wordcloud-hover)]"
+            }`}
+          >
+            {t("caAllBrands")}
+          </button>
+          {brandOptions.map((b) => {
+            const isSelected = effectiveBrands.includes(b);
+            return (
+              <button
+                key={b}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => toggleBrand(b)}
+                className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
+                  isSelected
+                    ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
+                    : "border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] text-[var(--text-control)] hover:bg-[var(--surface-wordcloud-hover)]"
+                }`}
+              >
+                {b}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     ) : null;
 
   // 0. 未选单个市场：覆盖率分母是同市场样本，多市场聚合无意义，提示选市场而非报错。
@@ -986,16 +1018,21 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
             {t("caMetaMarket", { site: site })}
           </span>
-          {activeBrand !== null && (
+          {brandFilterActive && (
             <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-              {t("caMetaBrand", { brand: activeBrand })}
+              {t("caMetaBrand", {
+                brand:
+                  effectiveBrands.length <= 3
+                    ? effectiveBrands.join(" · ")
+                    : t("caBrandsSelectedCount", { n: effectiveBrands.length }),
+              })}
             </span>
           )}
           <span className="text-xs text-[var(--text-secondary)]">
             {t("caMetaWindow", { start: activeWindow.start, end: activeWindow.end })}
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            {t(activeBrand !== null ? "caMetaSampleBrand" : "caMetaSampleAll", { n: totalEmails })}
+            {t(brandFilterActive ? "caMetaSampleBrand" : "caMetaSampleAll", { n: totalEmails })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
