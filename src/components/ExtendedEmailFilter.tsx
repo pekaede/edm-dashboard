@@ -213,6 +213,21 @@ function ExpandableKeywords({
   );
 }
 
+type DatePresetKey = "all" | "7d" | "3w" | "30d";
+
+const DATE_PRESETS: { key: DatePresetKey; label: string; days: number | null }[] = [
+  { key: "all", label: "全部日期", days: null },
+  { key: "7d", label: "最近 7 天", days: 7 },
+  { key: "3w", label: "最近三周", days: 21 },
+  { key: "30d", label: "最近一个月", days: 30 },
+];
+
+/** ISO 日期平移（UTC 计算，避免时区跨日）。 */
+function shiftISODate(iso: string, deltaDays: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + deltaDays)).toISOString().slice(0, 10);
+}
+
 export function ExtendedEmailFilter({
   initialTheme,
 }: {
@@ -243,6 +258,27 @@ export function ExtendedEmailFilter({
     setDateTo(value);
     setVisibleCount(PAGE_SIZE);
   };
+
+  // 快捷范围以数据窗口末日（最新数据日）为锚点，而非今天
+  const applyDatePreset = (days: number | null) => {
+    if (days === null) {
+      setDateFrom("");
+      setDateTo("");
+    } else {
+      setDateTo(meta.windowEnd);
+      setDateFrom(shiftISODate(meta.windowEnd, -(days - 1)));
+    }
+    setVisibleCount(PAGE_SIZE);
+  };
+  const activeDatePreset: DatePresetKey | null =
+    !dateFrom && !dateTo
+      ? "all"
+      : (DATE_PRESETS.find(
+          (preset) =>
+            preset.days !== null &&
+            dateTo === meta.windowEnd &&
+            dateFrom === shiftISODate(meta.windowEnd, -(preset.days - 1)),
+        )?.key ?? null);
 
   // Restore visibleCount from storage so returning to list does not reset to PAGE_SIZE and lose position
   const [visibleCount, setVisibleCount] = useState<number>(() => {
@@ -988,8 +1024,32 @@ export function ExtendedEmailFilter({
                   当前：{dateRangeLabel}
                 </p>
               </div>
+              <div
+                className="mb-3 flex flex-wrap gap-2.5"
+                role="group"
+                aria-label="日期快捷范围"
+              >
+                {DATE_PRESETS.map((preset) => {
+                  const isActive = activeDatePreset === preset.key;
+                  return (
+                    <button
+                      type="button"
+                      key={preset.key}
+                      onClick={() => applyDatePreset(preset.days)}
+                      aria-pressed={isActive}
+                      className={`rounded-full border px-4 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
+                        isActive
+                          ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
+                          : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
-                <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-description)]">
+                <label className="flex items-center gap-2 text-base font-semibold text-[var(--text-description)]">
                   起始
                   <input
                     type="date"
@@ -997,13 +1057,13 @@ export function ExtendedEmailFilter({
                     min={meta.windowStart}
                     max={dateTo || meta.windowEnd}
                     onChange={(e) => handleDateFromChange(e.target.value)}
-                    className="rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
+                    className="min-w-44 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3.5 py-2.5 text-base text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
                   />
                 </label>
                 <span aria-hidden="true" className="text-[var(--text-muted)]">
                   —
                 </span>
-                <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-description)]">
+                <label className="flex items-center gap-2 text-base font-semibold text-[var(--text-description)]">
                   结束
                   <input
                     type="date"
@@ -1011,7 +1071,7 @@ export function ExtendedEmailFilter({
                     min={dateFrom || meta.windowStart}
                     max={meta.windowEnd}
                     onChange={(e) => handleDateToChange(e.target.value)}
-                    className="rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
+                    className="min-w-44 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3.5 py-2.5 text-base text-[var(--text-primary)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
                   />
                 </label>
                 {dateFrom || dateTo ? (
