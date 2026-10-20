@@ -18,7 +18,12 @@
  *   --start/--end 对应的 start/end（22 天）。
  */
 
-import { COLOR_FAMILIES } from "./banner-vision-prompt";
+import {
+  BANNER_COMPOSITIONS,
+  BANNER_CTA_POSITIONS,
+  BANNER_TEXT_IMAGE_RATIOS,
+  COLOR_FAMILIES,
+} from "./banner-vision-prompt";
 
 /** 趋势词分类（与 pipeline 口径一致）：时尚 / 趋势 / 热点 / 季节 / 营销事件。 */
 export const TREND_CATEGORIES = ["fashion", "trend", "hotspot", "seasonal", "marketing"] as const;
@@ -87,9 +92,10 @@ const ANALYSIS_STATUSES: readonly AnalysisStatus[] = [
   "failed",
   "skipped",
 ];
-const BANNER_COMPOSITIONS = ["centered", "left-aligned", "split-layout", "full-bleed", "grid"];
-const BANNER_CTA_POSITIONS = ["top", "center", "bottom", "bottom-right"];
-const BANNER_TEXT_IMAGE_RATIOS = ["text-heavy", "balanced", "image-heavy"];
+// Banner 枚举一律以 banner-vision-prompt.ts 为规范源（本文件不再自备副本，避免口径漂移）。
+const BANNER_COMPOSITION_SET: ReadonlySet<string> = new Set(BANNER_COMPOSITIONS);
+const BANNER_CTA_POSITION_SET: ReadonlySet<string> = new Set(BANNER_CTA_POSITIONS);
+const BANNER_TEXT_IMAGE_RATIO_SET: ReadonlySet<string> = new Set(BANNER_TEXT_IMAGE_RATIOS);
 const COLOR_FAMILY_SET: ReadonlySet<string> = new Set(COLOR_FAMILIES);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -177,7 +183,7 @@ export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
   }
   if (
     typeof v.composition !== "string" ||
-    !BANNER_COMPOSITIONS.includes(v.composition)
+    !BANNER_COMPOSITION_SET.has(v.composition)
   ) {
     return false;
   }
@@ -185,7 +191,7 @@ export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
   if (
     v.cta_position !== null &&
     (typeof v.cta_position !== "string" ||
-      !BANNER_CTA_POSITIONS.includes(v.cta_position))
+      !BANNER_CTA_POSITION_SET.has(v.cta_position))
   ) {
     return false;
   }
@@ -193,7 +199,7 @@ export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
   if (v.cta_presence === false && v.cta_position !== null) return false;
   if (
     typeof v.text_image_ratio !== "string" ||
-    !BANNER_TEXT_IMAGE_RATIOS.includes(v.text_image_ratio)
+    !BANNER_TEXT_IMAGE_RATIO_SET.has(v.text_image_ratio)
   ) {
     return false;
   }
