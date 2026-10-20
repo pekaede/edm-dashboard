@@ -17,6 +17,8 @@ import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
 import type { MarketFilterValue } from "./components/MarketFilter";
 import type { Brand } from "./data";
+import { LanguageToggle } from "./i18n/LanguageToggle";
+import { LocaleProvider, useLocale } from "./i18n";
 import {
   SiteProvider,
   useComparisonMarkets,
@@ -28,13 +30,13 @@ import { THREE_WEEK_WINDOW } from "./three-week-aggregation";
 type View = "dashboard" | "report" | "emails";
 
 const DASHBOARD_SECTIONS = [
-  { id: "onepage-summary", label: "OnePage 摘要" },
-  { id: "overview", label: "数据概览" },
-  { id: "keywords", label: "关键词" },
-  { id: "calendar", label: "日历" },
-  { id: "comparison", label: "跨市场对比" },
-  { id: "content-analysis", label: "内容 AI 分析" },
-];
+  { id: "onepage-summary", labelKey: "sectionSummary" },
+  { id: "overview", labelKey: "sectionOverview" },
+  { id: "keywords", labelKey: "sectionKeywords" },
+  { id: "calendar", labelKey: "sectionCalendar" },
+  { id: "comparison", labelKey: "sectionComparison" },
+  { id: "content-analysis", labelKey: "sectionContentAnalysis" },
+] as const;
 
 // URL 原始 hash 的视图段；空 hash / "#" / 未知视图返回 null（旧行为：显示看板）。
 function getRawView(
@@ -53,6 +55,7 @@ function getRawView(
 }
 
 function Dashboard() {
+  const { t } = useLocale();
   const { market: siteMarket, setMarket: setSiteMarket } = useSiteSelection();
   const [comparisonMarkets, setComparisonMarkets] = useComparisonMarkets();
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
@@ -235,8 +238,13 @@ function Dashboard() {
     }
   }, [view]);
 
+  const dashboardSections = DASHBOARD_SECTIONS.map(({ id, labelKey }) => ({
+    id,
+    label: t(labelKey),
+  }));
+
   const viewNavigation = (
-    <nav aria-label="页面视图" className="flex min-w-0 justify-center sm:justify-end">
+    <nav aria-label={t("viewNavigation")} className="flex min-w-0 justify-center sm:justify-end">
       <div className="view-switcher">
         <a
           href="#dashboard"
@@ -247,7 +255,7 @@ function Dashboard() {
               : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
           }`}
         >
-          数据看板
+          {t("viewDashboard")}
         </a>
         <a
           href="#report"
@@ -258,7 +266,7 @@ function Dashboard() {
               : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
           }`}
         >
-          OnePage 报告
+          {t("viewReport")}
         </a>
         <a
           href="#emails"
@@ -269,7 +277,7 @@ function Dashboard() {
               : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
           }`}
         >
-          邮件视图
+          {t("viewEmails")}
         </a>
       </div>
     </nav>
@@ -277,17 +285,26 @@ function Dashboard() {
 
   return (
     <div className="dashboard-shell min-h-screen font-sans text-[var(--text-body)] antialiased">
-      <DashboardHeader />
+      <div className="relative">
+        <DashboardHeader />
+        <div className="pointer-events-none absolute inset-x-0 top-[var(--card-padding)] z-10">
+          <div className="dashboard-container flex justify-end">
+            <div className="pointer-events-auto">
+              <LanguageToggle />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <main className="dashboard-container space-y-[var(--card-padding)] pb-[calc(var(--card-padding)*2)] sm:space-y-[var(--card-padding-sm)] sm:pb-[calc(var(--card-padding-sm)*2)]">
         {view === "dashboard" ? (
           <>
-            <PageNav sections={DASHBOARD_SECTIONS} />
+            <PageNav sections={dashboardSections} />
             <KpiGrid />
 
-            <section id="onepage-summary" aria-label="OnePage 摘要" className="scroll-mt-20 min-w-0 space-y-[calc(var(--card-padding)/2)] xl:[&_ol]:grid-cols-2">
+            <section id="onepage-summary" aria-label={t("sectionSummary")} className="scroll-mt-20 min-w-0 space-y-[calc(var(--card-padding)/2)] xl:[&_ol]:grid-cols-2">
               <div className="flex flex-col gap-[calc(var(--card-padding)/2)] sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[length:var(--type-h3-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-h3-leading)] text-[var(--text-heading)]">OnePage 摘要</p>
+                <p className="text-[length:var(--type-h3-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-h3-leading)] text-[var(--text-heading)]">{t("sectionSummary")}</p>
                 {viewNavigation}
               </div>
               <Insights />
@@ -336,16 +353,16 @@ function Dashboard() {
           <section
             className="space-y-[var(--card-padding)] sm:space-y-[var(--card-padding-sm)]"
             data-email-theme={emailTheme ?? undefined}
-            aria-label="邮件视图"
+            aria-label={t("viewEmails")}
           >
             {viewNavigation}
             <div>
               <a
                 href="#dashboard"
                 className="inline-flex min-h-[calc(var(--card-padding)*3)] items-center rounded-[var(--card-radius)] px-[var(--card-padding)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--control-text)] transition-colors hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)]"
-                aria-label="返回数据看板"
+                aria-label={t("backToDashboardAria")}
               >
-                ← 回到看板
+                {t("backToDashboard")}
               </a>
             </div>
 
@@ -365,5 +382,11 @@ function Dashboard() {
 }
 
 export default function App() {
-  return <SiteProvider><Dashboard /></SiteProvider>;
+  return (
+    <LocaleProvider>
+      <SiteProvider>
+        <Dashboard />
+      </SiteProvider>
+    </LocaleProvider>
+  );
 }
