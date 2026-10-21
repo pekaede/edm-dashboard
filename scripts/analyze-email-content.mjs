@@ -47,12 +47,11 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(SCRIPT_DIR, "..");
 
 // ---- 版本（与 SQL / TS 契约一致；可用环境变量覆盖 prompt/rules/schema） ----
-// 注意：subject 口径已升 v2（新增 trend_terms 抽取），跑 subject 时应以
-// CONTENT_ANALYSIS_PROMPT_VERSION=2 CONTENT_ANALYSIS_SCHEMA_VERSION=2 运行；
-// banner 仍为 v1。常驻补跑脚本 supabase-import/analyze-pending.mjs 内置同样的版本划分。
-const SCHEMA_VERSION = process.env.CONTENT_ANALYSIS_SCHEMA_VERSION ?? "1";
+// subject（含 trend_terms）与 banner 的 prompt/schema 均为 v2，默认值与
+// 前端契约及常驻补跑脚本 supabase-import/analyze-pending.mjs 保持一致。
+const SCHEMA_VERSION = process.env.CONTENT_ANALYSIS_SCHEMA_VERSION ?? "2";
 const RULES_VERSION = process.env.CONTENT_ANALYSIS_RULES_VERSION ?? "1";
-const PROMPT_VERSION = process.env.CONTENT_ANALYSIS_PROMPT_VERSION ?? "1";
+const PROMPT_VERSION = process.env.CONTENT_ANALYSIS_PROMPT_VERSION ?? "2";
 
 // ---- 默认值 ----
 const DEFAULT_CONCURRENCY = 4;
@@ -569,16 +568,35 @@ class SupabaseAdmin {
     return latest;
   }
 
-  /** Upsert：仅用于新行，或用 success 替换同 input_hash 的 failed/skipped 行。调用方已保证不覆盖 success 行。 */
+  /** success 可合并；非 success 插入后条件更新同哈希的 failed/skipped，保护历史成功行。 */
   async upsertRow(row) {
     const u = new URL(`${this.baseUrl}/rest/v1/email_content_analysis`);
     u.searchParams.set("on_conflict", "market,brand,sent_date,day_seq,analysis_type,input_hash");
     const res = await fetch(u, {
       method: "POST",
-      headers: this.headers({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+      headers: this.headers({
+        "Content-Type": "application/json",
+        Prefer: `resolution=${row.status === "success" ? "merge" : "ignore"}-duplicates,return=minimal`,
+      }),
       body: JSON.stringify(row),
     });
     if (!res.ok) throw new Error(`写库失败（HTTP ${res.status}）：${(await res.text()).slice(0, 300)}`);
+    if (row.status !== "success") {
+      // POST 只解决“行不存在”；冲突的旧失败仍须刷新 attempted_at 等尝试字段。
+      // 先插入再条件 PATCH，也覆盖并发插入 failed/skipped 的情况；若已成功则不动。
+      u.searchParams.delete("on_conflict");
+      const { market, brand, sent_date, day_seq, analysis_type, input_hash, ...mutable } = row;
+      for (const [key, value] of Object.entries({ market, brand, sent_date, day_seq, analysis_type, input_hash })) {
+        u.searchParams.set(key, `eq.${value}`);
+      }
+      u.searchParams.set("status", "in.(failed,skipped)");
+      const patch = await fetch(u, {
+        method: "PATCH",
+        headers: this.headers({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify(mutable),
+      });
+      if (!patch.ok) throw new Error(`更新尝试失败（HTTP ${patch.status}）：${(await patch.text()).slice(0, 300)}`);
+    }
   }
 
   /** 下载 Storage 对象字节。 */
@@ -588,7 +606,7 @@ class SupabaseAdmin {
     if (!res.ok) throw new Error(`Storage 下载失败（HTTP ${res.status}）。`);
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.startsWith("image/")) throw new Error(`Storage 对象不是图片（content-type=${contentType}）。`);
-    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType };
+    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType, httpValidators: imageHttpValidators(res.headers) };
   }
 }
 
@@ -632,6 +650,15 @@ function parseImageDimensions(bytes) {
   return null;
 }
 
+function imageHttpValidators(headers) {
+  return Object.fromEntries([
+    ["etag", headers.get("etag")],
+    ["last_modified", headers.get("last-modified")],
+    ["content_length", headers.get("content-length")],
+  ].filter(([, value]) => typeof value === "string" && value.trim() !== "")
+    .map(([key, value]) => [key, value.trim()]));
+}
+
 async function fetchExternalImageBytes(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -640,7 +667,7 @@ async function fetchExternalImageBytes(url, timeoutMs) {
     if (!res.ok) throw new Error(`外部图片下载失败（HTTP ${res.status}）。`);
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.startsWith("image/")) throw new Error(`外部 URL 不是图片（content-type=${contentType}）。`);
-    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType };
+    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType, httpValidators: imageHttpValidators(res.headers) };
   } finally {
     clearTimeout(timer);
   }
@@ -749,9 +776,10 @@ async function runJob(job, ctx) {
   const fail = async (errorCode, detail) => {
     console.warn(`[failed] ${job.display} ${errorCode}：${detail}`);
     ctx.stats.failed += 1;
-    // 失败行只在尚无同 input_hash 行时写入（失败重跑不产生重复失败行，
-    // 更不覆盖 success 行——同 hash 的 success 行在此之前已跳过）。
-    if (prev && prev.input_hash === job.inputHash) return;
+    // prev 只是最新尝试，不能据此排除旧哈希已有 success（例如 A → B → A）。
+    // 只快速跳过同哈希 success；旧失败必须刷新，写入时再按状态保护并发成功。
+    // 保留真实 input_hash：不伪造新哈希干扰最新尝试与视图的成功优先回退。
+    if (prev?.status === "success" && prev.input_hash === job.inputHash) return;
     try {
       await ctx.supabase.upsertRow({
         ...baseRow,
@@ -849,6 +877,7 @@ async function runJob(job, ctx) {
     const bannerUrl = email.banner_url ?? null;
     const objectKey = parseStorageObjectKey(bannerUrl, ctx.supabase.baseUrl);
     job.inputMeta = {
+      subject: email.subject ?? null,
       banner_object_key: objectKey,
       banner_source_url: bannerUrl,
       banner_sha256: null,
@@ -892,13 +921,9 @@ async function runJob(job, ctx) {
       await fail("banner_download_failed", e.message);
       return;
     }
-    if (image.bytes.length > DEFAULT_MAX_IMAGE_BYTES) {
-      job.inputHash = sha256Hex(stableStringify({ analysis_type: "banner", market: email.market, brand: email.brand, banner_sha256: sha256Hex(image.bytes), prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION, schema_version: SCHEMA_VERSION, model_version: ctx.visionModel }));
-      await fail("banner_too_large", `图片 ${image.bytes.length} 字节，超过上限 ${DEFAULT_MAX_IMAGE_BYTES}。`);
-      return;
-    }
     const bannerSha = sha256Hex(image.bytes);
     const dims = parseImageDimensions(image.bytes);
+    job.inputMeta.banner_http = image.httpValidators;
     job.inputMeta.banner_sha256 = bannerSha;
     job.inputMeta.banner_width = dims?.width ?? null;
     job.inputMeta.banner_height = dims?.height ?? null;
@@ -910,6 +935,11 @@ async function runJob(job, ctx) {
       schema_version: SCHEMA_VERSION, model_version: ctx.visionModel,
     };
     job.inputHash = sha256Hex(stableStringify(inputPayload));
+    // 超限与正常路径共用完整输入及排序 JSON 序列化，包含传给 vision 的 subject。
+    if (image.bytes.length > DEFAULT_MAX_IMAGE_BYTES) {
+      await fail("banner_too_large", `图片 ${image.bytes.length} 字节，超过上限 ${DEFAULT_MAX_IMAGE_BYTES}。`);
+      return;
+    }
     if (!ctx.force && !ctx.retryFailed && prev && prev.status === "success" && prev.input_hash === job.inputHash) {
       ctx.stats.skippedUnchanged += 1;
       return;
