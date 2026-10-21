@@ -14,6 +14,8 @@ export interface TooltipProps {
   children: ReactNode;
   content: ReactNode;
   label: string;
+  // children 含链接、按钮等可交互元素时使用 "group"，保留其语义。
+  anchorRole?: "img" | "group";
   className?: string;
   style?: CSSProperties;
   open?: boolean;
@@ -47,6 +49,7 @@ export function Tooltip({
   children,
   content,
   label,
+  anchorRole = "img",
   className = "",
   style,
   open: controlledOpen,
@@ -262,7 +265,7 @@ export function Tooltip({
     <div
       ref={anchorRef}
       tabIndex={0}
-      role="img"
+      role={anchorRole}
       aria-label={label}
       aria-describedby={isOpen ? tooltipId : undefined}
       className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] ${className}`}

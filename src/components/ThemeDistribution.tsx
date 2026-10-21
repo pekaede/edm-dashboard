@@ -87,6 +87,7 @@ export function ThemeDistribution() {
         }}
       >
         <Tooltip
+          anchorRole="group"
           className="my-1 w-full max-w-64 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
           label={chartLabel}
           onOpenChange={(open) => {
