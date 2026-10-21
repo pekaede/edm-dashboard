@@ -11,6 +11,8 @@ export interface LoadingBlockProps extends React.HTMLAttributes<HTMLDivElement> 
   card?: boolean;
   /** 自定义内容行宽数组（循环匹配），未指定时使用自然参差宽度 */
   lineWidths?: string[];
+  /** 使用调用方已有的本地化加载文案。 */
+  label?: React.ReactNode;
 }
 
 const DEFAULT_LINE_WIDTHS = ["w-full", "w-4/5", "w-3/5", "w-5/6", "w-2/3"];
@@ -21,6 +23,8 @@ export function LoadingBlock({
   card = true,
   lineWidths = DEFAULT_LINE_WIDTHS,
   className,
+  label = "Loading...",
+  children,
   ...props
 }: LoadingBlockProps) {
   const lineCount = Math.max(0, lines);
@@ -64,7 +68,7 @@ export function LoadingBlock({
         </div>
       ) : null}
 
-      <span className="sr-only">Loading...</span>
+      {children ?? <span className="sr-only">{label}</span>}
     </div>
   );
 }

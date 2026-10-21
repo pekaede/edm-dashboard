@@ -4,6 +4,7 @@ import { useSiteEmails, useSiteSelection } from "../site-data";
 import { aggregateThreeWeek, formatWindowRange } from "../three-week-aggregation";
 import { THEME_TINTS } from "./dashboard";
 import { EmptyState } from "./EmptyState";
+import { LoadingBlock } from "./ui/loading-block";
 
 const EMPTY_STATE_CLASS_NAME =
   "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
@@ -75,9 +76,11 @@ export function KpiGrid() {
             onAction={market === null ? retry : () => setMarket(null)}
           />
         </div>
+      ) : status === "loading" ? (
+        <LoadingBlock card={false} titleWidth={false} lines={1} label={t("kpiLoadingStatus")} className="mt-[calc(var(--card-padding)/2)]" />
       ) : status !== "ready" ? (
         <p role="status" className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">
-          {status === "loading" ? t("kpiLoadingStatus") : t("kpiErrorStatus")}
+          {t("kpiErrorStatus")}
         </p>
       ) : null}
     </section>

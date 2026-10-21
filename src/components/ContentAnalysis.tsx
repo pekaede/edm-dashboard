@@ -1,3 +1,7 @@
+import { Check, ChevronDown, RotateCw } from "lucide-react";
+import { Button } from "./ui/button";
+import { LoadingBlock } from "./ui/loading-block";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useMemo, useState } from "react";
 import {
   validateBannerAnalysis,
@@ -775,45 +779,40 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     </div>
   );
 
-  // 品牌多选：紧凑胶囊组（不占高）；未选任何品牌即全部，"全部品牌"胶囊清空选择。
-  const brandSelect =
-    brandOptions.length > 0 ? (
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-bold text-[var(--text-control)]">{t("efColBrand")}</span>
-        <div className="flex flex-wrap gap-1" role="group" aria-label={t("caBrandAria")}>
-          <button
-            type="button"
-            aria-pressed={!brandFilterActive}
-            onClick={() => setSelectedBrands(new Set())}
-            className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-              !brandFilterActive
-                ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
-                : "border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] text-[var(--text-control)] hover:bg-[var(--surface-wordcloud-hover)]"
-            }`}
-          >
-            {t("caAllBrands")}
-          </button>
-          {brandOptions.map((b) => {
-            const isSelected = effectiveBrands.includes(b);
-            return (
-              <button
-                key={b}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => toggleBrand(b)}
-                className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-                  isSelected
-                    ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
-                    : "border-[var(--border-wordcloud-control)] bg-[var(--surface-raised)] text-[var(--text-control)] hover:bg-[var(--surface-wordcloud-hover)]"
-                }`}
-              >
-                {b}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    ) : null;
+  // 选项仍取当前样本；effectiveBrands 为空时回落全部，切市场/周期不悬空。
+  const brandSelect = brandOptions.length > 0 ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-sm font-bold text-[var(--text-control)]">{t("efColBrand")}</span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" aria-label={t("caBrandAria")} className="rounded-full">
+            <span className="max-w-64 truncate">
+              {!brandFilterActive ? t("caAllBrands") : effectiveBrands.length <= 3
+                ? effectiveBrands.join(" · ") : t("caBrandsSelectedCount", { n: effectiveBrands.length })}
+            </span>
+            <ChevronDown aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="max-w-[calc(100vw-2rem)] p-2" aria-label={t("caBrandAria")}>
+          <div role="group" aria-label={t("caBrandAria")} className="max-h-72 space-y-1 overflow-y-auto">
+            <Button type="button" variant="ghost" size="sm" className="w-full justify-start" aria-pressed={!brandFilterActive} onClick={() => setSelectedBrands(new Set())}>
+              <Check aria-hidden="true" className={!brandFilterActive ? "" : "invisible"} />
+              {t("caAllBrands")}
+            </Button>
+            {brandOptions.map((brand) => {
+              const isSelected = effectiveBrands.includes(brand);
+              return (
+                <Button key={brand} type="button" variant="ghost" size="sm" role="checkbox" aria-checked={isSelected} className="w-full justify-start" onClick={() => toggleBrand(brand)}>
+                  <Check aria-hidden="true" className={isSelected ? "" : "invisible"} />
+                  {brand}
+                </Button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  ) : null;
 
   // 0. 未选单个市场：覆盖率分母是同市场样本，多市场聚合无意义，提示选市场而非报错。
   if (site === null) {
@@ -834,19 +833,12 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   // 1. 加载中状态
   if (loading) {
     return (
-      <div
-        className="flex min-h-[18rem] w-full flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-center shadow-xs"
-        role="status"
-        aria-live="polite"
-      >
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--text-heading)] border-t-transparent" />
-        <p className="mt-4 text-sm font-medium text-[var(--text-body)]">
-          {t("caLoading", { site: site })}
-        </p>
+      <LoadingBlock className="min-h-[18rem]" label={t("caLoading", { site })}>
+        <p className="mt-4 text-sm font-medium text-[var(--text-body)]">{t("caLoading", { site })}</p>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">
           {t("caWindowLine", { start: activeWindow.start, end: activeWindow.end })}
         </p>
-      </div>
+      </LoadingBlock>
     );
   }
 
@@ -863,6 +855,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           onClick={emailData.retry}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-amber-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-amber-800 transition"
         >
+          <RotateCw className="mr-2 size-4" aria-hidden="true" />
           {t("caRetryBtn")}
         </button>
       </div>
@@ -880,6 +873,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           onClick={emailData.retry}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-rose-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-800 transition"
         >
+          <RotateCw className="mr-2 size-4" aria-hidden="true" />
           {t("caRetryBtn")}
         </button>
       </div>

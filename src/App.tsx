@@ -20,6 +20,8 @@ import { KpiGrid } from "./components/KpiGrid";
 import { PageNav } from "./components/PageNav";
 import { ThemeDistribution } from "./components/ThemeDistribution";
 import { WordCloud } from "./components/WordCloud";
+import { RotateCw } from "lucide-react";
+import { LoadingBlock } from "./components/ui/loading-block";
 import type { MarketFilterValue } from "./components/MarketFilter";
 import type { Brand } from "./data";
 import { LocaleProvider, useLocale } from "./i18n";
@@ -69,8 +71,9 @@ function ChunkErrorFallback({ onRetry, className = "" }: { onRetry: () => void; 
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 min-h-11 rounded-lg border border-[var(--border-default)] px-4 py-2 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
+        className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--border-default)] px-4 py-2 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
       >
+        <RotateCw className="size-4" aria-hidden="true" />
         {t("ebRetry")}
       </button>
     </div>
@@ -119,12 +122,7 @@ function LazySection<Props extends object>({
 function ChunkFallback({ className = "" }: { className?: string }) {
   const { t } = useLocale();
   return (
-    <div
-      role="status"
-      className={`flex items-center justify-center rounded-[var(--card-radius)] border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-sm text-[var(--text-secondary)] ${className}`}
-    >
-      {t("loading")}
-    </div>
+    <LoadingBlock className={className} label={t("loading")} />
   );
 }
 
