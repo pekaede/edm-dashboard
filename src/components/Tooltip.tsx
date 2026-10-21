@@ -350,7 +350,7 @@ export function Tooltip({
                 pointerDownInTooltipRef.current = false;
               }}
               onClick={cancelClose}
-              className="fixed z-[100] overflow-y-auto whitespace-normal break-words rounded-lg border border-[var(--border-strong)] bg-[var(--color-slate-950)] px-3 py-2 text-center text-xs leading-5 text-[var(--text-inverse)] shadow-xl"
+              className="fixed z-[100] overflow-y-auto whitespace-normal break-words rounded-lg border border-[var(--border-strong)] bg-[var(--surface-tooltip)] px-3 py-2 text-center text-xs leading-5 text-[var(--text-inverse)] shadow-xl"
               style={{
                 top: position.top,
                 left: position.left,

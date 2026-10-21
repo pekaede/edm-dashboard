@@ -9,13 +9,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--control-active-bg)] text-[var(--text-inverse)] shadow-xs hover:bg-[var(--color-slate-800)]",
+          "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-xs hover:bg-[var(--control-active-hover-bg)]",
         destructive:
           "border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error)] shadow-xs hover:opacity-90",
         outline:
           "border border-[var(--control-border)] bg-[var(--control-bg)] text-[var(--text-control)] shadow-xs hover:border-[var(--control-hover-border)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]",
         secondary:
-          "border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-body)] shadow-xs hover:bg-[var(--color-slate-100)] hover:text-[var(--text-heading)]",
+          "border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-body)] shadow-xs hover:bg-[var(--control-hover-bg)] hover:text-[var(--text-heading)]",
         ghost:
           "text-[var(--text-body)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--text-heading)]",
         link: "text-[var(--accent-ink)] underline-offset-4 hover:underline",

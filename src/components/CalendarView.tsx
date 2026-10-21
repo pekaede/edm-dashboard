@@ -17,7 +17,7 @@ import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
 
 const EMPTY_STATE_CLASS_NAME =
-  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--control-active-bg)] [&_button]:text-[var(--control-active-text)] [&_button:hover]:bg-[var(--control-active-hover-bg)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 const WINDOW_START = CALENDAR_START_DATE;
 const WINDOW_END = CALENDAR_END_DATE;
@@ -526,7 +526,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                             aria-controls={detailId}
                             title={t("calDayTitle", { date: formatDate(day.date, true), brand: displayBrand, market: getMarketLabel(selectedMarket), count: count })}
                             className={`calendar-day-button group relative flex h-12 w-full flex-col items-start justify-center gap-0.5 rounded-md border border-[var(--border-calendar-legend)] px-0.5 py-1 text-left transition duration-150 hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-calendar-heading)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar)] sm:p-1 ${
-                              usesWhiteText ? "text-[var(--text-inverse)]" : "text-[var(--text-calendar-heading)]"
+                              usesWhiteText ? "text-[var(--calendar-heat-strong-text)]" : count === 0 ? "text-[var(--calendar-heat-empty-text)]" : "text-[var(--calendar-heat-text)]"
                             } ${
                               isSelected ? "ring-2 ring-[var(--text-calendar-heading)] ring-offset-1 ring-offset-[var(--surface-calendar)]" : ""
                             }`}

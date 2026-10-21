@@ -380,7 +380,7 @@ function HorizontalProgressBar({
         aria-label={t("caShareAria", { label: label })}
       >
         <div
-          className="h-full rounded-full bg-[var(--text-heading)] transition-all duration-300"
+          className="h-full rounded-full bg-[var(--control-active-bg)] transition-all duration-300"
           style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
         />
       </div>
@@ -1199,14 +1199,14 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           onClick={() => setSelectedTrend(isSelected ? null : key)}
                           className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
-                              ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white"
+                              ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]"
                               : "border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-body)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
                           }`}
                           title={t("caTrendChipTitle", { n: count })}
                         >
                           <span className={`rounded-sm px-1 text-[10px] font-semibold ${
                             isSelected
-                              ? "bg-white/20 text-white"
+                              ? "bg-[var(--control-active-text)]/10 text-[var(--control-active-text)]"
                               : "bg-[var(--surface-card)] text-[var(--text-secondary)]"
                           }`}>
                             {labelText(TREND_CATEGORY_LABEL_MAP, category)}

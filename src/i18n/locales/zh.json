@@ -20,6 +20,8 @@
   "ebSectionDesc": "区块加载或显示时遇到了问题，请重试。",
   "ebRetry": "重试此区块",
   "language": "语言",
+  "appearanceSwitchLight": "切换到白天模式",
+  "appearanceSwitchDark": "切换到夜晚模式",
   "all": "全部",
   "backToDashboard": "← 回到看板",
   "backToDashboardAria": "返回数据看板",

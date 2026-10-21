@@ -17,7 +17,7 @@ import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
 
 const EMPTY_STATE_CLASS_NAME =
-  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--control-active-bg)] [&_button]:text-[var(--control-active-text)] [&_button:hover]:bg-[var(--control-active-hover-bg)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 interface BrandThemeBreakdownProps {
   onSelectBrand: (brand: Brand) => void;
@@ -77,7 +77,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
         }
       }}>
       <div
-        className="-mt-1 mb-4 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs text-slate-600"
+        className="-mt-1 mb-4 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs text-[var(--text-secondary)]"
         role="group"
         aria-label={t("btbLegendAria")}
       >
@@ -142,7 +142,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               </button>
 
               {/* Segmented Bar */}
-              <div className="relative order-3 col-span-2 flex h-8 min-w-0 flex-1 rounded-lg bg-slate-100 sm:order-none">
+              <div className="relative order-3 col-span-2 flex h-8 min-w-0 flex-1 rounded-lg bg-[var(--surface-subtle)] sm:order-none">
                 {segs.map((seg, index) => {
                   const isSingle = segs.length === 1;
                   const isFirst = index === 0;
@@ -159,7 +159,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
 
                   const isThemeDimmed =
                     highlightedTheme !== null && highlightedTheme !== seg.key;
-                  const textColor = isThemeDimmed ? "var(--theme-label-dark)" : themeLabelColor(seg.key);
+                  const textColor = isThemeDimmed ? "var(--chart-dimmed-label)" : themeLabelColor(seg.key);
 
                   return (
                     <Tooltip
@@ -200,7 +200,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               </div>
 
               {/* Total volume label */}
-              <div className="w-11 shrink-0 text-right font-mono text-xs font-semibold text-slate-600 tabular-nums sm:w-12">
+              <div className="w-11 shrink-0 text-right font-mono text-xs font-semibold text-[var(--text-secondary)] tabular-nums sm:w-12">
                 {b.total} {t("marketUnitEmails", { count: b.total })}
               </div>
 
