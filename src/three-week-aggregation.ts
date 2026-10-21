@@ -247,7 +247,7 @@ export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: s
         : 0,
     strategy: aggregatedBrand.total > 0
       ? `${brandName} 在当前站点三周窗口收录 ${aggregatedBrand.total} 封；下列主题和周分布均为实时聚合，不代表营销效果。`
-      : `${brandName} 在当前站点三周窗口暂无邮件。`,
+      : `${brandName} 在当前站点三周窗口内暂未收录到邮件；未收录不代表该品牌未发送，可能存在渠道未覆盖。`,
     themes: { ...aggregatedBrand.themes },
     campaigns: data.weeks.map((week, index) => `当前站点 ${week.range} 收录 ${aggregatedBrand.weekly[index]} 封邮件。`),
     // 聚合周标签（m1）：弹窗周标签用此处 weeks，不再用静态 DATA.weeks。
