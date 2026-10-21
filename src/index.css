@@ -17,6 +17,55 @@ body {
   min-height: 100vh;
 }
 
+.seo-introduction,
+.seo-market {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+}
+
+.seo-introduction p,
+.seo-market p,
+.seo-market small {
+  color: var(--text-secondary);
+}
+
+.seo-subtitle {
+  font-size: var(--type-helper-size);
+}
+
+.seo-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.seo-introduction a,
+.seo-market a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.seo-introduction a:focus-visible,
+.seo-market a:focus-visible {
+  outline: 3px solid var(--control-focus);
+  outline-offset: 3px;
+}
+
+.seo-market {
+  max-width: 60rem;
+  padding-block: 2.5rem;
+}
+
+.seo-market section {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .dashboard-shell {
   min-width: 0;
   overflow-wrap: anywhere;

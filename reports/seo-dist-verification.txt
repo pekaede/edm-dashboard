@@ -1,0 +1,13 @@
+PASS dist/index.html: root 内 H1 + 简介 + 8 市场入口 + 6 品牌 + 3 视图链接；WebSite/Organization JSON-LD
+PASS 全站分享标签: og:image=https://edmwatch.com/og-image.jpg (2240×1120), summary_large_image, twitter:image, 3 图标 link, theme-color
+PASS dist/markets/us/index.html: 美国邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/US; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/uk/index.html: 英国邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/UK; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/au/index.html: 澳大利亚邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/AU; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/fr/index.html: 法国邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/FR; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/de/index.html: 德国邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/DE; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/it/index.html: 意大利邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/IT; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/es/index.html: 西班牙邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/ES; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/markets/nl/index.html: 荷兰邮件营销分析 · Halara、SHEIN、Zara 等品牌 | 品牌营销触达趋势看板; canonical 自身; 3 段说明 + 6 品牌 + /#emails/NL; 持续收录中，未输出样本数字; 无 SPA 脚本
+PASS dist/sitemap.xml: 9 URLs; 首页 daily / 市场 weekly; 全部 lastmod=2026-10-21
+PASS Cloudflare 产物: 8 个独立 markets/<code>/index.html；_headers / robots.txt / 4 张素材逐字节一致；未新增回退/重写配置
+SEO dist 自验全部通过: /home/hatch/workspace/edm-seo/dist/
