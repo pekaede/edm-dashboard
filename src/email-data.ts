@@ -244,7 +244,9 @@ function stopRefreshTimer() {
 }
 
 function refreshVisibleEmails() {
-  if (document.visibilityState === "visible" && navigator.onLine) loadExtendedEmails(true);
+  // 自动刷新与手动重试共用 force：同时穿透主缓存和 Supabase 缓存，
+  // 并将同一信号传给内容分析，避免两层 TTL 的起算时差吞掉本轮邮件请求。
+  if (document.visibilityState === "visible" && navigator.onLine) loadExtendedEmails(true, true);
 }
 
 function startRefreshTimer() {
@@ -262,7 +264,7 @@ function handleVisibilityChange() {
 }
 
 function handleOnline() {
-  loadExtendedEmails(true);
+  loadExtendedEmails(true, true);
 }
 
 function startAutoRefresh() {

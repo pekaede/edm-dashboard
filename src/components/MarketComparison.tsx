@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { DATA } from "../data";
-import { LIVE_WINDOW } from "../data-window";
 import {
   BRAND_ORDER,
   getEmailMarket,
   useExtendedEmails,
   type EmailRecord,
+  type ExtendedEmailMeta,
 } from "../email-data";
 import { useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
@@ -26,8 +26,7 @@ import { themeColor } from "../three-week-aggregation";
  *
  * 数据：复用 useExtendedEmails() 的共享缓存（Supabase emails 表），
  * 本组件只做聚合，不造数据、不硬编码计数。0 封的市场显示 0。
- * 周均和周桶共用 LIVE_WINDOW 观察窗口（7 天一桶，含无记录日期）；
- * 样本最小/最大发送日期仅用于展示实际记录覆盖范围。
+ * 过滤、周均、周桶和窗口标注共用数据层 meta 的有效窗口（7 天一桶，含无记录日期）。
  */
 
 // 对比市场（固定 8 个，任务指定）。EU 不在固定列表内：
@@ -66,10 +65,10 @@ interface ComparisonData {
   brands: string[];
   themes: ThemeDef[];
   weeks: WeekDef[];
-  /** 实际记录覆盖范围，仅用于展示。 */
+  /** 当前数据集元数据标注的有效窗口。 */
   windowStart: string;
   windowEnd: string;
-  /** LIVE_WINDOW 的观察天数，用于周均分母。 */
+  /** 有效窗口的观察天数，用于周均分母。 */
   windowDays: number;
   brandMarket: Map<string, Map<string, number>>;
   themeMarket: Map<string, Map<string, number>>;
@@ -108,14 +107,10 @@ function increment(map: Map<string, number>, key: string): void {
  * 实时聚合：单次遍历 emails，填满品牌×市场、主题×市场、品牌×市场×周三张计数。
  * 品牌/主题/市场用 Map（不用普通对象做动态 key 索引），避免 __proto__ 等原型污染。
  */
-function aggregateComparison(emails: EmailRecord[]): ComparisonData {
-  let minDate = emails[0].date;
-  let maxDate = emails[0].date;
-  for (const email of emails) {
-    if (email.date < minDate) minDate = email.date;
-    if (email.date > maxDate) maxDate = email.date;
-  }
-  const { start: windowStart, end: windowEnd } = LIVE_WINDOW;
+function aggregateComparison(
+  emails: EmailRecord[],
+  { windowStart, windowEnd }: Pick<ExtendedEmailMeta, "windowStart" | "windowEnd">,
+): ComparisonData {
   const windowDays =
     Math.round((Date.parse(`${windowEnd}T00:00:00Z`) - Date.parse(`${windowStart}T00:00:00Z`)) / 86_400_000) + 1;
 
@@ -197,8 +192,8 @@ function aggregateComparison(emails: EmailRecord[]): ComparisonData {
     brands,
     themes,
     weeks,
-    windowStart: minDate,
-    windowEnd: maxDate,
+    windowStart,
+    windowEnd,
     windowDays,
     brandMarket,
     themeMarket,
@@ -404,7 +399,11 @@ export function MarketComparison({
   const [view, setView] = useState<ComparisonView>("brand");
   const [focusedBrand, setFocusedBrand] = useState<string>(BRAND_ORDER[0]);
   const id = useId();
-  const data = useMemo(() => emails.length > 0 ? aggregateComparison(emails) : null, [emails]);
+  const { windowStart, windowEnd } = meta;
+  const data = useMemo(
+    () => emails.length > 0 ? aggregateComparison(emails, { windowStart, windowEnd }) : null,
+    [emails, windowStart, windowEnd],
+  );
   const hint = data
     ? t("mcHint", { start: data.windowStart, end: data.windowEnd, total: data.grandTotal })
     : t("mcHintFallback");
