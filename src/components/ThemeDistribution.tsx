@@ -29,6 +29,7 @@ function slicePath(start: number, end: number) {
 export function ThemeDistribution() {
   const { t } = useLocale();
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [marketingOnly, setMarketingOnly] = useState(false);
   const { status, emails, total: emailTotal, error, retry, meta } = useSiteEmails();
   const { market, setMarket } = useSiteSelection();
   const data = useMemo(
@@ -63,10 +64,22 @@ export function ThemeDistribution() {
     );
   }
 
+  // 「其他」多为事务/法务类通知，会稀释营销主题占比；开关打开时把它剔出分母与切片。
+  // 全部邮件都是「其他」时剔除会让分母为 0，此时不提供开关。
+  const otherCount = data.themes.find((theme) => theme.key === "other")?.count ?? 0;
+  const canExcludeOther = otherCount > 0 && otherCount < data.total;
+  const excludeOther = marketingOnly && canExcludeOther;
+  const activeTotal = excludeOther ? data.total - otherCount : data.total;
+  const visibleThemes = data.themes
+    .filter((theme) => theme.count > 0 && (!excludeOther || theme.key !== "other"))
+    .map((theme) => (excludeOther
+      ? { ...theme, pct: activeTotal > 0 ? Math.round((theme.count / activeTotal) * 100) : 0 }
+      : theme));
+
   let currentAngle = 0;
-  const slices = data.themes.filter((theme) => theme.count > 0).map((theme) => {
+  const slices = visibleThemes.map((theme) => {
     const start = currentAngle;
-    const span = theme.count / data.total * 360;
+    const span = theme.count / activeTotal * 360;
     currentAngle += span;
     const middle = ((start + span / 2 - 90) * Math.PI) / 180;
     return { theme, start, end: currentAngle, span, x: 120 + 84 * Math.cos(middle), y: 120 + 84 * Math.sin(middle) };
@@ -74,7 +87,7 @@ export function ThemeDistribution() {
   const active = slices.find((slice) => slice.theme.key === hoveredKey)?.theme;
   const activeName = active ? themeName(active) : null;
   const centerLabel = activeName && activeName.length > 8 ? `${activeName.slice(0, 7)}…` : activeName;
-  const chartLabel = t("tdChartLabel", { market: meta.market, range: formatWindowRange(data.window), total: data.total, parts: slices.map(({ theme }) => t("tdChartPart", { label: themeName(theme), count: theme.count, pct: theme.pct })).join("；") });
+  const chartLabel = t("tdChartLabel", { market: meta.market, range: formatWindowRange(data.window), total: activeTotal, parts: slices.map(({ theme }) => t("tdChartPart", { label: themeName(theme), count: theme.count, pct: theme.pct })).join("；") });
   const sliceAria = (theme: { key: string; labelZh: string; count: number; pct: number }) =>
     t("tdSliceAria", { label: themeName(theme), count: theme.count, pct: theme.pct });
 
@@ -86,6 +99,18 @@ export function ThemeDistribution() {
           if (event.key === "Escape") setHoveredKey(null);
         }}
       >
+        {canExcludeOther ? (
+          <div className="mb-1 flex w-full justify-end">
+            <button
+              type="button"
+              aria-pressed={excludeOther}
+              onClick={() => setMarketingOnly((value) => !value)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] ${excludeOther ? "border-[var(--control-active-bg)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]" : "border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--control-focus)] hover:text-[var(--text-body)]"}`}
+            >
+              {t("tdMarketingOnly")}
+            </button>
+          </div>
+        ) : null}
         <Tooltip
           anchorRole="group"
           className="my-1 w-full max-w-64 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
@@ -95,8 +120,8 @@ export function ThemeDistribution() {
           }}
           content={<>
             <div className="font-semibold">{activeName ?? t("tdAllThemes")} · {meta.market}</div>
-            <div className="mt-1 font-mono font-bold">{active?.count ?? data.total} {t("marketUnitEmails", { count: active?.count ?? data.total })} · {t("tdTooltipShare")} {active?.pct ?? 100}%</div>
-            <div className="mt-1">{formatWindowRange(data.window)} · {t("tdDenominator")} {data.total} {t("marketUnitEmails", { count: data.total })} · {t("tdVisible")}</div>
+            <div className="mt-1 font-mono font-bold">{active?.count ?? activeTotal} {t("marketUnitEmails", { count: active?.count ?? activeTotal })} · {t("tdTooltipShare")} {active?.pct ?? 100}%</div>
+            <div className="mt-1">{formatWindowRange(data.window)} · {t("tdDenominator")} {activeTotal} {t("marketUnitEmails", { count: activeTotal })} · {t("tdVisible")}</div>
           </>}
         >
           <svg viewBox="0 0 240 240" className="h-auto w-full" role="group" aria-label={t("tdSliceGroupAria")}>
@@ -137,7 +162,7 @@ export function ThemeDistribution() {
                 </a>
               );
             })}
-            <text x="120" y="110" textAnchor="middle" className="pointer-events-none fill-[var(--text-heading)] font-mono text-3xl font-bold">{active?.count ?? data.total}</text>
+            <text x="120" y="110" textAnchor="middle" className="pointer-events-none fill-[var(--text-heading)] font-mono text-3xl font-bold">{active?.count ?? activeTotal}</text>
             <text x="120" y="137" textAnchor="middle" className="pointer-events-none fill-[var(--text-secondary)] text-xs">{active ? `${centerLabel} ${active.pct}%` : t("tdCenterAll")}</text>
           </svg>
         </Tooltip>

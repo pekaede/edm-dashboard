@@ -140,6 +140,7 @@
   "tdRetry": "重新拉取",
   "tdSwitchAll": "切换至全部市场",
   "tdAllThemes": "全部主题",
+  "tdMarketingOnly": "仅营销主题",
   "tdChartLabel": "主题分布，{market}，{range}，共 {total} 封。{parts}。切片或图例链接可查看对应邮件。",
   "tdChartPart": "{label} {count} 封，占 {pct}%",
   "tdSliceAria": "查看{label}主题邮件：{count} 封，占三周样本 {pct}%",
