@@ -21,8 +21,10 @@
 import {
   BANNER_COMPOSITIONS,
   BANNER_CTA_POSITIONS,
+  BANNER_SEASONAL_CUES,
   BANNER_TEXT_IMAGE_RATIOS,
   COLOR_FAMILIES,
+  type BannerSeasonalCue,
 } from "./banner-vision-prompt";
 
 /** 趋势词分类（与 pipeline 口径一致）：时尚 / 趋势 / 热点 / 季节 / 营销事件。 */
@@ -51,7 +53,7 @@ export interface BannerAnalysis {
   cta_presence: boolean;
   cta_position: string | null;
   text_image_ratio: string;
-  seasonal_cues: string[];
+  seasonal_cues: BannerSeasonalCue[];
 }
 
 export type AnalysisStatus = "pending" | "processing" | "success" | "failed" | "skipped";
@@ -96,6 +98,7 @@ const ANALYSIS_STATUSES: readonly AnalysisStatus[] = [
 const BANNER_COMPOSITION_SET: ReadonlySet<string> = new Set(BANNER_COMPOSITIONS);
 const BANNER_CTA_POSITION_SET: ReadonlySet<string> = new Set(BANNER_CTA_POSITIONS);
 const BANNER_TEXT_IMAGE_RATIO_SET: ReadonlySet<string> = new Set(BANNER_TEXT_IMAGE_RATIOS);
+const BANNER_SEASONAL_CUE_SET: ReadonlySet<string> = new Set(BANNER_SEASONAL_CUES);
 const COLOR_FAMILY_SET: ReadonlySet<string> = new Set(COLOR_FAMILIES);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -111,7 +114,7 @@ function isNonEmptyStringArray(value: unknown): value is string[] {
 }
 
 /** 数组去重（保序）。校验函数本身不做去重——重复视为脏数据；去重在 normalize 层做。 */
-function dedupe(values: string[]): string[] {
+function dedupe<T extends string>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
@@ -166,7 +169,7 @@ export function validateSubjectAnalysis(v: unknown): v is SubjectAnalysis {
 /**
  * 校验 BannerAnalysis。严格项：dominant_colors 为色族枚举（最多 5 项，
  * 含 Hex 在内的非色族值均拒绝）、composition /
- * text_image_ratio / cta_position 在枚举内、数组无重复、
+ * text_image_ratio / cta_position / seasonal_cues 在枚举内、数组无重复、
  * 字段间约束 cta_presence=false ⇒ cta_position 必须为 null。
  */
 export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
@@ -205,6 +208,7 @@ export function validateBannerAnalysis(v: unknown): v is BannerAnalysis {
   }
   if (
     !isNonEmptyStringArray(v.seasonal_cues) ||
+    !v.seasonal_cues.every((cue) => BANNER_SEASONAL_CUE_SET.has(cue)) ||
     hasDuplicates(v.seasonal_cues)
   ) {
     return false;

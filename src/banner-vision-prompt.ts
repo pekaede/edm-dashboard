@@ -81,6 +81,7 @@ export const BANNER_SEASONAL_CUES = [
   "clearance",
   "other",
 ] as const;
+export type BannerSeasonalCue = (typeof BANNER_SEASONAL_CUES)[number];
 
 /**
  * Banner 分析结构化输出 JSON Schema（与 BannerAnalysis 对齐）。
@@ -177,7 +178,7 @@ JSON Schema:
   "cta_presence": boolean,     // true only if a visually distinct CTA button-like element is VISIBLE in the image
   "cta_position": string | null, // "top" | "center" | "bottom" | "bottom-right", or null when cta_presence is false
   "text_image_ratio": string,  // Must be one of: "text-heavy", "balanced", "image-heavy"
-  "seasonal_cues": string[]    // Seasonal cues with VISIBLE image evidence only, e.g. ["summer", "back-to-school", "christmas"]. [] if none visible.
+  "seasonal_cues": string[]    // Only labels from: ${BANNER_SEASONAL_CUES.map((cue) => `"${cue}"`).join(", ")}. VISIBLE image evidence only; [] if none visible.
 }`;
 
 /**

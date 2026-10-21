@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  fetchContentAnalysis,
   validateBannerAnalysis,
   validateSubjectAnalysis,
   type BannerAnalysis,
@@ -8,8 +7,8 @@ import {
   type SubjectAnalysis,
   type TrendTerm,
 } from "../email-content-analysis";
-import { fetchEmailDataset } from "../supabase";
-import { EXTENDED_EMAIL_META } from "../email-data";
+import { useEmailContentAnalysis } from "../email-content-analysis-data";
+import { EXTENDED_EMAIL_META, getEmailMarket, useExtendedEmails } from "../email-data";
 import { getCurrentLocale, translate, useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
@@ -32,7 +31,6 @@ type AnalysisPeriod = "threeWeeks" | "threeMonths";
 
 interface MetricCount {
   key: string;
-  label: string;
   count: number;
   percentage: number;
 }
@@ -141,8 +139,6 @@ function labelText(map: Record<string, DictionaryKey>, key: string): string {
   return dictKey ? translate(dictKey) : key;
 }
 
-const REQUEST_TIMEOUT_MS = 60_000;
-
 function analysisKey(market: string, brand: string, sent_date: string, day_seq: number): string {
   return [market, brand, sent_date, String(day_seq)].join("\u0000");
 }
@@ -163,19 +159,6 @@ function isNotEnabledError(error: unknown): boolean {
       message,
     )
   );
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<T>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(translate("caTimeout", { label, s: ms / 1000 }))),
-      ms,
-    );
-  });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer !== undefined) clearTimeout(timer);
-  });
 }
 
 function subjectOutcome(row: EmailContentAnalysisRow | undefined): EmailAnalysis["subject"] {
@@ -275,7 +258,6 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
     tactics: Array.from(tacticCountMap.entries())
       .map(([key, count]) => ({
         key,
-        label: labelText(TACTIC_LABEL_MAP, key),
         count,
         percentage: Math.round((count / analyzedCount) * 100),
       }))
@@ -341,11 +323,10 @@ function aggregateBannerAnalysis(results: BannerAnalysis[]): BannerSummary {
     }
   }
 
-  const toMetric = (map: Map<string, number>, labels: Record<string, DictionaryKey>): MetricCount[] =>
+  const toMetric = (map: Map<string, number>): MetricCount[] =>
     Array.from(map.entries())
       .map(([key, count]) => ({
         key,
-        label: labelText(labels, key),
         count,
         percentage: Math.round((count / analyzedCount) * 100),
       }))
@@ -353,9 +334,9 @@ function aggregateBannerAnalysis(results: BannerAnalysis[]): BannerSummary {
 
   return {
     analyzedCount,
-    composition: toMetric(compositionMap, COMPOSITION_LABEL_MAP),
-    ctaPositions: toMetric(positionMap, CTA_POSITION_LABEL_MAP),
-    textImageRatio: toMetric(ratioMap, RATIO_LABEL_MAP),
+    composition: toMetric(compositionMap),
+    ctaPositions: toMetric(positionMap),
+    textImageRatio: toMetric(ratioMap),
     seasonalCues: Array.from(cueMap.entries())
       .map(([cue, count]) => ({ cue, count }))
       .sort((a, b) => b.count - a.count),
@@ -481,13 +462,19 @@ function escapeRegExp(text: string): string {
  * 同一模板即同一句式。例："Up to 50% Off + Free Shipping" → "up to {n}% off + free shipping"。
  */
 function toSubjectTemplate(subject: string, brand: string): string {
-  const en = getCurrentLocale() === "en";
   let s = subject.trim();
-  if (brand) s = s.replace(new RegExp(escapeRegExp(brand), "gi"), en ? "{brand}" : "{品牌}");
-  s = s.replace(/[$£€]\s?\d[\d,]*(?:\.\d{1,2})?/g, en ? "{price}" : "{价格}");
+  if (brand) s = s.replace(new RegExp(escapeRegExp(brand), "gi"), "{brand}");
+  s = s.replace(/[$£€]\s?\d[\d,]*(?:\.\d{1,2})?/g, "{price}");
   s = s.replace(/\d+(?:\.\d+)?\s*%/g, "{n}%");
   s = s.replace(/\d[\d,]*(?:\.\d+)?/g, "{n}");
   return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/** 聚合只保留语义占位符，展示时随当前语言翻译。 */
+function displaySubjectTemplate(template: string): string {
+  return getCurrentLocale() === "en"
+    ? template
+    : template.replaceAll("{brand}", "{品牌}").replaceAll("{price}", "{价格}");
 }
 
 function addDays(isoDate: string, days: number): string {
@@ -575,91 +562,36 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     period === "threeWeeks"
       ? dateWindow
       : { start: EXTENDED_EMAIL_META.windowStart, end: EXTENDED_EMAIL_META.windowEnd };
-  const [emails, setEmails] = useState<WindowEmail[] | null>(null);
-  const [analysisRows, setAnalysisRows] = useState<EmailContentAnalysisRow[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notEnabledDetail, setNotEnabledDetail] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState<number>(0);
-
-  useEffect(() => {
-    if (site === null) {
-      setLoading(false);
-      return;
-    }
-    const controller = new AbortController();
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setNotEnabledDetail(null);
-
-    (async () => {
-      const [emailsResult, analysisResult] = await Promise.allSettled([
-        withTimeout(fetchEmailDataset(), REQUEST_TIMEOUT_MS, t("caSrcEmails")),
-        withTimeout(
-          fetchContentAnalysis({ market: site, start: activeWindow.start, end: activeWindow.end, signal: controller.signal }),
-          REQUEST_TIMEOUT_MS,
-          t("caSrcAnalysis"),
-        ),
-      ]);
-      // 取消后不回写状态（AbortController 已触发或组件已卸载）。
-      if (cancelled || controller.signal.aborted) return;
-
-      if (emailsResult.status === "rejected" && isNotEnabledError(emailsResult.reason)) {
-        setNotEnabledDetail(t("caNotEnabledCol", { detail: emailsResult.reason }));
-        setLoading(false);
-        return;
-      }
-      if (analysisResult.status === "rejected" && isNotEnabledError(analysisResult.reason)) {
-        setNotEnabledDetail(
-          t("caNotEnabledView", { detail: analysisResult.reason }),
-        );
-        setLoading(false);
-        return;
-      }
-      if (emailsResult.status === "rejected") {
-        setError(emailsResult.reason instanceof Error ? emailsResult.reason.message : String(emailsResult.reason));
-        setLoading(false);
-        return;
-      }
-      if (analysisResult.status === "rejected") {
-        setError(analysisResult.reason instanceof Error ? analysisResult.reason.message : String(analysisResult.reason));
-        setLoading(false);
-        return;
-      }
-
-      const rows = emailsResult.value.rows.filter(
-        (row) => row.market === site && row.sent_date >= activeWindow.start && row.sent_date <= activeWindow.end,
-      );
-      setEmails(
-        rows.map((row) => ({
-          market: row.market,
-          brand: row.brand,
-          sent_date: row.sent_date,
-          day_seq: row.day_seq,
-          subject: asNullableText(row.subject),
-          preheader: asNullableText(row.preheader),
-          banner_url: asNullableText(row.banner_url),
-        })),
-      );
-      setAnalysisRows(
-        analysisResult.value.filter(
-          (row) => row.market === site && row.sent_date >= activeWindow.start && row.sent_date <= activeWindow.end,
-        ),
-      );
-      setLoading(false);
-    })().catch((err) => {
-      if (!cancelled && !controller.signal.aborted) {
-        setError(err instanceof Error ? err.message : String(err));
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [site, activeWindow.start, activeWindow.end, retryKey]);
+  const emailData = useExtendedEmails();
+  const analysisData = useEmailContentAnalysis({
+    source: emailData.meta.dataSource,
+    market: site,
+    start: activeWindow.start,
+    end: activeWindow.end,
+  });
+  const loading = emailData.status === "loading" || analysisData.status === "loading";
+  const error = emailData.error ?? analysisData.error?.message ??
+    (emailData.status === "incomplete" ? t("stIncompleteDescPlain") : null);
+  const notEnabledDetail = emailData.error && isNotEnabledError(emailData.error)
+    ? t("caNotEnabledCol", { detail: emailData.error })
+    : analysisData.error && isNotEnabledError(analysisData.error)
+      ? t("caNotEnabledView", { detail: analysisData.error })
+      : null;
+  const analysisRows = analysisData.rows;
+  const emails = useMemo<WindowEmail[] | null>(() => {
+    if (emailData.status !== "ready") return null;
+    return emailData.emails
+      .filter((row) => getEmailMarket(row) === site && row.date >= activeWindow.start && row.date <= activeWindow.end)
+      .map((row) => ({
+        market: getEmailMarket(row),
+        brand: row.brand,
+        sent_date: row.date,
+        day_seq: row.day_seq,
+        subject: asNullableText(row.subject),
+        preheader: asNullableText(row.preheader),
+        banner_url: asNullableText(row.banner_url),
+      }));
+  }, [emailData.status, emailData.emails, site, activeWindow.start, activeWindow.end]);
 
   // 品牌多选筛选：选项来自当前市场+窗口的 emails 样本；未选任何品牌即全部；
   // 选中的品牌不在当前样本中时自动忽略（切市场/周期后不悬空）。
@@ -923,7 +855,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         </p>
         <button
           type="button"
-          onClick={() => setRetryKey((k) => k + 1)}
+          onClick={emailData.retry}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-amber-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-amber-800 transition"
         >
           {t("caRetryBtn")}
@@ -940,7 +872,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         <p className="mt-2 text-xs leading-relaxed opacity-90 break-words">{error}</p>
         <button
           type="button"
-          onClick={() => setRetryKey((k) => k + 1)}
+          onClick={emailData.retry}
           className="mt-4 inline-flex items-center justify-center rounded-lg bg-rose-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-800 transition"
         >
           {t("caRetryBtn")}
@@ -1118,7 +1050,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           }`}
                         >
                           <HorizontalProgressBar
-                            label={item.label}
+                            label={labelText(TACTIC_LABEL_MAP, item.key)}
                             count={item.count}
                             percentage={item.percentage}
                             total={subjectSummary.analyzedCount}
@@ -1136,7 +1068,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   <div className="mt-4 space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
-                        {subjectSummary.tactics.find((tac) => tac.key === effectiveTactic)?.label ?? effectiveTactic}
+                        {labelText(TACTIC_LABEL_MAP, effectiveTactic)}
                         <span className="ml-2 font-normal text-[var(--text-secondary)]">
                           {t("caDetailCount", { n: tacticDetail.items.length })}
                         </span>
@@ -1157,7 +1089,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         <ul className="space-y-1.5">
                           {tacticDetail.patterns.common.map((g) => (
                             <li key={g.template} className="text-xs leading-relaxed">
-                              <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
+                              <span className="font-medium text-[var(--text-heading)]">{displaySubjectTemplate(g.template)}</span>
                               <span className="ml-1.5 text-[var(--text-secondary)]">×{g.count}</span>
                               <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
                                 {t("caExamplePrefix")}{g.example}
@@ -1175,7 +1107,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         <ul className="space-y-1.5">
                           {tacticDetail.patterns.fresh.map((g) => (
                             <li key={g.template} className="text-xs leading-relaxed">
-                              <span className="font-medium text-[var(--text-heading)]">{g.template}</span>
+                              <span className="font-medium text-[var(--text-heading)]">{displaySubjectTemplate(g.template)}</span>
                               <span className="ml-1.5 text-[var(--text-secondary)]">{t("caFirstSeen", { d: g.firstSeen })}</span>
                               <span className="block truncate text-[11px] text-[var(--text-secondary)]" title={g.example}>
                                 {t("caExamplePrefix")}{g.example}
@@ -1339,7 +1271,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     {bannerSummary.composition.map((item) => (
                       <HorizontalProgressBar
                         key={item.key}
-                        label={item.label}
+                        label={labelText(COMPOSITION_LABEL_MAP, item.key)}
                         count={item.count}
                         percentage={item.percentage}
                         total={bannerSummary.analyzedCount}
@@ -1362,7 +1294,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     {bannerSummary.textImageRatio.map((item) => (
                       <HorizontalProgressBar
                         key={item.key}
-                        label={item.label}
+                        label={labelText(RATIO_LABEL_MAP, item.key)}
                         count={item.count}
                         percentage={item.percentage}
                         total={bannerSummary.analyzedCount}
@@ -1385,7 +1317,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                     {bannerSummary.ctaPositions.map((item) => (
                       <HorizontalProgressBar
                         key={item.key}
-                        label={item.label}
+                        label={labelText(CTA_POSITION_LABEL_MAP, item.key)}
                         count={item.count}
                         percentage={item.percentage}
                         total={bannerSummary.analyzedCount}

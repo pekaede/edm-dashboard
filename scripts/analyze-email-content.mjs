@@ -69,6 +69,33 @@ const BANNER_BUCKET = process.env.SUPABASE_BANNER_BUCKET ?? "email-banners";
 const BANNER_COMPOSITIONS = new Set(["text-poster", "fashion-editorial", "single-model", "multi-product", "group-shot", "collage", "detail-closeup", "lifestyle-scene"]);
 const BANNER_CTA_POSITIONS = new Set(["top", "center", "bottom", "bottom-right"]);
 const BANNER_TEXT_IMAGE_RATIOS = new Set(["text-heavy", "balanced", "image-heavy"]);
+// 同源：src/banner-vision-prompt.ts 的 BANNER_SEASONAL_CUES；.mjs 不直接 import TS，
+// 此处标签与顺序必须保持字面一致，Prompt、Schema 与写库前校验均引用此集合。
+const BANNER_SEASONAL_CUES = new Set([
+  "spring",
+  "summer",
+  "autumn",
+  "winter",
+  "new-year",
+  "valentines-day",
+  "easter",
+  "mothers-day",
+  "fathers-day",
+  "halloween",
+  "thanksgiving",
+  "christmas",
+  "holiday",
+  "black-friday",
+  "cyber-monday",
+  "back-to-school",
+  "ramadan",
+  "lunar-new-year",
+  "pride",
+  "graduation",
+  "wedding",
+  "clearance",
+  "other",
+]);
 // 主色色族枚举（与 Pi 的 src/banner-vision-prompt.ts COLOR_FAMILIES 一致）。
 // 模型只输出色族标签，绝不编 Hex；Hex 由图像算法提取并归一成色族（本 pipeline
 // 无取色算法，颜色唯一来源是模型输出 + 此处校验/归一化）。
@@ -83,7 +110,7 @@ Schema: {"tactics": string[] (subset of: urgency, discount, social_proof, newnes
 const BANNER_PROMPT = `You are an expert marketing creative analyst specializing in email marketing (EDM) banner design.
 Analyze the provided email banner image. Output ONLY a valid JSON object, no Markdown fences, no extra text.
 Rules: dominant_colors must be color FAMILY labels from the allowed list only (red, orange, yellow, green, teal, blue, navy, purple, pink, brown, beige, gold, black, white, gray, cream). NEVER output hex codes — you must not invent hex values.
-Schema: {"dominant_colors": string[] (up to 5 color-family labels, e.g. ["white", "red", "black"]), "composition": string (one of: text-poster = typography-dominant, oversized headline is the main visual; fashion-editorial = high-fashion editorial look, artistic styling or lighting; single-model = one model showcasing an outfit or product; multi-product = multiple products displayed or arranged together; group-shot = several models or people posed together; collage = multiple distinct images combined in panels or a collage layout; detail-closeup = close-up of a product detail, material or texture; lifestyle-scene = product shown in a real-life scene or setting), "cta_presence": boolean, "cta_position": string | null (one of: top, center, bottom, bottom-right; null when cta_presence is false), "text_image_ratio": string (one of: text-heavy, balanced, image-heavy), "seasonal_cues": string[] (e.g. summer, holiday; [] if none)}`;
+Schema: {"dominant_colors": string[] (up to 5 color-family labels, e.g. ["white", "red", "black"]), "composition": string (one of: text-poster = typography-dominant, oversized headline is the main visual; fashion-editorial = high-fashion editorial look, artistic styling or lighting; single-model = one model showcasing an outfit or product; multi-product = multiple products displayed or arranged together; group-shot = several models or people posed together; collage = multiple distinct images combined in panels or a collage layout; detail-closeup = close-up of a product detail, material or texture; lifestyle-scene = product shown in a real-life scene or setting), "cta_presence": boolean, "cta_position": string | null (one of: top, center, bottom, bottom-right; null when cta_presence is false), "text_image_ratio": string (one of: text-heavy, balanced, image-heavy), "seasonal_cues": string[] (only labels from: ${[...BANNER_SEASONAL_CUES].join(", ")}; use other for a visible cue outside this list; [] if none)}`;
 
 // ---- 确定性规则（与 src/content-analysis-rules.ts 口径一致；本文件为 .mjs，无法 import TS，故此处同步一份；改规则时两处一起改） ----
 const TACTIC_KEYWORDS = {
@@ -294,7 +321,7 @@ function validateBanner(v) {
   if (v.cta_position !== null && (typeof v.cta_position !== "string" || !BANNER_CTA_POSITIONS.has(v.cta_position))) return `cta_position 不在枚举内：${String(v.cta_position)}`;
   if (v.cta_presence === false && v.cta_position !== null) return "cta_presence=false 时 cta_position 必须为 null";
   if (typeof v.text_image_ratio !== "string" || !BANNER_TEXT_IMAGE_RATIOS.has(v.text_image_ratio)) return `text_image_ratio 不在枚举内：${String(v.text_image_ratio)}`;
-  if (!Array.isArray(v.seasonal_cues) || !v.seasonal_cues.every((s) => typeof s === "string" && s.length > 0)) return "seasonal_cues 无效";
+  if (!Array.isArray(v.seasonal_cues) || !v.seasonal_cues.every((s) => typeof s === "string" && BANNER_SEASONAL_CUES.has(s))) return "seasonal_cues 无效（需为季节标签枚举）";
   if (new Set(v.seasonal_cues).size !== v.seasonal_cues.length) return "seasonal_cues 有重复";
   return null;
 }
@@ -361,7 +388,7 @@ const BANNER_JSON_SCHEMA = {
     cta_presence: { type: "boolean" },
     cta_position: { type: ["string", "null"], enum: [...BANNER_CTA_POSITIONS, null] },
     text_image_ratio: { type: "string", enum: [...BANNER_TEXT_IMAGE_RATIOS] },
-    seasonal_cues: { type: "array", items: { type: "string" } },
+    seasonal_cues: { type: "array", items: { type: "string", enum: [...BANNER_SEASONAL_CUES] } },
   },
 };
 
@@ -949,7 +976,7 @@ async function runDryRun({ window, markets, batchId, stats, limit }) {
   // Stub 模型：subject 返回规则结果；banner 返回固定合法结果。
   const stubBanner = {
     dominant_colors: ["white", "black"],
-    composition: "centered",
+    composition: "text-poster",
     cta_presence: true,
     cta_position: "bottom",
     text_image_ratio: "balanced",
@@ -990,22 +1017,28 @@ async function runDryRun({ window, markets, batchId, stats, limit }) {
   }
 
   // 自检：脏数据必须被校验拒绝（cta_presence=false 但给了位置；Hex 颜色；非法色族）。
-  const dirtyBanner = { dominant_colors: ["red"], composition: "centered", cta_presence: false, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
+  const dirtyBanner = { dominant_colors: ["red"], composition: "text-poster", cta_presence: false, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
   const dirtyErr = validateBanner(dirtyBanner);
   console.log(`[dry-run] 自检脏 banner（cta 约束）被拒绝：${dirtyErr ? `是（${dirtyErr}）` : "否——校验有漏洞！"}`);
   if (!dirtyErr) process.exitCode = 1;
-  const hexBanner = { dominant_colors: ["#FF0000", "white"], composition: "centered", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
+  const hexBanner = { dominant_colors: ["#FF0000", "white"], composition: "text-poster", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
   const hexErr = validateBanner(hexBanner);
   console.log(`[dry-run] 自检 Hex 颜色 banner 被拒绝：${hexErr ? `是（${hexErr}）` : "否——校验有漏洞！"}`);
   if (!hexErr) process.exitCode = 1;
-  const badFamilyBanner = { dominant_colors: ["notacolor"], composition: "centered", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
+  const badFamilyBanner = { dominant_colors: ["notacolor"], composition: "text-poster", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
   const badFamilyErr = validateBanner(badFamilyBanner);
   console.log(`[dry-run] 自检非法色族 banner 被拒绝：${badFamilyErr ? `是（${badFamilyErr}）` : "否——校验有漏洞！"}`);
   if (!badFamilyErr) process.exitCode = 1;
-  const goodFamilyBanner = { dominant_colors: ["red", "white"], composition: "centered", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
+  const goodFamilyBanner = { dominant_colors: ["red", "white"], composition: "text-poster", cta_presence: true, cta_position: "bottom", text_image_ratio: "balanced", seasonal_cues: [] };
   const goodFamilyErr = validateBanner(goodFamilyBanner);
   console.log(`[dry-run] 自检合法色族 banner 通过：${!goodFamilyErr ? "是" : `否——误杀（${goodFamilyErr}）`}`);
   if (goodFamilyErr) process.exitCode = 1;
+  const badCueErr = validateBanner({ ...goodFamilyBanner, seasonal_cues: ["invented-season"] });
+  console.log(`[dry-run] 自检非法季节标签被拒绝：${badCueErr ? `是（${badCueErr}）` : "否——校验有漏洞！"}`);
+  if (!badCueErr) process.exitCode = 1;
+  const goodCuesErr = validateBanner({ ...goodFamilyBanner, seasonal_cues: [...BANNER_SEASONAL_CUES] });
+  console.log(`[dry-run] 自检全部合法季节标签通过：${!goodCuesErr ? "是" : `否——误杀（${goodCuesErr}）`}`);
+  if (goodCuesErr) process.exitCode = 1;
   // 自检：规则 bug 回归（Save 20% 保留 %；家庭=1；国旗=1；裸 your 不算个性化）。
   const saveFraming = detectDiscountFraming("Save 20% on your favorites", null);
   console.log(`[dry-run] 自检 Save 20% 保留 %：${saveFraming === "Save 20%" ? "是" : `否——得到 ${JSON.stringify(saveFraming)}`}`);
@@ -1025,6 +1058,7 @@ async function runDryRun({ window, markets, batchId, stats, limit }) {
   if (!dupErr) process.exitCode = 1;
 
   console.log(`[dry-run done] total=${stats.total} success=${stats.success} failed=${stats.failed} skipped=${stats.skipped}`);
+  if (stats.failed > 0) process.exitCode = 1;
 }
 
 await main().catch((error) => {

@@ -10,6 +10,7 @@ export interface EmailRecord {
   url?: string;
   subject?: string;
   preheader?: string;
+  banner_url?: string;
   day_seq: number;
   source_index: number;
   market?: string;
@@ -131,6 +132,7 @@ async function supabaseAdapter(force = false): Promise<ExtendedEmailsData> {
     url: row.original_url ?? undefined,
     subject: row.subject ?? undefined,
     preheader: row.preheader ?? undefined,
+    banner_url: row.banner_url ?? undefined,
     day_seq: row.day_seq,
     source_index: row.source_index,
     market: row.market,
@@ -147,8 +149,23 @@ async function supabaseAdapter(force = false): Promise<ExtendedEmailsData> {
 }
 
 // 每日更新为主、白天偶有补数：5 分钟兼顾补数可见时效与全量分页查询的开销。
-const STALE_TIME = 5 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 30_000;
+export const EMAIL_DATA_STALE_TIME = 5 * 60 * 1000;
+export const EMAIL_DATA_REQUEST_TIMEOUT_MS = 30_000;
+
+/** 派生数据共享主数据的后台刷新/强制重试/失效信号，不另设自动刷新周期。 */
+type EmailDataRefreshEvent =
+  | { type: "refresh"; source: EmailDataSource; force: boolean }
+  | { type: "reset" };
+const refreshListeners = new Set<(event: EmailDataRefreshEvent) => void>();
+
+export function subscribeEmailDataRefresh(listener: (event: EmailDataRefreshEvent) => void): () => void {
+  refreshListeners.add(listener);
+  return () => { refreshListeners.delete(listener); };
+}
+
+function notifyRefresh(event: EmailDataRefreshEvent) {
+  refreshListeners.forEach((listener) => listener(event));
+}
 
 interface EmailCacheEntry {
   request: Promise<ExtendedEmailsData>;
@@ -162,7 +179,7 @@ function requestExtendedEmails(source: EmailDataSource, refresh = false, force =
   const cached = promiseCache.get(source);
   const pending = inFlightRequests.get(source);
   if (!force && pending) return pending;
-  if (!force && !refresh && cached && cached.updatedAt !== null && Date.now() - cached.updatedAt < STALE_TIME) {
+  if (!force && !refresh && cached && cached.updatedAt !== null && Date.now() - cached.updatedAt < EMAIL_DATA_STALE_TIME) {
     return cached.request;
   }
 
@@ -173,7 +190,7 @@ function requestExtendedEmails(source: EmailDataSource, refresh = false, force =
       const error = new Error("邮件加载超时，请重试。");
       controller.abort(error);
       reject(error);
-    }, REQUEST_TIMEOUT_MS);
+    }, EMAIL_DATA_REQUEST_TIMEOUT_MS);
   });
   // Supabase 自身会取消网络请求；此处同时限制 JSON 懒加载和整个适配过程。
   // 显式 force 直接启动新一轮，不再串接旧 pending。
@@ -232,7 +249,7 @@ function refreshVisibleEmails() {
 
 function startRefreshTimer() {
   if (refreshTimer !== null || document.visibilityState !== "visible") return;
-  refreshTimer = setInterval(refreshVisibleEmails, STALE_TIME);
+  refreshTimer = setInterval(refreshVisibleEmails, EMAIL_DATA_STALE_TIME);
 }
 
 function handleVisibilityChange() {
@@ -284,6 +301,7 @@ function loadExtendedEmails(refresh = false, force = false) {
   const request = requestExtendedEmails(DEFAULT_SOURCE, refresh, force);
   if (activeRequest === request) return;
   activeRequest = request;
+  if (refresh) notifyRefresh({ type: "refresh", source: DEFAULT_SOURCE, force });
 
   request.then(
     ({ emails, meta }) => {
@@ -318,6 +336,7 @@ export function resetExtendedEmailsCache() {
   promiseCache.clear();
   inFlightRequests.clear();
   activeRequest = null;
+  notifyRefresh({ type: "reset" });
   setState(loadingState);
 }
 
