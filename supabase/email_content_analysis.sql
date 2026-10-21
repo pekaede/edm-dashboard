@@ -105,7 +105,8 @@ create index if not exists email_content_analysis_status_idx
   on public.email_content_analysis (status, analysis_type);
 
 -- ----------------------------------------------------------------------------
--- 视图：每（邮件，类型）最新一行。前端只读此视图。
+-- 视图：每（邮件，类型）一行；成功优先（取最新成功尝试），无成功时取最新尝试。
+-- 前端只读此视图。
 -- ----------------------------------------------------------------------------
 create or replace view public.email_content_analysis_current
 with (security_invoker = true) as
@@ -122,7 +123,7 @@ select distinct on (market, brand, sent_date, day_seq, analysis_type)
 from public.email_content_analysis
 order by
   market, brand, sent_date, day_seq, analysis_type,
-  created_at desc, id desc;
+  (status = 'success') desc, attempted_at desc, id desc;
 
 comment on view public.email_content_analysis_current is
   '每（邮件，类型）最新一行分析结果；前端只读此视图，不直接读基表。';

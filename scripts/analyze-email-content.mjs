@@ -536,18 +536,18 @@ class SupabaseAdmin {
     return filtered;
   }
 
-  /** 基表最新行（按 key 取最新 created_at），供跳过判断与失败替换用。 */
+  /** 基表最新尝试（按 key 以 attempted_at desc、id desc 取首行），供跳过判断与失败替换用。 */
   async fetchLatestAnalysis({ start, end, markets }) {
     const latest = new Map();
     let offset = 0;
     // 先取总数再分页；排序保证同一 key 的最新行先出现。
     const buildUrl = (off) => {
       const u = new URL(`${this.baseUrl}/rest/v1/email_content_analysis`);
-      u.searchParams.set("select", "market,brand,sent_date,day_seq,analysis_type,status,input_hash");
+      u.searchParams.set("select", "market,brand,sent_date,day_seq,analysis_type,status,input_hash,attempted_at");
       if (markets.length === 1) u.searchParams.append("market", `eq.${markets[0]}`);
       u.searchParams.append("sent_date", `gte.${start}`);
       u.searchParams.append("sent_date", `lte.${end}`);
-      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,day_seq.asc,analysis_type.asc,created_at.desc,id.desc");
+      u.searchParams.set("order", "market.asc,brand.asc,sent_date.asc,day_seq.asc,analysis_type.asc,attempted_at.desc,id.desc");
       u.searchParams.set("limit", String(DEFAULT_PAGE_SIZE));
       u.searchParams.set("offset", String(off));
       return u;
