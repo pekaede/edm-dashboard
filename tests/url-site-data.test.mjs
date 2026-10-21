@@ -64,6 +64,7 @@ describe("URL 与站点缓存的纯逻辑契约", () => {
     assert.deepEqual(parseHash(hash), {
       view: "emails", market: "UK", marketSpecified: true,
       brand: "SHEIN", theme: "price", query: "linen + sale",
+      dateFrom: "", dateTo: "",
     });
   });
 
@@ -72,6 +73,7 @@ describe("URL 与站点缓存的纯逻辑契约", () => {
     for (const change of [
       { view: "calendar" }, { market: "UK" }, { marketSpecified: false },
       { brand: "SHEIN" }, { theme: "price" }, { query: "sale" },
+      { dateFrom: "2026-10-01" }, { dateTo: "2026-10-20" },
     ]) {
       assert.equal(isEqualPageState(base, { ...base, ...change }), false, JSON.stringify(change));
     }

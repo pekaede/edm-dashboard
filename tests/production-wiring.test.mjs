@@ -259,7 +259,7 @@ it("J4：真实 App/Provider 与多实例 URL hook 经导航和连续写入恢�
     assert.equal(selection.market, expected.market, "App 的真实 effect 应把 URL 站点同步到 Provider");
     assert.equal(result.data.total, total, "Provider 消费者读取恢复站点的数据");
   }
-  const uk = { view: "emails", market: "UK", marketSpecified: true, brand: "SHEIN", theme: "price", query: "sale" };
+  const uk = { view: "emails", market: "UK", marketSpecified: true, brand: "SHEIN", theme: "price", query: "sale", dateFrom: "", dateTo: "" };
   expectState(uk, 1);
   await settle(() => {
     f.window.history.replaceState(null, "", "#emails/US/Zara/new?q=coat");

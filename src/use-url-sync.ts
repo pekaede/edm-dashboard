@@ -268,6 +268,15 @@ export interface UseUrlSyncResult {
   setBrand: (brand: string, options?: { replace?: boolean }) => void;
   setTheme: (theme: string | null, options?: { replace?: boolean }) => void;
   setQuery: (query: string, options?: { replace?: boolean }) => void;
+  /**
+   * 邮件列表的日期范围（YYYY-MM-DD；空字符串表示未限定）。
+   * 走与品牌/主题相同的 push 历史语义：每次提交都是一个可回退的筛选快照。
+   */
+  setDateRange: (
+    dateFrom: string,
+    dateTo: string,
+    options?: { replace?: boolean },
+  ) => void;
   saveScrollPosition: (view?: string, pos?: number) => void;
   restoreScrollPosition: (view?: string) => boolean;
   /**
@@ -462,6 +471,13 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
       // Typically typing search queries should replace history rather than flood it
       const shouldReplace = setOpts?.replace ?? true;
       setState((prev) => ({ ...prev, query }), { replace: shouldReplace });
+    },
+    [setState],
+  );
+
+  const setDateRange = useCallback(
+    (dateFrom: string, dateTo: string, setOpts?: { replace?: boolean }) => {
+      setState((prev) => ({ ...prev, dateFrom, dateTo }), setOpts);
     },
     [setState],
   );
@@ -767,6 +783,7 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
     setBrand,
     setTheme,
     setQuery,
+    setDateRange,
     saveScrollPosition: saveScroll,
     restoreScrollPosition: restoreScroll,
     hash: rawHash,

@@ -233,7 +233,7 @@ export function ExtendedEmailFilter() {
   const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, meta, status } = emailData;
 
-  const { state: urlState, setState: setUrlState, setQuery } = useUrlSync({
+  const { state: urlState, setState: setUrlState, setQuery, setDateRange } = useUrlSync({
     isReady: () => status === "ready",
   });
 
@@ -242,15 +242,17 @@ export function ExtendedEmailFilter() {
   // 切站点保留品牌；新站点无匹配时展示可重置的空态。
   const selectedBrand = urlState.brand === "all" ? null : urlState.brand;
   const searchQuery = urlState.query;
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  // 日期范围同样只从 URL 派生（#emails…?from=YYYY-MM-DD&to=YYYY-MM-DD）：
+  // 刷新/分享/前进后退后筛选可还原；其他视图的 hash 不携带日期。
+  const dateFrom = urlState.dateFrom;
+  const dateTo = urlState.dateTo;
 
   const handleDateFromChange = (value: string) => {
-    setDateFrom(value);
+    setDateRange(value, dateTo);
     setVisibleCount(PAGE_SIZE);
   };
   const handleDateToChange = (value: string) => {
-    setDateTo(value);
+    setDateRange(dateFrom, value);
     setVisibleCount(PAGE_SIZE);
   };
 
@@ -263,8 +265,7 @@ export function ExtendedEmailFilter() {
   };
   const applyDatePreset = (key: DatePresetKey) => {
     const range = dateRangeForPreset(key);
-    setDateFrom(range.start);
-    setDateTo(range.end);
+    setDateRange(range.start, range.end);
     setVisibleCount(PAGE_SIZE);
   };
   const activeDatePreset: DatePresetKey | null =
@@ -311,20 +312,22 @@ export function ExtendedEmailFilter() {
     }
   }, [visibleCount]);
 
-  // 外部 URL 导航或切站点只重置分页，保留日期、收藏和展开状态。
-  const previousFiltersRef = useRef({ selectedMarket, selectedBrand, selectedTheme, searchQuery });
+  // 外部 URL 导航或切站点只重置分页；日期已纳入 URL，同样参与比对。
+  const previousFiltersRef = useRef({ selectedMarket, selectedBrand, selectedTheme, searchQuery, dateFrom, dateTo });
   useEffect(() => {
     const previous = previousFiltersRef.current;
     if (
       previous.selectedMarket !== selectedMarket ||
       previous.selectedBrand !== selectedBrand ||
       previous.selectedTheme !== selectedTheme ||
-      previous.searchQuery !== searchQuery
+      previous.searchQuery !== searchQuery ||
+      previous.dateFrom !== dateFrom ||
+      previous.dateTo !== dateTo
     ) {
       setVisibleCount(PAGE_SIZE);
     }
-    previousFiltersRef.current = { selectedMarket, selectedBrand, selectedTheme, searchQuery };
-  }, [selectedMarket, selectedBrand, selectedTheme, searchQuery]);
+    previousFiltersRef.current = { selectedMarket, selectedBrand, selectedTheme, searchQuery, dateFrom, dateTo };
+  }, [selectedMarket, selectedBrand, selectedTheme, searchQuery, dateFrom, dateTo]);
 
   // Favorites state from localStorage with cross-tab/event sync
   const [favoriteKeys, setFavoriteKeys] = useState<Set<string>>(
@@ -1120,8 +1123,7 @@ export function ExtendedEmailFilter() {
                   <button
                     type="button"
                     onClick={() => {
-                      setDateFrom("");
-                      setDateTo("");
+                      setDateRange("", "");
                       setVisibleCount(PAGE_SIZE);
                     }}
                     className="rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:bg-[var(--control-filter-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
@@ -1217,9 +1219,7 @@ export function ExtendedEmailFilter() {
               description={t("efNoResultDesc", { summary: filterSummary })}
               actionLabel={t("efResetFilterSearch")}
               onAction={() => {
-                setUrlState((current) => ({ ...current, brand: "all", theme: null, query: "" }));
-                setDateFrom("");
-                setDateTo("");
+                setUrlState((current) => ({ ...current, brand: "all", theme: null, query: "", dateFrom: "", dateTo: "" }));
                 setShowOnlyFavorites(false);
                 setVisibleCount(PAGE_SIZE);
               }}

@@ -27,6 +27,7 @@ describe("URL 状态恢复", () => {
       const input = {
         view, market: " uk ", marketSpecified: true,
         brand: "Zara / 联名 & + #?", theme: " PRICE ", query: "  春夏 sale + 50% & q=二 #? /  ",
+        dateFrom: "", dateTo: "",
       };
       const hash = buildHash(input);
       const restored = parseHash(hash);
@@ -40,6 +41,7 @@ describe("URL 状态恢复", () => {
     assert.deepEqual(state, {
       view: "emails", market: "UK", marketSpecified: true,
       brand: "SHEIN", theme: "price", query: "linen sale+&春",
+      dateFrom: "", dateTo: "",
     });
     assert.equal(buildHash(state), "#emails/UK/SHEIN/price?q=linen%20sale%2B%26%E6%98%A5");
     assert.deepEqual(parseHash(buildHash(state)), state);
@@ -75,6 +77,47 @@ describe("URL 状态恢复", () => {
     assert.equal(state.brand, "%E0%A4%A");
     assert.equal(state.market, "US");
     assert.equal(state.theme, "new");
+    assert.deepEqual(parseHash(buildHash(state)), state);
+  });
+
+  it("邮件列表日期范围写入 URL 查询参数并可往返恢复", () => {
+    const hash = "#emails/US/all/price?from=2026-10-01&to=2026-10-20";
+    const state = parseHash(hash);
+    assert.equal(state.dateFrom, "2026-10-01");
+    assert.equal(state.dateTo, "2026-10-20");
+    assert.equal(buildHash(state), hash);
+    assert.deepEqual(parseHash(buildHash(state)), state);
+  });
+
+  it("日期参数只在 emails 视图生效，其他视图写入与解析均丢弃", () => {
+    const reportState = parseHash("#report?from=2026-10-01&to=2026-10-20");
+    assert.equal(reportState.dateFrom, "");
+    assert.equal(reportState.dateTo, "");
+    const built = buildHash({
+      ...DEFAULT_PAGE_STATE, view: "report",
+      dateFrom: "2026-10-01", dateTo: "2026-10-20",
+    });
+    assert.equal(built.includes("from="), false);
+    assert.equal(built.includes("to="), false);
+  });
+
+  it("非法日期参数被丢弃，不污染邮件列表筛选", () => {
+    const state = parseHash("#emails?from=abc&to=2026/10/01");
+    assert.equal(state.dateFrom, "");
+    assert.equal(state.dateTo, "");
+    assert.equal(buildHash(state), "#emails");
+  });
+
+  it("不存在的日历日期被丢弃", () => {
+    const state = parseHash("#emails?from=2026-99-99&to=2026-10-20");
+    assert.equal(state.dateFrom, "");
+    assert.equal(state.dateTo, "2026-10-20");
+    assert.equal(buildHash(state), "#emails?to=2026-10-20");
+  });
+
+  it("仅设单边日期时只写一个查询参数", () => {
+    const state = { ...DEFAULT_PAGE_STATE, view: "emails", dateFrom: "2026-10-01" };
+    assert.equal(buildHash(state), "#emails?from=2026-10-01");
     assert.deepEqual(parseHash(buildHash(state)), state);
   });
 });

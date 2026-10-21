@@ -13,6 +13,13 @@ export interface PageState {
   brand: string;
   theme: string | null;
   query: string;
+  /**
+   * 邮件视图的日期范围（YYYY-MM-DD；空字符串表示未限定）。
+   * 仅 emails 视图写入/恢复：其他视图的 hash 不携带日期参数，解析时也归一为空，
+   * 保证"日期只属于邮件列表"的不变式。
+   */
+  dateFrom: string;
+  dateTo: string;
 }
 
 export const KNOWN_MARKETS = new Set([
@@ -46,6 +53,8 @@ export const DEFAULT_PAGE_STATE: PageState = {
   brand: "all",
   theme: null,
   query: "",
+  dateFrom: "",
+  dateTo: "",
 };
 
 function safeDecode(val: string): string {
@@ -66,6 +75,17 @@ function normalizeTheme(theme: string | null): string | null {
   if (!value) return null;
   const lower = value.toLowerCase();
   return KNOWN_THEMES.has(lower) ? lower : value;
+}
+
+/**
+ * 日期参数只接受 YYYY-MM-DD 形式（与 <input type="date"> 的值格式一致）；
+ * 非法值归一为空，避免脏参数把邮件列表筛成空。
+ */
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function normalizeISODate(value: string | null | undefined): string {
+  const v = value?.trim() ?? "";
+  // 正则只看形状；Date.parse 再挡掉 2026-99-99 这类不存在的日历日期。
+  return ISO_DATE_RE.test(v) && !Number.isNaN(Date.parse(v)) ? v : "";
 }
 
 /**
@@ -119,7 +139,18 @@ export function buildHash(state: PageState): string {
   }
 
   const encodedPath = segments.map((s) => encodeURIComponent(s)).join("/");
-  const queryString = query ? `?q=${encodeURIComponent(query)}` : "";
+  // 查询参数：搜索词 q 与（仅 emails 视图的）日期范围 from/to。
+  // 日期以 from/to 命名避开与站点/品牌路径段的歧义；数字与连字符无需转义，
+  // URL 保持可读（如 #emails/US/all/price?q=coat&from=2026-10-01&to=2026-10-20）。
+  const queryParams: string[] = [];
+  if (query) queryParams.push(`q=${encodeURIComponent(query)}`);
+  if (state.view === "emails") {
+    const dateFrom = normalizeISODate(state.dateFrom);
+    const dateTo = normalizeISODate(state.dateTo);
+    if (dateFrom) queryParams.push(`from=${dateFrom}`);
+    if (dateTo) queryParams.push(`to=${dateTo}`);
+  }
+  const queryString = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
 
   return `#${encodedPath}${queryString}`;
 }
@@ -143,10 +174,14 @@ export function parseHash(hash: string): PageState {
   const searchPart = qIdx >= 0 ? raw.slice(qIdx + 1) : "";
 
   let query = "";
+  let dateFrom = "";
+  let dateTo = "";
   if (searchPart) {
     try {
       const params = new URLSearchParams(searchPart);
       query = params.get("q") ?? "";
+      dateFrom = normalizeISODate(params.get("from"));
+      dateTo = normalizeISODate(params.get("to"));
     } catch {
       query = "";
     }
@@ -236,6 +271,10 @@ export function parseHash(hash: string): PageState {
     brand,
     theme: normalizeTheme(theme),
     query,
+    // 日期只属于邮件列表：非 emails 视图的 from/to 参数直接丢弃，
+    // 与 buildHash"仅 emails 视图写日期"对称，保证往返归一。
+    dateFrom: view === "emails" ? dateFrom : "",
+    dateTo: view === "emails" ? dateTo : "",
   };
 }
 
@@ -266,6 +305,8 @@ export function isEqualPageState(a: PageState, b: PageState): boolean {
     a.marketSpecified === b.marketSpecified &&
     a.brand === b.brand &&
     a.theme === b.theme &&
-    a.query === b.query
+    a.query === b.query &&
+    a.dateFrom === b.dateFrom &&
+    a.dateTo === b.dateTo
   );
 }
