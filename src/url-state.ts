@@ -56,6 +56,18 @@ function safeDecode(val: string): string {
   }
 }
 
+function normalizeMarket(market: string | null): string | null {
+  const value = market?.trim();
+  return !value || value.toLowerCase() === "all" ? null : value.toUpperCase();
+}
+
+function normalizeTheme(theme: string | null): string | null {
+  const value = theme?.trim();
+  if (!value) return null;
+  const lower = value.toLowerCase();
+  return KNOWN_THEMES.has(lower) ? lower : value;
+}
+
 /**
  * Encodes PageState into a reversible URL hash, e.g. #emails/US/all/price?q=xxx
  */
@@ -68,10 +80,10 @@ export function buildHash(state: PageState): string {
       ? state.view
       : "report";
 
-  const market = state.market && state.market.trim() !== "" ? state.market.trim() : null;
+  const market = normalizeMarket(state.market);
   const marketSpecified = state.marketSpecified === true;
   const brand = state.brand && state.brand.trim() !== "" ? state.brand.trim() : "all";
-  const theme = state.theme && state.theme.trim() !== "" ? state.theme.trim() : null;
+  const theme = normalizeTheme(state.theme);
   const query = typeof state.query === "string" ? state.query : "";
 
   // Segment layout: [view, market, brand, theme]
@@ -219,10 +231,10 @@ export function parseHash(hash: string): PageState {
 
   return {
     view,
-    market,
+    market: normalizeMarket(market),
     marketSpecified,
     brand,
-    theme,
+    theme: normalizeTheme(theme),
     query,
   };
 }

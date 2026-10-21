@@ -397,20 +397,16 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
       updater: PageState | ((prev: PageState) => PageState),
       setOpts?: { replace?: boolean },
     ) => {
-      // In case URL query was updated directly without triggering a React render yet
-      const currentHash =
-        typeof window !== "undefined" ? window.location.hash : "";
-      const latestFromHash = parseHash(currentHash);
-      const current: PageState = {
-        ...stateRef.current,
-        query:
-          latestFromHash.query !== undefined
-            ? latestFromHash.query
-            : stateRef.current.query,
-      };
-
-      const next = typeof updater === "function" ? updater(current) : updater;
-      if (isEqualPageState(current, next)) {
+      // 多个 hook 实例可能在同一轮渲染前连续写入；所有字段都以最新 URL 为准，
+      // 避免切站点或连续更改筛选时，用旧品牌/主题覆盖刚写入的值。
+      const current = syncToHash && typeof window !== "undefined"
+        ? parseHash(window.location.hash)
+        : stateRef.current;
+      const proposed = typeof updater === "function" ? updater(current) : updater;
+      // 内存状态与最终可恢复的 URL 使用同一套归一规则。
+      const next = parseHash(buildHash(proposed));
+      if (isEqualPageState(current, next) && isEqualPageState(stateRef.current, next)) {
+        writeHash(next, true);
         return;
       }
 
@@ -428,7 +424,7 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
       writeHash(next, setOpts?.replace ?? false);
       onChangeRef.current?.(next);
     },
-    [preserveScroll, saveScrollSnapshot, writeHash],
+    [preserveScroll, saveScrollSnapshot, syncToHash, writeHash],
   );
 
   const setView = useCallback(

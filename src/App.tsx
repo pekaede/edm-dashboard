@@ -1,4 +1,14 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { initAnalytics, trackView } from "./analytics";
 import { BrandThemeBreakdown } from "./components/BrandThemeBreakdown";
 import { CalendarView } from "./components/CalendarView";
@@ -23,21 +33,88 @@ import { THREE_WEEK_WINDOW } from "./three-week-aggregation";
 
 // 重组件按需加载：非默认视图（报告/邮件）与看板下半区（内容分析/跨市场对比）
 // 不进首屏包；品牌弹窗只在点开时才加载。
-const ContentAnalysis = lazy(() =>
-  import("./components/ContentAnalysis").then((m) => ({ default: m.ContentAnalysis })),
-);
-const MarketComparison = lazy(() =>
-  import("./components/MarketComparison").then((m) => ({ default: m.MarketComparison })),
-);
-const MarkdownReport = lazy(() =>
-  import("./components/MarkdownReport").then((m) => ({ default: m.MarkdownReport })),
-);
-const ExtendedEmailFilter = lazy(() =>
-  import("./components/ExtendedEmailFilter").then((m) => ({ default: m.ExtendedEmailFilter })),
-);
-const BrandDetailDialog = lazy(() =>
-  import("./components/BrandDetailDialog").then((m) => ({ default: m.BrandDetailDialog })),
-);
+const loadContentAnalysis = () =>
+  import("./components/ContentAnalysis").then((m) => ({ default: m.ContentAnalysis }));
+const loadMarketComparison = () =>
+  import("./components/MarketComparison").then((m) => ({ default: m.MarketComparison }));
+const loadMarkdownReport = () =>
+  import("./components/MarkdownReport").then((m) => ({ default: m.MarkdownReport }));
+const loadExtendedEmailFilter = () =>
+  import("./components/ExtendedEmailFilter").then((m) => ({ default: m.ExtendedEmailFilter }));
+const loadBrandDetailDialog = () =>
+  import("./components/BrandDetailDialog").then((m) => ({ default: m.BrandDetailDialog }));
+
+/** 根节点和独立区块共用，区块失败时保留其余页面。 */
+export class ErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
+function ChunkErrorFallback({ onRetry, className = "" }: { onRetry: () => void; className?: string }) {
+  const { t } = useLocale();
+  return (
+    <div role="alert" className={`rounded-[var(--card-radius)] border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-[var(--text-body)] ${className}`}>
+      <p className="font-semibold text-[var(--text-heading)]">{t("ebSectionTitle")}</p>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">{t("ebSectionDesc")}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 min-h-11 rounded-lg border border-[var(--border-default)] px-4 py-2 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
+      >
+        {t("ebRetry")}
+      </button>
+    </div>
+  );
+}
+
+function SectionErrorBoundary({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const [attempt, setAttempt] = useState(0);
+  // 普通区块沿用懒加载区块的重试方式：递增 key，仅重新挂载失败区块。
+  return (
+    <ErrorBoundary
+      key={attempt}
+      fallback={<ChunkErrorFallback className={className} onRetry={() => setAttempt((value) => value + 1)} />}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+function LazySection<Props extends object>({
+  load,
+  componentProps,
+  className = "",
+  loadingFallback,
+}: {
+  load: () => Promise<{ default: ComponentType<Props> }>;
+  componentProps: Props;
+  className?: string;
+  loadingFallback?: ReactNode;
+}) {
+  const [attempt, setAttempt] = useState(0);
+  // lazy 会缓存被拒绝的 Promise；重试必须同时重建 lazy 类型及错误边界。
+  const Section = useMemo(() => lazy(load), [load, attempt]);
+  return (
+    <ErrorBoundary
+      key={attempt}
+      fallback={<ChunkErrorFallback className={className} onRetry={() => setAttempt((value) => value + 1)} />}
+    >
+      <Suspense fallback={loadingFallback === undefined ? <ChunkFallback className={className} /> : loadingFallback}>
+        <Section {...componentProps} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
 
 function ChunkFallback({ className = "" }: { className?: string }) {
   const { t } = useLocale();
@@ -157,8 +234,10 @@ function Dashboard() {
     if (connection?.saveData) return;
     if (connection?.effectiveType && connection.effectiveType.includes("2g")) return;
     const prefetch = () => {
-      void import("./components/MarkdownReport");
-      void import("./components/ExtendedEmailFilter");
+      void Promise.all([loadMarkdownReport(), loadExtendedEmailFilter()]).catch((error: unknown) => {
+        // 预取失败不阻止导航；实际加载失败时由区块边界展示重试入口。
+        console.warn("[EDM] View prefetch failed", error);
+      });
     };
     if ("requestIdleCallback" in window) {
       const id = window.requestIdleCallback(prefetch, { timeout: 4000 });
@@ -327,66 +406,85 @@ function Dashboard() {
 
   return (
     <div className="dashboard-shell min-h-screen font-sans text-[var(--text-body)] antialiased">
-      <DashboardHeader />
+      <SectionErrorBoundary>
+        <DashboardHeader />
+      </SectionErrorBoundary>
 
       <main className="dashboard-container space-y-[var(--card-padding)] pb-[calc(var(--card-padding)*2)] sm:space-y-[var(--card-padding-sm)] sm:pb-[calc(var(--card-padding-sm)*2)]">
         {view === "dashboard" ? (
           <>
-            <PageNav sections={dashboardSections} />
-            <KpiGrid />
+            <SectionErrorBoundary>
+              <PageNav sections={dashboardSections} />
+            </SectionErrorBoundary>
+            <SectionErrorBoundary>
+              <KpiGrid />
+            </SectionErrorBoundary>
 
             <section id="onepage-summary" aria-label={t("sectionSummary")} className="scroll-mt-20 min-w-0 space-y-[calc(var(--card-padding)/2)] xl:[&_ol]:grid-cols-2">
               <div className="flex flex-col gap-[calc(var(--card-padding)/2)] sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[length:var(--type-h3-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-h3-leading)] text-[var(--text-heading)]">{t("sectionSummary")}</p>
                 {viewNavigation}
               </div>
-              <Insights />
+              <SectionErrorBoundary>
+                <Insights />
+              </SectionErrorBoundary>
             </section>
 
             <div id="overview" className="dashboard-overview-grid scroll-mt-20 grid items-stretch gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] xl:grid-cols-[1.1fr_0.85fr_1.1fr]">
               <div className="min-w-0">
-                <CampaignOverview onSelectBrand={setSelectedBrand} />
+                <SectionErrorBoundary>
+                  <CampaignOverview onSelectBrand={setSelectedBrand} />
+                </SectionErrorBoundary>
               </div>
               <div className="min-w-0">
-                <ThemeDistribution />
+                <SectionErrorBoundary>
+                  <ThemeDistribution />
+                </SectionErrorBoundary>
               </div>
               <div className="min-w-0">
-                <BrandThemeBreakdown onSelectBrand={setSelectedBrand} />
+                <SectionErrorBoundary>
+                  <BrandThemeBreakdown onSelectBrand={setSelectedBrand} />
+                </SectionErrorBoundary>
               </div>
             </div>
 
             <div className="grid gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] lg:grid-cols-2">
               <div id="keywords" className="scroll-mt-20 min-w-0">
-                <WordCloud />
+                <SectionErrorBoundary>
+                  <WordCloud />
+                </SectionErrorBoundary>
               </div>
               <div id="calendar" className="scroll-mt-20 min-w-0">
-                <CalendarView key={siteMarket ?? "all"} className="h-full" />
+                <SectionErrorBoundary className="h-full">
+                  <CalendarView key={siteMarket ?? "all"} className="h-full" />
+                </SectionErrorBoundary>
               </div>
             </div>
 
             <div id="comparison" className="scroll-mt-20 min-w-0">
-              <Suspense fallback={<ChunkFallback className="min-h-60" />}>
-                <MarketComparison
-                  markets={comparisonMarkets}
-                  onMarketsChange={setComparisonMarkets}
-                />
-              </Suspense>
+              <LazySection
+                load={loadMarketComparison}
+                componentProps={{ markets: comparisonMarkets, onMarketsChange: setComparisonMarkets }}
+                className="min-h-60"
+              />
             </div>
 
             <div id="content-analysis" className="scroll-mt-20 min-w-0">
               {/* 内容 AI 分析：默认三周窗口 THREE_WEEK_WINDOW，组件内可切三个月（数据窗口） */}
-              <Suspense fallback={<ChunkFallback className="min-h-60" />}>
-                <ContentAnalysis site={siteMarket} window={THREE_WEEK_WINDOW} />
-              </Suspense>
+              <LazySection
+                load={loadContentAnalysis}
+                componentProps={{ site: siteMarket, window: THREE_WEEK_WINDOW }}
+                className="min-h-60"
+              />
             </div>
-            <DashboardFooter />
+            <SectionErrorBoundary>
+              <DashboardFooter />
+            </SectionErrorBoundary>
           </>
         ) : view === "report" ? (
           <>
             {viewNavigation}
-            <Suspense fallback={<ChunkFallback className="min-h-96" />}>
-              <MarkdownReport />
-            </Suspense>
+            <LazySection load={loadMarkdownReport} componentProps={{}} className="min-h-96" />
           </>
         ) : (
           <section
@@ -405,20 +503,17 @@ function Dashboard() {
               </a>
             </div>
 
-            <Suspense fallback={<ChunkFallback className="min-h-96" />}>
-              <ExtendedEmailFilter
-                key={`${siteMarket ?? "all"}-${emailTheme ?? "all"}`}
-                initialTheme={emailTheme}
-              />
-            </Suspense>
+            <LazySection load={loadExtendedEmailFilter} componentProps={{}} className="min-h-96" />
           </section>
         )}
       </main>
 
       {selectedBrand ? (
-        <Suspense fallback={null}>
-          <BrandDetailDialog brand={selectedBrand} onClose={() => setSelectedBrand(null)} />
-        </Suspense>
+        <LazySection
+          load={loadBrandDetailDialog}
+          componentProps={{ brand: selectedBrand, onClose: () => setSelectedBrand(null) }}
+          loadingFallback={null}
+        />
       ) : null}
     </div>
   );

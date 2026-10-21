@@ -23,11 +23,10 @@ import {
 } from "../favorites";
 import { useSiteEmails, useSiteSelection } from "../site-data";
 import {
-  buildHash,
-  notifyUrlChanged,
   parseHash,
   URL_SYNC_EVENT,
 } from "../url-state";
+import { THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { useUrlSync } from "../use-url-sync";
 import { Card } from "./Card";
 import { THEME_LABEL_KEYS } from "./dashboard";
@@ -212,11 +211,11 @@ function ExpandableKeywords({
 
 type DatePresetKey = "all" | "7d" | "3w" | "30d";
 
-const DATE_PRESETS: { key: DatePresetKey; labelKey: DictionaryKey; days: number | null }[] = [
-  { key: "all", labelKey: "efRangeAll", days: null },
-  { key: "7d", labelKey: "efRange7d", days: 7 },
-  { key: "3w", labelKey: "efRange3w", days: 21 },
-  { key: "30d", labelKey: "efRange30d", days: 30 },
+const DATE_PRESETS: { key: DatePresetKey; labelKey: DictionaryKey }[] = [
+  { key: "all", labelKey: "efRangeAll" },
+  { key: "7d", labelKey: "efRange7d" },
+  { key: "3w", labelKey: "efRange3w" },
+  { key: "30d", labelKey: "efRange30d" },
 ];
 
 /** ISO 日期平移（UTC 计算，避免时区跨日）。 */
@@ -225,26 +224,21 @@ function shiftISODate(iso: string, deltaDays: number): string {
   return new Date(Date.UTC(y, m - 1, d + deltaDays)).toISOString().slice(0, 10);
 }
 
-export function ExtendedEmailFilter({
-  initialTheme,
-}: {
-  initialTheme?: string | null;
-}) {
+export function ExtendedEmailFilter() {
   const { t } = useLocale();
   const emailData = useSiteEmails();
   const { market: selectedMarket, setMarket } = useSiteSelection();
   const { emails, meta, status } = emailData;
 
-  useUrlSync({
+  const { state: urlState, setState: setUrlState, setQuery } = useUrlSync({
     isReady: () => status === "ready",
   });
 
-  const [selectedTheme, setSelectedTheme] = useState<FilterTheme | null>(() =>
-    FILTER_THEMES.some((theme) => theme.key === initialTheme)
-      ? (initialTheme as FilterTheme)
-      : null,
-  );
-  const [selectedBrand, setSelectedBrand] = useState<FilterBrand | null>(null);
+  // 品牌、主题与搜索只从 URL 派生；前进后退及外部链接与控件使用同一状态。
+  const selectedTheme = urlState.theme;
+  // 切站点保留品牌；新站点无匹配时展示可重置的空态。
+  const selectedBrand = urlState.brand === "all" ? null : urlState.brand;
+  const searchQuery = urlState.query;
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
 
@@ -257,26 +251,24 @@ export function ExtendedEmailFilter({
     setVisibleCount(PAGE_SIZE);
   };
 
-  // 快捷范围以数据窗口末日（最新数据日）为锚点，而非今天
-  const applyDatePreset = (days: number | null) => {
-    if (days === null) {
-      setDateFrom("");
-      setDateTo("");
-    } else {
-      setDateTo(meta.windowEnd);
-      setDateFrom(shiftISODate(meta.windowEnd, -(days - 1)));
-    }
+  // 三周与看板共用固定闭区间；其他快捷范围以数据窗口末日为锚点。
+  const dateRangeForPreset = (key: DatePresetKey) => {
+    if (key === "all") return { start: "", end: "" };
+    if (key === "3w") return THREE_WEEK_WINDOW;
+    const days = key === "7d" ? 7 : 30;
+    return { start: shiftISODate(meta.windowEnd, -(days - 1)), end: meta.windowEnd };
+  };
+  const applyDatePreset = (key: DatePresetKey) => {
+    const range = dateRangeForPreset(key);
+    setDateFrom(range.start);
+    setDateTo(range.end);
     setVisibleCount(PAGE_SIZE);
   };
   const activeDatePreset: DatePresetKey | null =
-    !dateFrom && !dateTo
-      ? "all"
-      : (DATE_PRESETS.find(
-          (preset) =>
-            preset.days !== null &&
-            dateTo === meta.windowEnd &&
-            dateFrom === shiftISODate(meta.windowEnd, -(preset.days - 1)),
-        )?.key ?? null);
+    DATE_PRESETS.find(({ key }) => {
+      const range = dateRangeForPreset(key);
+      return dateFrom === range.start && dateTo === range.end;
+    })?.key ?? null;
 
   // Restore visibleCount from storage so returning to list does not reset to PAGE_SIZE and lose position
   const [visibleCount, setVisibleCount] = useState<number>(() => {
@@ -308,11 +300,20 @@ export function ExtendedEmailFilter({
     }
   }, [visibleCount]);
 
-  // Search state initialized from URL hash query
-  const [searchQuery, setSearchQuery] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return parseHash(window.location.hash).query || "";
-  });
+  // 外部 URL 导航或切站点只重置分页，保留日期、收藏和展开状态。
+  const previousFiltersRef = useRef({ selectedMarket, selectedBrand, selectedTheme, searchQuery });
+  useEffect(() => {
+    const previous = previousFiltersRef.current;
+    if (
+      previous.selectedMarket !== selectedMarket ||
+      previous.selectedBrand !== selectedBrand ||
+      previous.selectedTheme !== selectedTheme ||
+      previous.searchQuery !== searchQuery
+    ) {
+      setVisibleCount(PAGE_SIZE);
+    }
+    previousFiltersRef.current = { selectedMarket, selectedBrand, selectedTheme, searchQuery };
+  }, [selectedMarket, selectedBrand, selectedTheme, searchQuery]);
 
   // Favorites state from localStorage with cross-tab/event sync
   const [favoriteKeys, setFavoriteKeys] = useState<Set<string>>(
@@ -418,7 +419,7 @@ export function ExtendedEmailFilter({
     }
   }, []);
 
-  // Listen to external hash changes to sync search query and proactively save position on leaving emails view
+  // 离开邮件视图前主动保存阅读位置；筛选同步统一交给 useUrlSync。
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -428,7 +429,6 @@ export function ExtendedEmailFilter({
       if (parsed.view !== "emails") {
         saveReadingPosition();
       }
-      setSearchQuery(parsed.query || "");
     };
 
     const handleDocumentClick = (e: MouseEvent) => {
@@ -685,36 +685,14 @@ export function ExtendedEmailFilter({
     };
   }, [status]);
 
-  // Update URL hash when search query changes and notify hook synchronously
-  const updateQueryInUrl = useCallback((query: string) => {
-    if (typeof window === "undefined") return;
-    const current = parseHash(window.location.hash);
-    if (current.query === query) return;
-    // 打字搜索只改 query，但重建 hash 会物化市场：当前 URL 未写市场段时
-    // （如旧链接 #emails/price），用当前站点补齐并标记显式指定，避免把市场
-    // 写成 "all" 而误切全局站点到全部市场；显式 /all 时 market 已为 null、
-    // marketSpecified 已为 true，保持全部市场。
-    const nextState = {
-      ...current,
-      query,
-      market: current.market ?? selectedMarket,
-      marketSpecified: true,
-    };
-    const nextHash = buildHash(nextState);
-    window.history.replaceState(null, "", nextHash);
-    notifyUrlChanged();
-  }, [selectedMarket]);
-
   const handleSearchChange = (val: string) => {
-    setSearchQuery(val);
     setVisibleCount(PAGE_SIZE);
-    updateQueryInUrl(val);
+    setQuery(val);
   };
 
   const handleClearSearch = () => {
-    setSearchQuery("");
     setVisibleCount(PAGE_SIZE);
-    updateQueryInUrl("");
+    setQuery("");
   };
 
   const handleToggleFavorite = (email: EmailRecord) => {
@@ -837,16 +815,18 @@ export function ExtendedEmailFilter({
   }, [filteredEmails]);
 
   const selectBrand = (brand: FilterBrand | null) => {
-    setSelectedBrand((currentBrand) =>
-      brand !== null && currentBrand === brand ? null : brand,
-    );
+    setUrlState((current) => ({
+      ...current,
+      brand: brand !== null && current.brand !== brand ? brand : "all",
+    }));
     setVisibleCount(PAGE_SIZE);
   };
 
   const selectTheme = (theme: FilterTheme | null) => {
-    setSelectedTheme((currentTheme) =>
-      theme !== null && currentTheme === theme ? null : theme,
-    );
+    setUrlState((current) => ({
+      ...current,
+      theme: theme !== null && current.theme !== theme ? theme : null,
+    }));
     setVisibleCount(PAGE_SIZE);
   };
 
@@ -1035,7 +1015,7 @@ export function ExtendedEmailFilter({
                     <button
                       type="button"
                       key={preset.key}
-                      onClick={() => applyDatePreset(preset.days)}
+                      onClick={() => applyDatePreset(preset.key)}
                       aria-pressed={isActive}
                       className={`rounded-full border px-4 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isActive
@@ -1223,12 +1203,10 @@ export function ExtendedEmailFilter({
               description={t("efNoResultDesc", { summary: filterSummary })}
               actionLabel={t("efResetFilterSearch")}
               onAction={() => {
-                setSelectedBrand(null);
-                setSelectedTheme(null);
+                setUrlState((current) => ({ ...current, brand: "all", theme: null, query: "" }));
                 setDateFrom("");
                 setDateTo("");
                 setShowOnlyFavorites(false);
-                handleClearSearch();
                 setVisibleCount(PAGE_SIZE);
               }}
             />
