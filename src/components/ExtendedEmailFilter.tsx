@@ -1,3 +1,8 @@
+import { useTable, type PaginationState, type Updater } from "@tanstack/react-table";
+import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
+import { Download, Search, Star, X } from "lucide-react";
+import { emailTableColumns, emailTableFeatures, getEmailRowKey as getEmailKey } from "./email-table-model";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import {
   useCallback,
   useEffect,
@@ -11,12 +16,10 @@ import {
   BRAND_ORDER,
   EmailRecord,
   getEmailMarket,
-  matchesMarket,
 } from "../email-data";
 import { downloadFile, EmailExportRow, emailsToCSV } from "../export";
-import { translate, translateIn, useLocale, type DictionaryKey } from "../i18n";
+import { translate, useLocale, type DictionaryKey } from "../i18n";
 import {
-  createFavoriteKey,
   loadFavorites,
   subscribeFavorites,
   toggleFavorite,
@@ -36,8 +39,11 @@ import { getMarketLabel } from "./MarketFilter";
 
 const PAGE_SIZE = 50;
 const EMAIL_LIST_SCROLL_KEY = "edm-emails-list-scroll";
+const EMAIL_LIST_ANCHOR_KEY = "edm-emails-list-anchor";
 const EMAIL_WINDOW_SCROLL_KEY = "edm-emails-window-scroll";
 const EMAIL_VISIBLE_COUNT_KEY = "edm-emails-visible-count";
+
+type EmailScrollAnchor = { key: string; offset: number };
 
 const FILTER_THEMES = [
   { key: "price", labelKey: "themePrice" },
@@ -49,9 +55,6 @@ const FILTER_THEMES = [
 ] as const satisfies readonly { key: string; labelKey: DictionaryKey }[];
 
 const FILTER_BRANDS = BRAND_ORDER;
-
-type FilterTheme = (typeof FILTER_THEMES)[number]["key"];
-type FilterBrand = (typeof FILTER_BRANDS)[number];
 
 function themeLabelOf(theme: string): string {
   const key = THEME_LABEL_KEYS[theme];
@@ -67,7 +70,7 @@ const THEME_BADGE_STYLES: Record<string, string> = {
   other: "border-[var(--theme-other-border)] bg-[var(--theme-other-tint)] text-[var(--theme-other-text)]",
 };
 
-const FILTER_DOT_STYLES: Record<FilterTheme, string> = {
+const FILTER_DOT_STYLES: Record<(typeof FILTER_THEMES)[number]["key"], string> = {
   price: "bg-[var(--theme-price)]",
   behavior: "bg-[var(--theme-behavior)]",
   new: "bg-[var(--theme-new)]",
@@ -271,21 +274,29 @@ export function ExtendedEmailFilter() {
     })?.key ?? null;
 
   // Restore visibleCount from storage so returning to list does not reset to PAGE_SIZE and lose position
-  const [visibleCount, setVisibleCount] = useState<number>(() => {
-    if (typeof window === "undefined") return PAGE_SIZE;
+  const [pagination, setPagination] = useState<PaginationState>(() => {
+    if (typeof window === "undefined") return { pageIndex: 0, pageSize: PAGE_SIZE };
     try {
       const saved = sessionStorage.getItem(EMAIL_VISIBLE_COUNT_KEY);
       if (saved !== null) {
         const count = Number(saved);
         if (Number.isFinite(count) && count >= PAGE_SIZE) {
-          return count;
+          return { pageIndex: 0, pageSize: Math.floor(count) };
         }
       }
     } catch {
       // Fallback on security error
     }
-    return PAGE_SIZE;
+    return { pageIndex: 0, pageSize: PAGE_SIZE };
   });
+  // 用 TanStack 的第一页逐步扩大 pageSize，保留原有“显示更多”及会话存储键。
+  const visibleCount = pagination.pageSize;
+  const setVisibleCount = useCallback((updater: Updater<number>) => {
+    setPagination((previous) => ({
+      pageIndex: 0,
+      pageSize: typeof updater === "function" ? updater(previous.pageSize) : updater,
+    }));
+  }, []);
 
   const visibleCountRef = useRef(visibleCount);
   visibleCountRef.current = visibleCount;
@@ -333,38 +344,100 @@ export function ExtendedEmailFilter() {
   const restoredRef = useRef(false);
   const exhaustedRef = useRef(false);
   const restoringRef = useRef(false);
+  const programListTopRef = useRef<number | null>(null);
+  const programWindowTopRef = useRef<number | null>(null);
+  const cancelRestoreRef = useRef<(() => void) | null>(null);
   const userInteractedRef = useRef(false);
   const restoreGenerationRef = useRef(0);
   const mountedRef = useRef(true);
 
-  // Helper to format consistent favorite key
-  const getEmailKey = useCallback((email: EmailRecord): string => {
-    return createFavoriteKey({
-      market: getEmailMarket(email),
-      brand: email.brand,
-      sent_date: email.date,
-      source_index: email.source_index,
-      day_seq: email.day_seq,
-    });
+  const columnFilters = useMemo(() => [{
+    id: "email",
+    value: {
+      market: selectedMarket, brand: selectedBrand, theme: selectedTheme,
+      dateFrom, dateTo, favoritesOnly: showOnlyFavorites, favoriteKeys, query: searchQuery,
+    },
+  }], [selectedMarket, selectedBrand, selectedTheme, dateFrom, dateTo, showOnlyFavorites, favoriteKeys, searchQuery]);
+  const table = useTable({
+    features: emailTableFeatures,
+    columns: emailTableColumns,
+    data: emails,
+    getRowId: getEmailKey,
+    state: { columnFilters, pagination },
+    initialState: { sorting: [{ id: "date", desc: true }] },
+    onPaginationChange: setPagination,
+    autoResetPageIndex: false,
+  });
+  const filteredRows = table.getFilteredRowModel().rows;
+  const filteredEmails = useMemo(() => filteredRows.map((row) => row.original), [filteredRows]);
+  const visibleRows = table.getRowModel().rows;
+  const visibleRowsRef = useRef(visibleRows);
+  visibleRowsRef.current = visibleRows;
+  const visibleEmails = useMemo(() => visibleRows.map((row) => row.original), [visibleRows]);
+  const getVirtualRowKey = useCallback((index: number) => visibleRows[index].id, [visibleRows]);
+  const cancelScrollRestoration = useCallback(() => {
+    userInteractedRef.current = true;
+    restoringRef.current = false;
+    cancelRestoreRef.current?.();
   }, []);
+  const hasExternalScroll = useCallback(() => {
+    const container = listContainerRef.current;
+    return (container !== null && programListTopRef.current !== null && container.scrollTop !== programListTopRef.current) ||
+      (programWindowTopRef.current !== null && window.scrollY !== programWindowTopRef.current);
+  }, []);
+  const rowVirtualizer = useVirtualizer({
+    count: visibleRows.length,
+    getScrollElement: () => listContainerRef.current,
+    getItemKey: getVirtualRowKey,
+    estimateSize: () => 100,
+    overscan: 6,
+    scrollToFn: (offset, options, instance) => {
+      // 虚拟器的测量补偿和异步定位也属于自身写入；写前先防止覆盖尚未派发 scroll 的用户滚动。
+      if (restoringRef.current && hasExternalScroll()) {
+        cancelScrollRestoration();
+        return;
+      }
+      elementScroll(offset, options, instance);
+      programListTopRef.current = instance.scrollElement?.scrollTop ?? null;
+    },
+    // 表头占据正常文档流的 48px；占位行仅补齐 tbody 内的虚拟空间。
+    scrollMargin: 48,
+  });
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualRows.length ? Math.max(0, virtualRows[0].start - 48) : 0;
+  const paddingBottom = virtualRows.length
+    ? Math.max(0, rowVirtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - 48)) : 0;
+  const columnCount = selectedMarket === null ? 9 : 8;
+
+  const saveListPosition = useCallback((top: number) => {
+    const row = rowVirtualizer.getVirtualItemForOffset(top);
+    try {
+      sessionStorage.setItem(EMAIL_LIST_SCROLL_KEY, String(top));
+      if (row) {
+        // 使用视口所在行而非 overscan 首行；offset 允许为负，以保留顶部表头空间。
+        const anchor: EmailScrollAnchor = { key: String(row.key), offset: top - row.start };
+        sessionStorage.setItem(EMAIL_LIST_ANCHOR_KEY, JSON.stringify(anchor));
+      } else {
+        sessionStorage.removeItem(EMAIL_LIST_ANCHOR_KEY);
+      }
+    } catch {
+      // SecurityError protection
+    }
+  }, [rowVirtualizer]);
 
   // Track container scroll position actively
   const handleContainerScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      if (!restoringRef.current) {
-        userInteractedRef.current = true;
-      }
       const top = e.currentTarget.scrollTop;
+      if (!restoringRef.current || top !== programListTopRef.current) {
+        cancelScrollRestoration();
+      }
       lastScrollTopRef.current = top;
       if (!restoringRef.current) {
-        try {
-          sessionStorage.setItem(EMAIL_LIST_SCROLL_KEY, String(top));
-        } catch {
-          // SecurityError protection
-        }
+        saveListPosition(top);
       }
     },
-    [],
+    [saveListPosition, cancelScrollRestoration],
   );
 
   // Track window scroll position actively
@@ -372,17 +445,42 @@ export function ExtendedEmailFilter() {
     if (typeof window === "undefined") return;
 
     const handleWindowScroll = () => {
-      if (!restoringRef.current) {
-        userInteractedRef.current = true;
+      if (!restoringRef.current || window.scrollY !== programWindowTopRef.current) {
+        cancelScrollRestoration();
       }
       lastWindowScrollRef.current = window.scrollY;
     };
+    const handleScrollKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || ![
+        "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", " ", "Spacebar",
+      ].includes(event.key)) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (
+        target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) ||
+        (target.tagName === "BUTTON" && (event.key === " " || event.key === "Spacebar"))
+      )) return;
+      cancelScrollRestoration();
+    };
+    const handleScrollbarPointer = (event: PointerEvent) => {
+      // 原生滚动条的按下目标是滚动容器或文档根节点，内容子节点的点击不算拖动。
+      if (event.button === 0 && (
+        event.target === listContainerRef.current || event.target === document.documentElement || event.target === document
+      )) cancelScrollRestoration();
+    };
 
     window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    window.addEventListener("wheel", cancelScrollRestoration, { passive: true, capture: true });
+    window.addEventListener("touchmove", cancelScrollRestoration, { passive: true, capture: true });
+    window.addEventListener("pointerdown", handleScrollbarPointer, true);
+    window.addEventListener("keydown", handleScrollKey, true);
     return () => {
       window.removeEventListener("scroll", handleWindowScroll);
+      window.removeEventListener("wheel", cancelScrollRestoration, true);
+      window.removeEventListener("touchmove", cancelScrollRestoration, true);
+      window.removeEventListener("pointerdown", handleScrollbarPointer, true);
+      window.removeEventListener("keydown", handleScrollKey, true);
     };
-  }, []);
+  }, [cancelScrollRestoration]);
 
   // Subscribe to favorites changes
   useEffect(() => {
@@ -407,8 +505,8 @@ export function ExtendedEmailFilter() {
         ? listContainerRef.current.scrollTop
         : lastScrollTopRef.current;
 
+    saveListPosition(containerTop);
     try {
-      sessionStorage.setItem(EMAIL_LIST_SCROLL_KEY, String(containerTop));
       sessionStorage.setItem(EMAIL_WINDOW_SCROLL_KEY, String(windowTop));
       sessionStorage.setItem(
         EMAIL_VISIBLE_COUNT_KEY,
@@ -417,7 +515,7 @@ export function ExtendedEmailFilter() {
     } catch {
       // SecurityError protection
     }
-  }, []);
+  }, [saveListPosition]);
 
   // 离开邮件视图前主动保存阅读位置；筛选同步统一交给 useUrlSync。
   useEffect(() => {
@@ -512,14 +610,19 @@ export function ExtendedEmailFilter() {
 
     let savedContainerScroll: string | null = null;
     let savedWindowScroll: string | null = null;
+    let savedAnchor: EmailScrollAnchor | null = null;
     try {
       savedContainerScroll = sessionStorage.getItem(EMAIL_LIST_SCROLL_KEY);
       savedWindowScroll = sessionStorage.getItem(EMAIL_WINDOW_SCROLL_KEY);
+      const anchor = JSON.parse(sessionStorage.getItem(EMAIL_LIST_ANCHOR_KEY) ?? "null");
+      if (anchor && typeof anchor.key === "string" && typeof anchor.offset === "number" && Number.isFinite(anchor.offset)) {
+        savedAnchor = anchor;
+      }
     } catch {
-      // SecurityError protection
+      // 锚点损坏或存储不可读时，仍可使用已读取的像素位置回退。
     }
 
-    if (savedContainerScroll === null && savedWindowScroll === null) {
+    if (savedContainerScroll === null && savedWindowScroll === null && savedAnchor === null) {
       restoredRef.current = true;
       return () => {
         mountedRef.current = false;
@@ -529,7 +632,41 @@ export function ExtendedEmailFilter() {
     let rafId: number | null = null;
     let resetRestoringRaf: number | null = null;
     let attempts = 0;
-    const maxAttempts = 15;
+    const maxAttempts = 30;
+    const requiredStableMeasurements = 4;
+    let anchorLocated = false;
+    let anchorCalibrated = false;
+    let previousAnchorMeasurement: { start: number; size: number } | null = null;
+    let stableAnchorMeasurements = 0;
+    const cancelPendingRestore = () => {
+      restoreGenerationRef.current += 1;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (resetRestoringRaf !== null) cancelAnimationFrame(resetRestoringRaf);
+      rowVirtualizer.cancelScroll();
+      if (cancelRestoreRef.current === cancelPendingRestore) cancelRestoreRef.current = null;
+    };
+    cancelRestoreRef.current = cancelPendingRestore;
+    programListTopRef.current = listContainerRef.current?.scrollTop ?? null;
+    programWindowTopRef.current = window.scrollY;
+    // 首帧之前也要接受主动输入取消。
+    restoringRef.current = true;
+
+    const getMeasuredAnchor = () => {
+      const container = listContainerRef.current;
+      if (!savedAnchor || !container) return null;
+      // 实测尺寸等于估算值时不会写入 itemSizeCache；以已挂载行的实际矩形为准。
+      const element = rowVirtualizer.elementsCache.get(savedAnchor.key);
+      if (!element?.isConnected) return null;
+      const rect = element.getBoundingClientRect();
+      if (rect.height <= 0) return null;
+      const start = container.scrollTop + rect.top - container.getBoundingClientRect().top - (container.clientTop || 0);
+      // 展开状态或窗口宽度可能变化；行变短时仍停留在锚点邮件内。
+      return {
+        start,
+        size: rect.height,
+        top: Math.max(0, start + Math.min(savedAnchor.offset, Math.max(0, rect.height - 1))),
+      };
+    };
 
     const scheduleResetRestoring = () => {
       if (resetRestoringRaf !== null) {
@@ -539,6 +676,9 @@ export function ExtendedEmailFilter() {
         resetRestoringRaf = requestAnimationFrame(() => {
           restoringRef.current = false;
           resetRestoringRaf = null;
+          if ((restoredRef.current || exhaustedRef.current) && cancelRestoreRef.current === cancelPendingRestore) {
+            cancelRestoreRef.current = null;
+          }
         });
       });
     };
@@ -554,8 +694,8 @@ export function ExtendedEmailFilter() {
         return;
       }
 
-      if (userInteractedRef.current) {
-        restoringRef.current = false;
+      if (userInteractedRef.current || hasExternalScroll()) {
+        cancelScrollRestoration();
         return;
       }
 
@@ -563,10 +703,24 @@ export function ExtendedEmailFilter() {
       restoringRef.current = true;
       try {
         const container = listContainerRef.current;
-        if (savedContainerScroll !== null) {
+        const anchorIndex = savedAnchor
+          ? visibleRowsRef.current.findIndex((row) => row.id === savedAnchor.key) : -1;
+        if (anchorIndex >= 0 && container) {
+          const measurement = getMeasuredAnchor();
+          if (!anchorLocated || measurement === null) {
+            // 先让锚点行挂载并测量，不能把旧缓存下的像素位置直接用于新虚拟器。
+            rowVirtualizer.scrollToIndex(anchorIndex, { align: "start" });
+            anchorLocated = true;
+            anchorCalibrated = false;
+          } else {
+            rowVirtualizer.scrollToOffset(measurement.top);
+            anchorCalibrated = true;
+          }
+        } else if (savedContainerScroll !== null) {
           const top = Number(savedContainerScroll);
           if (Number.isFinite(top) && container) {
             container.scrollTop = top;
+            programListTopRef.current = container.scrollTop;
           }
         }
 
@@ -574,6 +728,7 @@ export function ExtendedEmailFilter() {
           const top = Number(savedWindowScroll);
           if (Number.isFinite(top)) {
             window.scrollTo({ top, behavior: "instant" });
+            programWindowTopRef.current = window.scrollY;
           }
         }
 
@@ -588,8 +743,8 @@ export function ExtendedEmailFilter() {
             return;
           }
 
-          if (userInteractedRef.current) {
-            restoringRef.current = false;
+          if (userInteractedRef.current || hasExternalScroll()) {
+            cancelScrollRestoration();
             return;
           }
 
@@ -598,24 +753,35 @@ export function ExtendedEmailFilter() {
             let restoredWindow = false;
 
             const curContainer = listContainerRef.current;
-            if (savedContainerScroll !== null) {
-              const top = Number(savedContainerScroll);
-              if (Number.isFinite(top)) {
+            const measurement = anchorIndex >= 0 ? getMeasuredAnchor() : null;
+            // 渐进测量可能先只移动 1px，随后继续变化；位置和行高须连续多次稳定。
+            if (measurement) {
+              stableAnchorMeasurements = previousAnchorMeasurement?.start === measurement.start &&
+                previousAnchorMeasurement.size === measurement.size ? stableAnchorMeasurements + 1 : 1;
+            } else {
+              stableAnchorMeasurements = 0;
+            }
+            previousAnchorMeasurement = measurement;
+            const containerTarget = anchorIndex >= 0
+              ? measurement?.top ?? null : savedContainerScroll !== null ? Number(savedContainerScroll) : null;
+            if (anchorIndex >= 0 || savedContainerScroll !== null) {
+              if ((anchorIndex < 0 || anchorCalibrated) && containerTarget !== null && Number.isFinite(containerTarget)) {
+                const top = containerTarget;
                 if (curContainer) {
                   const actual = curContainer.scrollTop;
                   const max = Math.max(
                     0,
                     curContainer.scrollHeight - curContainer.clientHeight,
                   );
-                  if (
-                    Math.abs(actual - top) <= 2 ||
-                    (max > 0 && actual >= max - 2 && top >= max)
-                  ) {
+                  const tolerance = anchorIndex >= 0 ? 0.5 : 2;
+                  const atTarget = Math.abs(actual - top) <= tolerance ||
+                    (max > 0 && actual >= max - tolerance && top >= max);
+                  if (atTarget && (anchorIndex < 0 || stableAnchorMeasurements >= requiredStableMeasurements)) {
                     restoredContainer = true;
                     lastScrollTopRef.current = actual;
                   }
                 }
-              } else {
+              } else if (anchorIndex < 0) {
                 restoredContainer = true;
               }
             } else {
@@ -644,16 +810,17 @@ export function ExtendedEmailFilter() {
               restoredWindow = true;
             }
 
-            // restoredRef 仅在实际位置校验通过时置 true
-            if (restoredContainer && restoredWindow) {
-              restoredRef.current = true;
-              return;
-            }
-
-            // 耗尽时只置 exhaustedRef，不置 restoredRef
             attempts++;
-            if (attempts >= maxAttempts) {
-              exhaustedRef.current = true;
+            if ((restoredContainer && restoredWindow) || attempts >= maxAttempts) {
+              // 无论稳定还是耗尽，按本次最后的 DOM 实测收尾，不再启动虚拟器的异步定位循环。
+              rowVirtualizer.cancelScroll();
+              if (curContainer && measurement) {
+                curContainer.scrollTop = measurement.top;
+                programListTopRef.current = curContainer.scrollTop;
+                lastScrollTopRef.current = curContainer.scrollTop;
+              }
+              restoredRef.current = restoredContainer && restoredWindow;
+              exhaustedRef.current = !restoredRef.current;
               return;
             }
 
@@ -675,15 +842,10 @@ export function ExtendedEmailFilter() {
     rafId = requestAnimationFrame(tryRestore);
     return () => {
       mountedRef.current = false;
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      if (resetRestoringRaf !== null) {
-        cancelAnimationFrame(resetRestoringRaf);
-      }
+      cancelPendingRestore();
       restoringRef.current = false;
     };
-  }, [status]);
+  }, [status, rowVirtualizer, hasExternalScroll, cancelScrollRestoration]);
 
   const handleSearchChange = (val: string) => {
     setVisibleCount(PAGE_SIZE);
@@ -711,51 +873,6 @@ export function ExtendedEmailFilter() {
       return next;
     });
   };
-
-  // Filter emails: market, brand, theme, favorites, and search query
-  const filteredEmails = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return emails.filter((email) => {
-      if (!matchesMarket(email, selectedMarket)) return false;
-      if (selectedBrand && email.brand !== selectedBrand) return false;
-      if (selectedTheme && email.theme !== selectedTheme) return false;
-      if (dateFrom && email.date < dateFrom) return false;
-      if (dateTo && email.date > dateTo) return false;
-      if (showOnlyFavorites) {
-        const key = getEmailKey(email);
-        if (!favoriteKeys.has(key)) return false;
-      }
-      if (q) {
-        const matchesBrand = email.brand.toLowerCase().includes(q);
-        const matchesDate = email.date.toLowerCase().includes(q);
-        const themeKey = THEME_LABEL_KEYS[email.theme];
-        const matchesTheme = themeKey
-          ? translateIn("zh", themeKey).toLowerCase().includes(q) ||
-            translateIn("en", themeKey).toLowerCase().includes(q)
-          : email.theme.toLowerCase().includes(q);
-        const matchesKeywords = email.keywords.some((kw) =>
-          kw.toLowerCase().includes(q),
-        );
-        if (!matchesBrand && !matchesDate && !matchesTheme && !matchesKeywords) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [
-    emails,
-    selectedMarket,
-    selectedBrand,
-    selectedTheme,
-    dateFrom,
-    dateTo,
-    showOnlyFavorites,
-    favoriteKeys,
-    searchQuery,
-    getEmailKey,
-  ]);
-
-  const visibleEmails = filteredEmails.slice(0, visibleCount);
 
   // Content expansion semantics: allExpanded is derived, collapsing all clears set, per-row toggle works anytime
   const allExpanded = useMemo(() => {
@@ -814,18 +931,18 @@ export function ExtendedEmailFilter() {
     downloadFile(`edm-emails-${dateStr}.csv`, csv, "text/csv;charset=utf-8;");
   }, [filteredEmails]);
 
-  const selectBrand = (brand: FilterBrand | null) => {
+  const selectBrand = (brand: string | null) => {
     setUrlState((current) => ({
       ...current,
-      brand: brand !== null && current.brand !== brand ? brand : "all",
+      brand: brand ?? "all",
     }));
     setVisibleCount(PAGE_SIZE);
   };
 
-  const selectTheme = (theme: FilterTheme | null) => {
+  const selectTheme = (theme: string | null) => {
     setUrlState((current) => ({
       ...current,
-      theme: theme !== null && current.theme !== theme ? theme : null,
+      theme,
     }));
     setVisibleCount(PAGE_SIZE);
   };
@@ -891,45 +1008,16 @@ export function ExtendedEmailFilter() {
                 </p>
               </div>
 
-              <div
-                className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7"
-                role="group"
-                aria-label={t("efBrandGroupAria")}
-              >
-                <button
-                  type="button"
-                  onClick={() => selectBrand(null)}
-                  aria-pressed={selectedBrand === null}
-                  className={`min-h-12 rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-                    selectedBrand === null
-                      ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
-                      : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
-                  }`}
-                >
-                  {t("calAllBrands")}
-                </button>
-
-                {FILTER_BRANDS.map((brand) => {
-                  const isSelected = selectedBrand === brand;
-
-                  return (
-                    <button
-                      type="button"
-                      key={brand}
-                      onClick={() => selectBrand(brand)}
-                      aria-pressed={isSelected}
-                      aria-label={t("efBrandChipAria", { brand: brand, selected: isSelected ? t("efChipSelectedSuffix") : "" })}
-                      className={`flex min-h-12 items-center justify-center rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-                        isSelected
-                          ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
-                          : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
-                      }`}
-                    >
-                      {brand}
-                    </button>
-                  );
-                })}
-              </div>
+              <Select value={selectedBrand ?? "all"} onValueChange={(value) => selectBrand(value === "all" ? null : value)}>
+                <SelectTrigger className="min-h-12 max-w-md" aria-label={t("efBrandGroupAria")}>
+                  <SelectValue>{selectedBrandLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("calAllBrands")}</SelectItem>
+                  {selectedBrand && !FILTER_BRANDS.some((brand) => brand === selectedBrand) ? <SelectItem value={selectedBrand}>{selectedBrand}</SelectItem> : null}
+                  {FILTER_BRANDS.map((brand) => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -946,49 +1034,23 @@ export function ExtendedEmailFilter() {
                 </p>
               </div>
 
-              <div
-                className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6"
-                role="group"
-                aria-label={t("efThemeGroupAria")}
-              >
-                <button
-                  type="button"
-                  onClick={() => selectTheme(null)}
-                  aria-pressed={selectedTheme === null}
-                  className={`min-h-12 rounded-full border px-4 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-                    selectedTheme === null
-                      ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
-                      : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
-                  }`}
-                >
-                  {t("calAllBrands")}
-                </button>
-
-                {FILTER_THEMES.map((theme) => {
-                  const isSelected = selectedTheme === theme.key;
-
-                  return (
-                    <button
-                      type="button"
-                      key={theme.key}
-                      onClick={() => selectTheme(theme.key)}
-                      aria-pressed={isSelected}
-                      aria-label={t("efThemeChipAria", { label: t(theme.labelKey), selected: isSelected ? t("efChipSelectedSuffix") : "" })}
-                      className={`flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 py-2.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
-                        isSelected
-                          ? "border-[var(--accent-ink)] bg-[var(--accent-ink)] text-white shadow-[var(--shadow-filter-accent-active)]"
-                          : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
-                      }`}
-                    >
-                      <span
-                        className={`size-2 rounded-full ${isSelected ? "bg-white/80" : FILTER_DOT_STYLES[theme.key]}`}
-                        aria-hidden="true"
-                      />
-                      {t(theme.labelKey)}
-                    </button>
-                  );
-                })}
-              </div>
+              <Select value={selectedTheme === null ? "__all__" : `theme:${selectedTheme}`} onValueChange={(value) => selectTheme(value === "__all__" ? null : value.slice(6))}>
+                <SelectTrigger className="min-h-12 max-w-md" aria-label={t("efThemeGroupAria")}>
+                  <SelectValue>{selectedThemeLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t("calAllBrands")}</SelectItem>
+                  {selectedTheme && !FILTER_THEMES.some((theme) => theme.key === selectedTheme) ? <SelectItem value={`theme:${selectedTheme}`}>{selectedThemeLabel}</SelectItem> : null}
+                  {FILTER_THEMES.map((theme) => (
+                    <SelectItem key={theme.key} value={`theme:${theme.key}`} textValue={t(theme.labelKey)}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className={`size-2 rounded-full ${FILTER_DOT_STYLES[theme.key]}`} aria-hidden="true" />
+                        {t(theme.labelKey)}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -1079,19 +1141,7 @@ export function ExtendedEmailFilter() {
                 {t("efSearchLabel")}
               </label>
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--text-muted)]">
-                <svg
-                  className="size-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                <Search className="size-4" aria-hidden="true" />
               </div>
               <input
                 id={`${listId}-search`}
@@ -1108,19 +1158,7 @@ export function ExtendedEmailFilter() {
                   aria-label={t("efClearSearchAria")}
                   className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[var(--text-muted)] hover:text-[var(--text-heading)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-1 rounded-sm"
                 >
-                  <svg
-                    className="size-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <X className="size-4" aria-hidden="true" />
                 </button>
               ) : null}
             </div>
@@ -1140,18 +1178,7 @@ export function ExtendedEmailFilter() {
                     : "border-[var(--control-border)] bg-[var(--control-bg)] text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
                 }`}
               >
-                <svg
-                  className="size-4"
-                  viewBox="0 0 24 24"
-                  fill={showOnlyFavorites ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
+                <Star className="size-4" fill={showOnlyFavorites ? "currentColor" : "none"} aria-hidden="true" />
                 <span>{t("efFavOnly", { n: favoriteCount })}</span>
               </button>
 
@@ -1175,20 +1202,7 @@ export function ExtendedEmailFilter() {
                     : "cursor-not-allowed border-[var(--control-disabled-border)] bg-[var(--control-disabled-bg)] text-[var(--control-disabled-text)] opacity-60"
                 }`}
               >
-                <svg
-                  className="size-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+                <Download className="size-4" aria-hidden="true" />
                 <span>{t("efExportLabel", { n: filteredEmails.length })}</span>
               </button>
             </div>
@@ -1221,10 +1235,22 @@ export function ExtendedEmailFilter() {
             tabIndex={0}
             aria-label={t("efTableAria", { summary: filterSummary })}
           >
-            <table className="w-full min-w-[48rem] border-separate border-spacing-0 text-left text-sm text-[var(--text-email-table)]">
+            <table
+              aria-rowcount={visibleRows.length + 1}
+              data-email-table
+              data-filtered-rows={filteredRows.length}
+              data-page-size={pagination.pageSize}
+              className="w-full min-w-[92rem] table-fixed border-separate border-spacing-0 text-left text-sm text-[var(--text-email-table)]"
+            >
               <caption className="sr-only">
                 {t("efCaption", { summary: filterSummary })}
               </caption>
+              <colgroup>
+                <col className="w-16" /><col className="w-32" /><col className="w-40" />
+                {selectedMarket === null ? <col className="w-24" /> : null}
+                <col className="w-36" /><col className="w-56" /><col className="w-56" />
+                <col className="w-80" /><col className="w-24" />
+              </colgroup>
               <thead className="sticky top-0 z-10 bg-[var(--surface-table-header)] text-xs font-bold uppercase tracking-[0.08em] text-[var(--surface-table-stripe)] shadow-[var(--shadow-table-header)]">
                 <tr>
                   <th scope="col" className="w-16 px-4 py-4 text-center">
@@ -1259,8 +1285,12 @@ export function ExtendedEmailFilter() {
                 </tr>
               </thead>
               <tbody>
-                {visibleEmails.map((email, index) => {
-                  const emailKey = getEmailKey(email);
+                {paddingTop > 0 ? <tr aria-hidden="true"><td colSpan={columnCount} style={{ height: paddingTop, padding: 0, border: 0 }} /></tr> : null}
+                {virtualRows.map((virtualRow) => {
+                  const index = virtualRow.index;
+                  const row = visibleRows[index];
+                  const email = row.original;
+                  const emailKey = row.id;
                   const isFav = favoriteKeys.has(emailKey);
                   const isExpanded = expandedRowKeys.has(emailKey);
                   const hasKeywords = email.keywords.length > 0;
@@ -1268,6 +1298,10 @@ export function ExtendedEmailFilter() {
                   return (
                     <tr
                       key={emailKey}
+                      data-index={index}
+                      data-email-row={emailKey}
+                      aria-rowindex={index + 2}
+                      ref={rowVirtualizer.measureElement}
                       className={`transition-colors hover:bg-[var(--surface-table-hover)] ${
                         index % 2 === 0
                           ? "bg-[var(--surface-card)]"
@@ -1287,18 +1321,7 @@ export function ExtendedEmailFilter() {
                               : "text-[var(--text-muted)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--text-heading)]"
                           }`}
                         >
-                          <svg
-                            className="size-5"
-                            viewBox="0 0 24 24"
-                            fill={isFav ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
+                          <Star className="size-5" fill={isFav ? "currentColor" : "none"} aria-hidden="true" />
                         </button>
                       </td>
 
@@ -1397,6 +1420,7 @@ export function ExtendedEmailFilter() {
                     </tr>
                   );
                 })}
+                {paddingBottom > 0 ? <tr aria-hidden="true"><td colSpan={columnCount} style={{ height: paddingBottom, padding: 0, border: 0 }} /></tr> : null}
               </tbody>
             </table>
           </div>

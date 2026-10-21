@@ -1,3 +1,4 @@
+import { SearchX } from "lucide-react";
 import { useLocale } from "../i18n";
 
 export interface EmptyStateProps {
@@ -25,19 +26,7 @@ export function EmptyState({
         className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--color-slate-400)] shadow-inner sm:h-16 sm:w-16"
         aria-hidden="true"
       >
-        <svg
-          className="h-6 w-6 sm:h-7 sm:w-7"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          <line x1="8" y1="11" x2="14" y2="11" />
-        </svg>
+        <SearchX className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" strokeWidth={1.75} />
       </div>
 
       <h3 className="mt-4 text-base font-bold text-[var(--text-heading)] sm:text-lg">

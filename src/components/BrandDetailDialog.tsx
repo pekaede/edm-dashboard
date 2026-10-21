@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import type { Brand } from "../data";
 import { DATA } from "../data";
@@ -86,9 +87,7 @@ export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
           onClick={closeDialog}
           autoFocus
         >
-          <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
-          </svg>
+          <X className="size-5" aria-hidden="true" />
         </button>
       </header>
 

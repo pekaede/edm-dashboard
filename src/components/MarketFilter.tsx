@@ -1,4 +1,5 @@
 import { translate, useLocale, type DictionaryKey } from "../i18n";
+import { Button } from "./ui/button";
 
 export const MARKET_OPTIONS = [
   { code: "US", labelKey: "marketUS" },
@@ -64,7 +65,8 @@ export function MarketFilter({
         {options.map((option) => {
           const isSelected = value === option.code;
           return (
-            <button
+            <Button
+              variant={isSelected ? "default" : "outline"}
               key={option.code ?? "all"}
               type="button"
               aria-pressed={isSelected}
@@ -79,7 +81,7 @@ export function MarketFilter({
               <span className={`text-xs font-semibold ${isSelected ? "text-white/70" : "text-[var(--text-description)]"}`}>
                 {option.count} {t("marketUnitEmails", { count: option.count })}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
