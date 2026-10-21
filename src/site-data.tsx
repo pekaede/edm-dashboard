@@ -10,6 +10,7 @@ import {
 import { matchesMarket, useExtendedEmails, type EmailRecord, type ExtendedEmailsResult } from "./email-data";
 import { getMarketLabel, type MarketFilterValue } from "./components/MarketFilter";
 import { useLocale } from "./i18n";
+import { aggregateThreeWeek } from "./three-week-aggregation";
 
 export interface SiteSelection {
   market: MarketFilterValue;
@@ -153,4 +154,14 @@ export function useSiteEmails(): ExtendedEmailsResult {
       meta: nextMeta,
     };
   }, [data, market, locale]);
+}
+
+/** 共享当前站点的三周聚合入口；非 ready 状态保持空值，meta 沿用三个月口径。 */
+export function useSiteThreeWeekData() {
+  const site = useSiteEmails();
+  const data = useMemo(
+    () => (site.status === "ready" ? aggregateThreeWeek(site.emails) : null),
+    [site.status, site.emails],
+  );
+  return { ...site, data };
 }

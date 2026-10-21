@@ -2,10 +2,8 @@ import { THEME_COLORS, THEME_LABEL_COLORS, THEME_TINTS } from "./components/dash
 import { DATA, type Brand } from "./data";
 import type { EmailRecord } from "./email-data";
 
-// 3 周窗口：实时聚合从 emails 表逐封过滤，滑动 = 改这两个日期。
-// 默认 2026-09-29 至 2026-10-20（含首尾）共 22 天；周按窗口起算：
+// 3 周窗口由 THREE_WEEK_WINDOW 定义；实时聚合从 emails 表逐封过滤，按窗口起算：
 // W1 = 起始日起 7 天，W2 = 接下来 7 天，W3 = 剩余天数至窗口末。
-//
 export interface ThreeWeekWindow {
   start: string;
   end: string;
@@ -71,7 +69,7 @@ export function windowDays(window: ThreeWeekWindow): number {
   return Math.round((endMs - startMs) / 86_400_000) + 1;
 }
 
-// 由窗口起止推导 3 周定义（标签 / 日期范围），默认窗口下与静态 DATA.weeks 一致。
+// 由窗口起止推导 3 周定义（标签 / 日期范围）。
 // 窗口 < 15 天时 W2/W3 会越界或重叠（W3 起始日超出窗口末），直接抛错拒绝静默产出错误标签，
 // 而不是钳制出重叠周：滑动窗口时须保持至少 15 天。
 export function deriveThreeWeekWeeks(window: ThreeWeekWindow): ThreeWeekWeekDef[] {

@@ -3,21 +3,17 @@ import { DATA } from "../data";
 import { countEmailsByMarket, useExtendedEmails } from "../email-data";
 import { useLocale } from "../i18n";
 import { LanguageToggle } from "../i18n/LanguageToggle";
-import { useSiteEmails, useSiteSelection } from "../site-data";
+import { useSiteThreeWeekData, useSiteSelection } from "../site-data";
 import { MarketFilter } from "./MarketFilter";
-import { aggregateThreeWeek, formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
+import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 
 export function DashboardHeader() {
   const { t } = useLocale();
-  const { status, emails, meta } = useSiteEmails();
+  const { status, meta, data } = useSiteThreeWeekData();
   const allEmails = useExtendedEmails();
   const { market, setMarket } = useSiteSelection();
   const marketCounts = useMemo(() => countEmailsByMarket(allEmails.emails), [allEmails.emails]);
-  const data = useMemo(
-    () => (status === "ready" ? aggregateThreeWeek(emails) : null),
-    [status, emails],
-  );
   const tags = [
     { label: meta.market, theme: "price" },
     { label: meta.source, theme: "behavior" },

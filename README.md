@@ -15,7 +15,7 @@
 
 ## 数据说明
 
-数据来源为 **Milled**，当前含美国（US）、英国（UK）、澳洲（AU）、法国（FR）、德国（DE）记录；意大利（IT）、荷兰（NL）、西班牙（ES）为可选的暂无记录站点。共 6 个品牌：Zara、lululemon、ALO Yoga、Halara、Temu、SHEIN；不保证各站点均覆盖全部品牌。
+数据来源为 **Milled**，共配置美国（US）、英国（UK）、澳洲（AU）、法国（FR）、德国（DE）、意大利（IT）、荷兰（NL）、西班牙（ES）8 个市场，当前 7 个市场已有收录记录，西班牙（ES）暂无记录。各市场样本量的差异源于 Milled 各市场品牌页的收录覆盖，不代表品牌实际发送量的差异。共 6 个品牌：Zara、lululemon、ALO Yoga、Halara、Temu、SHEIN；不保证各站点均覆盖全部品牌。
 
 | 窗口 | 日期范围 | 邮件样本数 |
 | --- | --- | --- |
@@ -34,6 +34,17 @@ npm run dev
 ```
 
 在本地 `.env` 中配置 `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY` 和 `VITE_EDM_DATA_SOURCE=supabase`；环境文件不纳入版本管理。部署时在构建环境中配置相同变量，修改后需重启开发服务或重新构建。
+
+## 回归检查
+
+使用 Node.js 24+ 的内置 `node:test`，复用现有 TypeScript 依赖在内存中转译被测源文件。测试在同一进程运行，无新增依赖、无构建产物，也不访问网络或读取 `.env`。
+
+```bash
+npx tsc -b
+npm test
+```
+
+`tests/` 覆盖数据窗口起止、含首尾天数与分桶边界、URL 状态往返、CSV 公式注入中和，以及 Banner 的 8 类构图与 23 个季节标签契约。日期断言固定当前窗口；经确认滑动窗口时，应同步更新测试中的日期与预期分桶。
 
 ## 构建
 

@@ -1,8 +1,7 @@
-/* 品牌营销触达趋势看板 - 数据文件
- * 数据来源：Milled（美国市场），2026-09-24 至 2026-10-15（美东时间）
+/* 品牌 / 主题结构及 Milled 历史美国样本资料。
+ * 当前窗口由 data-window.ts 与 three-week-aggregation.ts 定义。
  * 口径：每封邮件只归一个主题；计数为 Milled 品牌页在窗口内可见的收录邮件数，
  * 非品牌向全量收件人的发送量。词频按“含该词的邮件数”统计，同一词在同一主题出现多次只计 1 次。
- * 更新数据时只改这个文件即可。
  */
 
 export interface Week {
@@ -28,7 +27,7 @@ export interface Brand {
   themes: Record<string, number>;
   campaigns: string[];
   // 聚合周定义（m1）：实时聚合弹窗用，由 buildAggregatedBrand 从聚合 weeks 填入；
-  // 缺失时弹窗回落到静态 DATA.weeks（默认窗口下两者一致）。
+  // 缺失时弹窗回落到历史 DATA.weeks。
   weeks?: Week[];
 }
 

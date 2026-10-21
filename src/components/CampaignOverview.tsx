@@ -1,9 +1,7 @@
-import { useMemo } from "react";
 import type { Brand } from "../data";
 import { useLocale } from "../i18n";
-import { useSiteEmails, useSiteSelection } from "../site-data";
+import { useSiteThreeWeekData, useSiteSelection } from "../site-data";
 import {
-  aggregateThreeWeek,
   buildAggregatedBrand,
   formatWindowRange,
   THREE_WEEK_WINDOW,
@@ -39,12 +37,8 @@ interface CampaignOverviewProps {
 
 export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
   const { t } = useLocale();
-  const { status, emails, total, error, retry, meta } = useSiteEmails();
+  const { status, total, error, retry, meta, data } = useSiteThreeWeekData();
   const { market, setMarket } = useSiteSelection();
-  const data = useMemo(
-    () => (status === "ready" ? aggregateThreeWeek(emails) : null),
-    [status, emails],
-  );
 
   const hint = data
     ? `${meta.market} · ${t("campaignHintRealtime")}${formatWindowRange(data.window)}${t("campaignHintTotalPart")}${data.total}${t("campaignHintDiffPart")}${meta.total}${t("campaignHintDescPart")}`
