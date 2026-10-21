@@ -78,7 +78,7 @@ export interface BrandCalendarData {
   dailyCounts: Record<string, number>;
   /** 关键词索引（keyword → 该关键词出现的去重日期列表，按升序排列） */
   keywordIndex: Record<string, string[]>;
-  /** 关键词每封出现频次（keyword → 命中该关键词的邮件总数） */
+  /** 关键词含词邮件数（同一封邮件内重复关键词只计一次） */
   keywordOccurrences: Record<string, number>;
   /** 主题汇总（theme → 邮件总数） */
   themeSummary: Record<CalendarThemeKey, number>;
@@ -134,6 +134,10 @@ export const CALENDAR_TOTAL_DAYS = CALENDAR_DATES.length; // 窗口总天数（�
 // 数据转换与索引构建
 // ==========================================
 
+function normalizeKeywords(keywords: readonly string[]): string[] {
+  return [...new Set(keywords.map((keyword) => keyword.trim().toLowerCase()).filter(Boolean))];
+}
+
 function processBrand(
   brandName: BrandKey,
   emailsInput: EmailRecord[]
@@ -154,8 +158,8 @@ function processBrand(
   }
 
   // 2. 关键词索引（keyword → 该关键词出现的日期列表，升序排列）
-  const keywordDatesMap: Record<string, Set<string>> = {};
-  const keywordOccurrences: Record<string, number> = {};
+  const keywordDatesMap: Record<string, Set<string>> = Object.create(null);
+  const keywordOccurrences: Record<string, number> = Object.create(null);
 
   for (const kw of CALENDAR_KEYWORDS) {
     keywordDatesMap[kw] = new Set<string>();
@@ -163,7 +167,7 @@ function processBrand(
   }
 
   for (const email of emails) {
-    for (const kw of email.keywords) {
+    for (const kw of normalizeKeywords(email.keywords)) {
       if (!keywordDatesMap[kw]) {
         keywordDatesMap[kw] = new Set<string>();
         keywordOccurrences[kw] = 0;
@@ -173,7 +177,7 @@ function processBrand(
     }
   }
 
-  const keywordIndex: Record<string, string[]> = {};
+  const keywordIndex: Record<string, string[]> = Object.create(null);
   for (const keyword of Object.keys(keywordDatesMap)) {
     keywordIndex[keyword] = Array.from(keywordDatesMap[keyword]).sort();
   }
@@ -445,11 +449,11 @@ export function validateCalendarData(emails: EmailRecord[], built: CalendarData,
 
     // 关键词索引合法性校验（升序、窗口内、索引键覆盖）
     let keywordIndexValid = true;
-    const keywords = new Set([...CALENDAR_KEYWORDS, ...expectedEmails.flatMap((email) => email.keywords)]);
+    const keywords = new Set([...CALENDAR_KEYWORDS, ...expectedEmails.flatMap((email) => normalizeKeywords(email.keywords))]);
     for (const keyword of keywords) {
       const dates = brandData.keywordIndex[keyword] || [];
       const expectedDates = [...new Set(expectedEmails
-        .filter((email) => email.keywords.includes(keyword))
+        .filter((email) => normalizeKeywords(email.keywords).includes(keyword))
         .map((email) => email.date))].sort();
       if (!(keyword in brandData.keywordIndex) || dates.join() !== expectedDates.join()) {
         keywordIndexValid = false;
@@ -555,7 +559,7 @@ export function getDailyCount(built: CalendarData, brand: BrandKey, date: string
 
 /** 获取指定品牌命中某关键词的日期列表 */
 export function getKeywordDates(built: CalendarData, brand: BrandKey, keyword: string): string[] {
-  return built.brands[brand]?.keywordIndex[keyword] ?? [];
+  return built.brands[brand]?.keywordIndex[keyword.trim().toLowerCase()] ?? [];
 }
 
 /** 获取指定品牌指定主题的邮件数 */

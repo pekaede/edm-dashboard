@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { DATA } from "../data";
+import { LIVE_WINDOW } from "../data-window";
 import {
   BRAND_ORDER,
   getEmailMarket,
@@ -25,8 +26,8 @@ import { themeColor } from "../three-week-aggregation";
  *
  * 数据：复用 useExtendedEmails() 的共享缓存（Supabase emails 表），
  * 本组件只做聚合，不造数据、不硬编码计数。0 封的市场显示 0。
- * 窗口：由 emails 的最小/最大发送日期推导（7 天一桶），不依赖固定窗口常量，
- * 当前上游查询为按已发布截止日滑动的 93 天过滤窗口（当前 2026-07-20 至 2026-10-20）；仅在查询窗口经确认后扩展时，聚合周桶才随数据扩展。
+ * 周均和周桶共用 LIVE_WINDOW 观察窗口（7 天一桶，含无记录日期）；
+ * 样本最小/最大发送日期仅用于展示实际记录覆盖范围。
  */
 
 // 对比市场（固定 8 个，任务指定）。EU 不在固定列表内：
@@ -65,8 +66,10 @@ interface ComparisonData {
   brands: string[];
   themes: ThemeDef[];
   weeks: WeekDef[];
+  /** 实际记录覆盖范围，仅用于展示。 */
   windowStart: string;
   windowEnd: string;
+  /** LIVE_WINDOW 的观察天数，用于周均分母。 */
   windowDays: number;
   brandMarket: Map<string, Map<string, number>>;
   themeMarket: Map<string, Map<string, number>>;
@@ -112,12 +115,13 @@ function aggregateComparison(emails: EmailRecord[]): ComparisonData {
     if (email.date < minDate) minDate = email.date;
     if (email.date > maxDate) maxDate = email.date;
   }
+  const { start: windowStart, end: windowEnd } = LIVE_WINDOW;
   const windowDays =
-    Math.round((Date.parse(`${maxDate}T00:00:00Z`) - Date.parse(`${minDate}T00:00:00Z`)) / 86_400_000) + 1;
+    Math.round((Date.parse(`${windowEnd}T00:00:00Z`) - Date.parse(`${windowStart}T00:00:00Z`)) / 86_400_000) + 1;
 
   const weeks: WeekDef[] = [];
-  for (let start = minDate, index = 0; start <= maxDate; start = addDaysISO(start, 7), index += 1) {
-    const end = addDaysISO(start, 6) <= maxDate ? addDaysISO(start, 6) : maxDate;
+  for (let start: string = windowStart, index = 0; start <= windowEnd; start = addDaysISO(start, 7), index += 1) {
+    const end = addDaysISO(start, 6) <= windowEnd ? addDaysISO(start, 6) : windowEnd;
     weeks.push({
       index,
       label: `W${index + 1}`,
@@ -127,7 +131,7 @@ function aggregateComparison(emails: EmailRecord[]): ComparisonData {
     });
   }
   const weekIndex = (date: string): number =>
-    Math.min(Math.floor((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${minDate}T00:00:00Z`)) / 86_400_000 / 7), weeks.length - 1);
+    Math.floor((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${windowStart}T00:00:00Z`)) / 86_400_000 / 7);
 
   // 市场：固定 8 + 数据中出现的 extra（有封数时追加，字母序）。
   const marketLabels = new Map<string, string>(COMPARISON_MARKETS.map((m) => [m.code, m.label]));
@@ -170,6 +174,7 @@ function aggregateComparison(emails: EmailRecord[]): ComparisonData {
   let grandTotal = 0;
 
   for (const email of emails) {
+    if (email.date < windowStart || email.date > windowEnd) continue;
     const market = getEmailMarket(email);
     const wi = weekIndex(email.date);
     increment(getOrCreate(brandMarket, email.brand, () => new Map()), market);

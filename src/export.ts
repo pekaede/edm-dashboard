@@ -11,7 +11,12 @@ function escapeCSVField(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
-  const str = String(value);
+  let str = String(value);
+  // 跳过前导空白和控制字符检测文本公式；直接以制表符或回车开头也中和，数字保持原样。
+  if (typeof value === "string" &&
+    (/^[\s\u0000-\u001f\u007f-\u009f]*[=+\-@＝＋－＠]/.test(str) || /^[\t\r]/.test(str))) {
+    str = "'" + str;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
