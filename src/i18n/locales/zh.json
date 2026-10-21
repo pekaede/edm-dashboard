@@ -515,14 +515,6 @@
   "caNoTrend": "已分析样本中暂未抽取到趋势/热点词（新版分析补跑后自动填充）",
   "caNoSubjectResults": "该窗口内 {n} 封邮件尚无标题分析成功结果（成功 0 封；排队/失败/未采集见上方覆盖率）。",
   "caBannerTitle": "Banner 视觉风格分析",
-  "caBannerCtaTitle": "Banner CTA 包含率（视觉）",
-  "caBannerCtaSub": "共 {a} / {b} 封已分析；仅指视觉可见按钮，不代表可点击",
-  "caColorKindsTitle": "识别主色族种类",
-  "caColorKindsSub": "色族标签按频次降序 Top（模型不直接编 Hex）",
-  "caColorsHeading": "视觉主色族分布 (Dominant Colors)",
-  "caColorAria": "颜色 {hex}",
-  "caColorCount": "{count} 次 ({percentage}%)",
-  "caNoColors": "暂无色彩提取数据",
   "caCompositionHeading": "构图风格分布 (Composition)",
   "caNoComposition": "暂无构图风格标签",
   "caRatioHeading": "图文比例分布 (Text-Image Ratio)",
@@ -531,6 +523,5 @@
   "caNoCtaPlacement": "暂无 CTA 位置数据",
   "caSeasonalHeading": "季节与节日氛围 (Seasonal Cues)",
   "caNoSeasonal": "已分析样本中无可见季节/节日氛围标签（标题里的季节词不计入）",
-  "caNoBannerResults": "该窗口内 {n} 封邮件尚无 Banner 视觉分析成功结果（成功 0 封；排队/失败/未采集/无 Banner 见上方覆盖率）。",
-  "caColorGlyph": "色"
+  "caNoBannerResults": "该窗口内 {n} 封邮件尚无 Banner 视觉分析成功结果（成功 0 封；排队/失败/未采集/无 Banner 见上方覆盖率）。"
 }

@@ -515,14 +515,6 @@
   "caNoTrend": "No trend/hotspot terms extracted yet (filled automatically after the new analysis backfill)",
   "caNoSubjectResults": "None of the {n, plural, one {# email} other {# emails}} in this window has a successful subject analysis yet (0 succeeded; see Coverage above for queued / failed / not collected).",
   "caBannerTitle": "Banner Visual Style",
-  "caBannerCtaTitle": "Banner CTA Presence (visual)",
-  "caBannerCtaSub": "{a} / {b} analyzed; refers only to visually visible buttons, not clickability",
-  "caColorKindsTitle": "Dominant Color Families Found",
-  "caColorKindsSub": "Color-family labels by frequency (the model never invents Hex values)",
-  "caColorsHeading": "Dominant Color Families",
-  "caColorAria": "Color {hex}",
-  "caColorCount": "{count}× ({percentage}%)",
-  "caNoColors": "No color data extracted yet",
   "caCompositionHeading": "Composition Distribution",
   "caNoComposition": "No composition tags yet",
   "caRatioHeading": "Text–Image Ratio Distribution",
@@ -531,6 +523,5 @@
   "caNoCtaPlacement": "No CTA placement data yet",
   "caSeasonalHeading": "Seasonal & Holiday Cues",
   "caNoSeasonal": "No visible seasonal/holiday cues in analyzed samples (seasonal words in subjects do not count)",
-  "caNoBannerResults": "None of the {n, plural, one {# email} other {# emails}} in this window has a successful banner visual analysis yet (0 succeeded; see Coverage above for queued / failed / not collected / no banner).",
-  "caColorGlyph": "C"
+  "caNoBannerResults": "None of the {n, plural, one {# email} other {# emails}} in this window has a successful banner visual analysis yet (0 succeeded; see Coverage above for queued / failed / not collected / no banner)."
 }

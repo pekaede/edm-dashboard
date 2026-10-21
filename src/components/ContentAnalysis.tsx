@@ -58,10 +58,7 @@ interface SubjectSummary {
 
 interface BannerSummary {
   analyzedCount: number;
-  dominantColors: { label: string; hex: string | null; count: number; percentage: number }[];
   composition: MetricCount[];
-  ctaPresenceRate: number;
-  ctaPresenceCount: number;
   ctaPositions: MetricCount[];
   textImageRatio: MetricCount[];
   seasonalCues: { cue: string; count: number }[];
@@ -307,56 +304,29 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
   };
 }
 
-/**
- * 纯函数：Banner 视觉分析聚合。dominant_colors 口径是色族标签；
- * 渲染仍兼容旧 Hex（显示色块），色族显示文字标签，两者都计数；
- * 新校验已拒绝 Hex（见 validateBannerAnalysis），Hex 分支仅为历史数据兼容。
- */
+/** 纯函数：Banner 视觉分析聚合（构图、CTA 位置、图文比、季节元素）。 */
 function aggregateBannerAnalysis(results: BannerAnalysis[]): BannerSummary {
   const analyzedCount = results.length;
   if (analyzedCount === 0) {
     return {
       analyzedCount: 0,
-      dominantColors: [],
       composition: [],
-      ctaPresenceRate: 0,
-      ctaPresenceCount: 0,
       ctaPositions: [],
       textImageRatio: [],
       seasonalCues: [],
     };
   }
 
-  const colorMap = new Map<string, { hex: string | null; count: number }>();
   const compositionMap = new Map<string, number>();
-  let ctaPresenceCount = 0;
   const positionMap = new Map<string, number>();
   const ratioMap = new Map<string, number>();
   const cueMap = new Map<string, number>();
 
   for (const b of results) {
-    if (Array.isArray(b.dominant_colors)) {
-      for (const raw of b.dominant_colors) {
-        const value = raw.trim();
-        if (!value) continue;
-        if (/^#[0-9A-Fa-f]{3,8}$/.test(value)) {
-          const hex = value.toUpperCase();
-          const prev = colorMap.get(hex) ?? { hex, count: 0 };
-          prev.count += 1;
-          colorMap.set(hex, prev);
-        } else {
-          const label = value.toLowerCase();
-          const prev = colorMap.get(label) ?? { hex: null, count: 0 };
-          prev.count += 1;
-          colorMap.set(label, prev);
-        }
-      }
-    }
     if (b.composition) {
       const comp = b.composition.trim().toLowerCase();
       if (comp) compositionMap.set(comp, (compositionMap.get(comp) ?? 0) + 1);
     }
-    if (b.cta_presence) ctaPresenceCount += 1;
     const posKey = b.cta_position?.trim().toLowerCase() || "none";
     positionMap.set(posKey, (positionMap.get(posKey) ?? 0) + 1);
     if (b.text_image_ratio) {
@@ -383,18 +353,7 @@ function aggregateBannerAnalysis(results: BannerAnalysis[]): BannerSummary {
 
   return {
     analyzedCount,
-    dominantColors: Array.from(colorMap.entries())
-      .map(([label, { hex, count }]) => ({
-        label,
-        hex,
-        count,
-        percentage: Math.round((count / analyzedCount) * 100),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10),
     composition: toMetric(compositionMap, COMPOSITION_LABEL_MAP),
-    ctaPresenceRate: Math.round((ctaPresenceCount / analyzedCount) * 100),
-    ctaPresenceCount,
     ctaPositions: toMetric(positionMap, CTA_POSITION_LABEL_MAP),
     textImageRatio: toMetric(ratioMap, RATIO_LABEL_MAP),
     seasonalCues: Array.from(cueMap.entries())
@@ -1371,62 +1330,6 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
         >
           {bannerSummary && bannerSummary.analyzedCount > 0 ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-2">
-                <StatPill
-                  title={t("caBannerCtaTitle")}
-                  value={`${bannerSummary.ctaPresenceRate}%`}
-                  subtext={t("caBannerCtaSub", { a: bannerSummary.ctaPresenceCount, b: bannerSummary.analyzedCount })}
-                />
-                <StatPill
-                  title={t("caColorKindsTitle")}
-                  value={bannerSummary.dominantColors.length}
-                  subtext={t("caColorKindsSub")}
-                />
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                  {t("caColorsHeading")}
-                </h3>
-                {bannerSummary.dominantColors.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                    {bannerSummary.dominantColors.map(({ label, hex, count, percentage }) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-subtle)] p-1.5"
-                      >
-                        {hex ? (
-                          <span
-                            className="h-6 w-6 shrink-0 rounded-md border border-slate-300 shadow-2xs"
-                            style={{ backgroundColor: hex }}
-                            aria-label={t("caColorAria", { hex: hex })}
-                          />
-                        ) : (
-                          <span
-                            className="h-6 w-6 shrink-0 rounded-md border border-slate-300 bg-[var(--surface-card)] text-center text-[10px] leading-6 text-[var(--text-secondary)]"
-                            aria-hidden="true"
-                          >
-                            {t("caColorGlyph")}
-                          </span>
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-mono font-medium text-[var(--text-heading)] truncate">
-                            {hex ?? label}
-                          </p>
-                          <p className="text-[10px] tabular-nums text-[var(--text-secondary)]">
-                            {t("caColorCount", { count: count, percentage: percentage })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-[var(--text-secondary)] italic">
-                    {t("caNoColors")}
-                  </p>
-                )}
-              </div>
-
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
                   {t("caCompositionHeading")}
