@@ -86,7 +86,7 @@ export function SnapshotState({
           <button
             type="button"
             onClick={retry}
-            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
+            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--control-active-text)] shadow-xs transition hover:bg-[var(--control-active-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
             <RotateCw className="mr-2 size-4" aria-hidden="true" />
             {t("stRecheck")}
@@ -123,7 +123,7 @@ export function SnapshotState({
           <button
             type="button"
             onClick={retry}
-            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
+            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--control-active-text)] shadow-xs transition hover:bg-[var(--control-active-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
           >
             <RotateCw className="mr-2 size-4" aria-hidden="true" />
             {t("stRetryFetch")}
@@ -159,7 +159,7 @@ export function SnapshotState({
         <button
           type="button"
           onClick={retry}
-          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--text-heading)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--control-active-text)] shadow-xs transition hover:bg-[var(--control-active-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
           <RotateCw className="mr-2 size-4" aria-hidden="true" />
           {t("stRetryLoad")}

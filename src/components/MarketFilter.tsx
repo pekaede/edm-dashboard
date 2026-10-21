@@ -73,12 +73,12 @@ export function MarketFilter({
               onClick={() => onChange(option.code)}
               className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)] ${
                 isSelected
-                  ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
+                  ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-filter-active)]"
                   : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
               }`}
             >
               {option.name}
-              <span className={`text-xs font-semibold ${isSelected ? "text-white/70" : "text-[var(--text-description)]"}`}>
+              <span className={`text-xs font-semibold ${isSelected ? "text-[var(--control-active-text)]/70" : "text-[var(--text-description)]"}`}>
                 {option.count} {t("marketUnitEmails", { count: option.count })}
               </span>
             </Button>

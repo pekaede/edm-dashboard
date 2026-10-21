@@ -1,3 +1,5 @@
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
     "Microsoft YaHei", "Segoe UI", sans-serif;
@@ -27,6 +29,7 @@
 }
 
 :root {
+  color-scheme: light;
   --surface-page: #f7f1e8;
   --surface-card: #fffdf9;
   --surface-subtle: var(--color-slate-50);
@@ -41,6 +44,10 @@
   --surface-calendar-detail: #fff6e9;
   --surface-calendar-item: #fffdf8;
   --surface-wordcloud-hover: #f1e5d8;
+  --surface-tooltip: var(--color-slate-950);
+  --surface-overlay: rgb(31 28 25 / 0.55);
+  --surface-skeleton: var(--color-slate-200);
+  --scrollbar-thumb: var(--color-slate-400);
   --surface-page-glow-accent: rgb(229 95 71 / 0.05);
   --surface-page-glow-warm: rgb(195 138 36 / 0.06);
   --selection-bg: #f3c5b5;
@@ -88,6 +95,7 @@
   --divider-calendar: #eee3d6;
   --divider-wordcloud: #e2d7ca;
   --chart-empty: #e5ddd3;
+  --chart-dimmed-label: var(--theme-label-dark);
 
   --accent: var(--theme-price);
   --accent-ink: #a13f2d;
@@ -156,6 +164,7 @@
   --control-hover-border: var(--border-hover);
   --control-active-bg: var(--color-slate-900);
   --control-active-text: var(--text-inverse);
+  --control-active-hover-bg: var(--color-slate-800);
   --control-active-border: var(--control-active-bg);
   --control-disabled-bg: var(--color-slate-100);
   --control-disabled-text: var(--text-secondary);
@@ -179,6 +188,9 @@
   --calendar-heat-3: #e99061;
   --calendar-heat-4: #b65343;
   --calendar-heat-5: #7d342f;
+  --calendar-heat-empty-text: var(--text-calendar-heading);
+  --calendar-heat-text: var(--theme-label-dark);
+  --calendar-heat-strong-text: var(--text-inverse);
   --heatmap-high-hue: 14;
   --heatmap-high-saturation: 65%;
   --heatmap-low-saturation: 80%;
@@ -223,4 +235,163 @@
   --shadow-table-header: 0 1px 0 rgba(255, 255, 255, 0.12);
   --shadow-calendar-panel: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   --filter-chart-hover: drop-shadow(0 4px 8px rgb(0 0 0 / 0.15));
+}
+
+/* Warm charcoal surfaces; category/brand data colors retain their meaning. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-page: #1c1815;
+  --surface-card: #251f1b;
+  --surface-subtle: #2c251f;
+  --surface-raised: #302720;
+  --surface-table-stripe: #2c241e;
+  --surface-table-hover: #3b2b23;
+  --surface-table-header: #171310;
+  --surface-calendar: #251f1a;
+  --surface-calendar-tabs: #30271f;
+  --surface-calendar-hover: #3b2e23;
+  --surface-calendar-outside: #211c18;
+  --surface-calendar-detail: #30261e;
+  --surface-calendar-item: #29221c;
+  --surface-wordcloud-hover: #443227;
+  --surface-tooltip: #3a2f27;
+  --surface-overlay: rgb(12 9 7 / 0.8);
+  --surface-skeleton: #4a3e33;
+  --scrollbar-thumb: #a79481;
+  --surface-page-glow-accent: rgb(229 95 71 / 0.08);
+  --surface-page-glow-warm: rgb(195 138 36 / 0.07);
+  --selection-bg: #714231;
+
+  --text-primary: #f3e9dc;
+  --text-body: #e8dccc;
+  --text-secondary: #c7b6a3;
+  --text-muted: #b8a48f;
+  --text-heading: #fff2e2;
+  --text-inverse: #ffffff;
+  --text-control: #f0e2d1;
+  --text-label: #cbb9a4;
+  --text-description: #c4b19d;
+  --text-caption: #bda993;
+  --text-detail: #d3bfaa;
+  --text-email-intro: #ebddcc;
+  --text-email-table: #e5d6c4;
+  --text-email-brand: #fff0dd;
+  --text-table-inverse: #f5e9d9;
+  --text-calendar-heading: #f7e8d5;
+  --text-calendar-secondary: #c6b29b;
+  --text-calendar-muted: #b8a18a;
+  --text-calendar-outside: #a8917a;
+  --text-calendar-label: #d5c0a7;
+  --text-notice: #f0aa92;
+
+  --border-default: #514236;
+  --border-hover: #78604d;
+  --border-strong: #66513f;
+  --border-control: #705a45;
+  --border-control-hover: #b69676;
+  --border-calendar: #544231;
+  --border-calendar-control: #72583f;
+  --border-calendar-hover: #df9574;
+  --border-calendar-legend: #72533d;
+  --border-calendar-outside: #44372a;
+  --border-calendar-detail: #654b35;
+  --border-calendar-item: #57422f;
+  --border-calendar-input: #7a5c40;
+  --border-wordcloud: #614a36;
+  --border-wordcloud-control: #896749;
+  --divider: var(--border-default);
+  --divider-table: #44382c;
+  --divider-email: #514030;
+  --divider-calendar: #4e3d2d;
+  --divider-wordcloud: #5a4330;
+  --chart-empty: #524235;
+  --chart-dimmed-label: var(--text-body);
+
+  --accent: var(--theme-price);
+  --accent-ink: #f3a18b;
+  --accent-tint: #492c22;
+  --accent-wordcloud: #f3a18b;
+  --theme-price-tint: #482a22;
+  --theme-price-text: #ffb19e;
+  --theme-price-border: #a15d47;
+  --theme-behavior-tint: #3c2e19;
+  --theme-behavior-text: #e9c17a;
+  --theme-behavior-border: #8d6e36;
+  --theme-new-tint: #21382c;
+  --theme-new-text: #a3d5b8;
+  --theme-new-border: #527e61;
+  --theme-lifestyle-tint: #33283f;
+  --theme-lifestyle-text: #d0b7ee;
+  --theme-lifestyle-border: #7d6297;
+  --theme-category-tint: #20353a;
+  --theme-category-text: #a4d2dc;
+  --theme-category-border: #507c86;
+  --theme-other-tint: #352d25;
+  --theme-other-text: #d2c1ac;
+  --theme-other-border: #80705d;
+  --word-category: #f1957d;
+  --word-promotion: #e8b35d;
+  --word-style: #f2b087;
+  --word-audience: #f49b85;
+  --word-other: #dcb86f;
+
+  --status-success: var(--theme-new-text);
+  --status-success-bg: var(--theme-new-tint);
+  --status-success-border: var(--theme-new-border);
+  --status-warning: var(--theme-behavior-text);
+  --status-warning-bg: var(--theme-behavior-tint);
+  --status-warning-border: #96743a;
+  --status-error: var(--theme-price-text);
+  --status-error-bg: var(--theme-price-tint);
+  --status-error-border: var(--theme-price-border);
+
+  --control-bg: var(--surface-card);
+  --control-text: var(--text-secondary);
+  --control-border: var(--border-default);
+  --control-hover-bg: #403328;
+  --control-hover-text: var(--text-heading);
+  --control-hover-border: var(--border-hover);
+  --control-active-bg: #e5c6a4;
+  --control-active-text: #211b17;
+  --control-active-hover-bg: #f2d5b1;
+  --control-active-border: var(--control-active-bg);
+  --control-disabled-bg: #332a22;
+  --control-disabled-text: var(--text-secondary);
+  --control-disabled-border: var(--border-default);
+  --control-focus: var(--accent-ink);
+  --control-focus-offset: var(--surface-page);
+  --control-filter-bg: var(--surface-raised);
+  --control-filter-text: var(--text-control);
+  --control-filter-border: var(--border-control);
+  --control-filter-hover-bg: #403328;
+  --control-filter-hover-border: var(--border-control-hover);
+  --control-filter-active-bg: var(--control-active-bg);
+  --control-filter-active-text: var(--control-active-text);
+  --control-filter-focus: var(--accent-ink);
+  --control-calendar-focus: #ef9a7b;
+  --control-calendar-focus-soft: var(--selection-bg);
+
+  --calendar-heat-empty: #30271f;
+  --calendar-heat-1: #493021;
+  --calendar-heat-2: #5b3823;
+  --calendar-heat-3: #78422d;
+  --calendar-heat-4: #974832;
+  --calendar-heat-5: #b65343;
+  --calendar-heat-empty-text: var(--text-calendar-heading);
+  --calendar-heat-text: #fff0df;
+  --calendar-heat-strong-text: var(--text-inverse);
+
+  --card-border: var(--border-default);
+  --card-border-hover: var(--border-hover);
+  --shadow-color-soft: rgb(0 0 0 / 0.22);
+  --card-shadow: 0 4px 18px var(--shadow-color-soft);
+  --card-shadow-hover: 0 6px 22px rgb(0 0 0 / 0.32);
+  --card-report-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  --shadow-switcher: 0 2px 6px var(--shadow-color-soft);
+  --shadow-filter-active: 0 8px 20px -14px rgb(0 0 0 / 0.9);
+  --shadow-filter-accent-active: 0 8px 20px -14px rgb(180 55 35 / 0.6);
+  --shadow-table-header: 0 1px 0 rgb(255 232 209 / 0.1);
+  --shadow-calendar-panel: inset 0 1px 0 rgb(255 232 209 / 0.06);
+  --filter-chart-hover: drop-shadow(0 4px 8px rgb(0 0 0 / 0.4));
 }

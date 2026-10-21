@@ -1081,7 +1081,7 @@ export function ExtendedEmailFilter() {
                       aria-pressed={isActive}
                       className={`rounded-full border px-4 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] ${
                         isActive
-                          ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-white shadow-[var(--shadow-filter-active)]"
+                          ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-filter-active)]"
                           : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
                       }`}
                     >
@@ -1198,7 +1198,7 @@ export function ExtendedEmailFilter() {
                 aria-label={t("efExportAria", { n: filteredEmails.length })}
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)] sm:text-sm ${
                   filteredEmails.length > 0
-                    ? "border-[var(--text-heading)] bg-[var(--text-heading)] text-[var(--text-inverse)] hover:bg-[var(--accent-ink)] hover:border-[var(--accent-ink)]"
+                    ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)] hover:bg-[var(--control-active-hover-bg)] hover:border-[var(--control-active-hover-bg)]"
                     : "cursor-not-allowed border-[var(--control-disabled-border)] bg-[var(--control-disabled-bg)] text-[var(--control-disabled-text)] opacity-60"
                 }`}
               >
@@ -1251,7 +1251,7 @@ export function ExtendedEmailFilter() {
                 <col className="w-36" /><col className="w-56" /><col className="w-56" />
                 <col className="w-80" /><col className="w-24" />
               </colgroup>
-              <thead className="sticky top-0 z-10 bg-[var(--surface-table-header)] text-xs font-bold uppercase tracking-[0.08em] text-[var(--surface-table-stripe)] shadow-[var(--shadow-table-header)]">
+              <thead className="sticky top-0 z-10 bg-[var(--surface-table-header)] text-xs font-bold uppercase tracking-[0.08em] text-[var(--text-table-inverse)] shadow-[var(--shadow-table-header)]">
                 <tr>
                   <th scope="col" className="w-16 px-4 py-4 text-center">
                     {t("efColFav")}
@@ -1449,7 +1449,7 @@ export function ExtendedEmailFilter() {
                 type="button"
                 onClick={handleLoadMore}
                 aria-controls={listId}
-                className="min-h-11 rounded-full border border-[var(--text-control)] bg-[var(--text-control)] px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-[var(--accent-ink)] hover:bg-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
+                className="min-h-11 rounded-full border border-[var(--control-active-border)] bg-[var(--control-active-bg)] px-5 py-2.5 text-sm font-bold text-[var(--control-active-text)] transition hover:-translate-y-0.5 hover:border-[var(--control-active-hover-bg)] hover:bg-[var(--control-active-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
               >
                 {t("efLoadMore", { n: filteredEmails.length - visibleEmails.length })}
               </button>

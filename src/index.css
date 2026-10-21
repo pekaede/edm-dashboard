@@ -145,7 +145,7 @@ body {
 .dashboard-card :is(table, details, [tabindex="0"]),
 .report-table-scroll,
 .brand-dialog {
-  scrollbar-color: var(--color-slate-400) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
   scrollbar-width: thin;
 }
 

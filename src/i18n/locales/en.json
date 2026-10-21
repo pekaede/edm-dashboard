@@ -20,6 +20,8 @@
   "ebSectionDesc": "This section encountered a problem while loading or displaying. Please try again.",
   "ebRetry": "Retry this section",
   "language": "Language",
+  "appearanceSwitchLight": "Switch to light mode",
+  "appearanceSwitchDark": "Switch to dark mode",
   "all": "All",
   "backToDashboard": "← Back to dashboard",
   "backToDashboardAria": "Back to dashboard",

@@ -23,7 +23,7 @@ export function EmptyState({
     >
       {/* CSS 圆形占位（不用图片） */}
       <div
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--color-slate-400)] shadow-inner sm:h-16 sm:w-16"
+        className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-muted)] shadow-inner sm:h-16 sm:w-16"
         aria-hidden="true"
       >
         <SearchX className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" strokeWidth={1.75} />
@@ -43,7 +43,7 @@ export function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--text-inverse)] shadow-xs transition hover:bg-[var(--color-slate-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--control-active-bg)] px-4 py-2 text-xs font-bold text-[var(--control-active-text)] shadow-xs transition hover:bg-[var(--control-active-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--control-focus-offset)] sm:text-sm"
         >
           {actionLabel ?? t("emptyStateReset")}
         </button>

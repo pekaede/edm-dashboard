@@ -12,15 +12,15 @@ import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
 
 const EMPTY_STATE_CLASS_NAME =
-  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--text-heading)] [&_button]:text-[var(--text-inverse)] [&_button:hover]:bg-[var(--text-body)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
+  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--control-active-bg)] [&_button]:text-[var(--control-active-text)] [&_button:hover]:bg-[var(--control-active-hover-bg)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 const HEATMAP_LEVELS = [
-  { label: "0", background: "var(--calendar-heat-empty)", color: "var(--theme-label-dark)" },
-  { label: "1–4", background: "var(--calendar-heat-1)", color: "var(--theme-label-dark)" },
-  { label: "5–9", background: "var(--calendar-heat-2)", color: "var(--theme-label-dark)" },
-  { label: "10–14", background: "var(--calendar-heat-3)", color: "var(--theme-label-dark)" },
-  { label: "15–19", background: "var(--calendar-heat-4)", color: "var(--text-inverse)" },
-  { label: "20+", background: "var(--calendar-heat-5)", color: "var(--text-inverse)" },
+  { label: "0", background: "var(--calendar-heat-empty)", color: "var(--calendar-heat-empty-text)" },
+  { label: "1–4", background: "var(--calendar-heat-1)", color: "var(--calendar-heat-text)" },
+  { label: "5–9", background: "var(--calendar-heat-2)", color: "var(--calendar-heat-text)" },
+  { label: "10–14", background: "var(--calendar-heat-3)", color: "var(--calendar-heat-text)" },
+  { label: "15–19", background: "var(--calendar-heat-4)", color: "var(--calendar-heat-strong-text)" },
+  { label: "20+", background: "var(--calendar-heat-5)", color: "var(--calendar-heat-strong-text)" },
 ];
 
 function getHeatmapStyle(count: number) {
@@ -86,15 +86,15 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
         <table className="w-full min-w-[23rem] border-collapse text-xs sm:text-sm">
           <caption className="sr-only">{meta.market}，{formatWindowRange(data.window)}{t("campaignCaptionUnit")}</caption>
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-700">
+            <tr className="border-b border-[var(--border-default)] bg-[var(--surface-subtle)]/90 text-[var(--text-body)]">
               <th scope="col" className="py-2.5 pl-3 pr-2 text-left font-semibold">{t("campaignBrand")}</th>
               {data.weeks.map((w) => (
                 <th key={w.id} scope="col" className="px-2 py-2 text-center font-semibold">
                   <div>{w.label}</div>
-                  <div className="text-xs font-normal text-slate-600">{w.range}</div>
+                  <div className="text-xs font-normal text-[var(--text-secondary)]">{w.range}</div>
                 </th>
               ))}
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 text-center font-semibold text-slate-800">
+              <th scope="col" className="border-l border-[var(--border-default)] px-2 py-2 text-center font-semibold text-[var(--text-body)]">
                 {t("campaignTotal")}
               </th>
             </tr>
@@ -103,12 +103,12 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
             {data.brands.map((b) => (
               <tr
                 key={b.name}
-                className="border-b border-slate-100 transition-colors hover:bg-slate-50/50"
+                className="border-b border-[var(--divider)] transition-colors hover:bg-[var(--surface-subtle)]/50"
               >
                 <th scope="row" className="py-2 pl-3 pr-2 font-medium">
                   <button
                     type="button"
-                    className="inline-flex min-h-9 items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-slate-800 transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
+                    className="inline-flex min-h-9 items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-[var(--text-body)] transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
                     onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name))}
                   >
                     {b.name}
@@ -147,8 +147,8 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   );
                 })}
 
-                <td className="border-l border-slate-200/80 px-2 py-2 text-center font-mono font-bold text-slate-900 tabular-nums">
-                  <span className="inline-block rounded px-1.5 py-0.5 bg-slate-100/80">
+                <td className="border-l border-[var(--border-default)]/80 px-2 py-2 text-center font-mono font-bold text-[var(--text-primary)] tabular-nums">
+                  <span className="inline-block rounded px-1.5 py-0.5 bg-[var(--surface-subtle)]/80">
                     {b.total}
                   </span>
                 </td>
@@ -156,7 +156,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
             ))}
 
             {/* Bottom Total Row */}
-            <tr className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold text-slate-900">
+            <tr className="border-t-2 border-[var(--border-default)] bg-[var(--surface-subtle)]/90 font-semibold text-[var(--text-primary)]">
               <th scope="row" className="py-2.5 pl-3 pr-2 text-left font-bold">{t("campaignTotal")}</th>
               {data.weekTotals.map((n, i) => (
                 <td
@@ -166,7 +166,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   {n}
                 </td>
               ))}
-              <td className="border-l border-slate-200/80 px-2 py-2.5 text-center font-mono font-bold text-[var(--accent-ink)] tabular-nums">
+              <td className="border-l border-[var(--border-default)]/80 px-2 py-2.5 text-center font-mono font-bold text-[var(--accent-ink)] tabular-nums">
                 {grandTotal}
               </td>
             </tr>

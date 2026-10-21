@@ -3,6 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script id="theme-init">
+      (function () {
+        var theme;
+        try {
+          theme = window.localStorage.getItem("edm-theme");
+        } catch (_) {}
+        if (theme !== "light" && theme !== "dark") {
+          try {
+            theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          } catch (_) {
+            theme = "light";
+          }
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
     <link rel="preconnect" href="https://nwjyafirqckaznqkexyb.supabase.co" crossorigin />
     <meta name="description" content="品牌营销触达趋势看板：基于 Milled 美国、英国、澳洲、法国、德国等站点邮件数据，分析 Halara、ALO Yoga、SHEIN、Temu、lululemon、Zara 等品牌的邮件收录趋势、主题分布与节奏，并提供实时 OnePage 报告。" />
     <link rel="canonical" href="https://edmwatch.com/" />
