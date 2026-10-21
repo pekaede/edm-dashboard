@@ -22,10 +22,12 @@ const collections = import.meta.glob<JsonCollection>([
 
 const collectionNames = ["zara", "lululemon", "aloyoga", "halara", "temu", "shein"] as const;
 
-export async function loadJsonEmailDataset(): Promise<{ emails: EmailRecord[]; expectedTotal: number }> {
+export async function loadJsonEmailDataset(signal?: AbortSignal): Promise<{ emails: EmailRecord[]; expectedTotal: number }> {
+  signal?.throwIfAborted();
   const brands = await Promise.all(BRAND_ORDER.map(async (brand, brandIndex) => {
     const loadCollection = collections[`../data-collection/${collectionNames[brandIndex]}-2026-07-16-to-2026-10-15.json`];
     const collection = await loadCollection();
+    signal?.throwIfAborted();
     if (collection.brand !== brand || (collection.market !== undefined && collection.market !== "US") ||
       !Array.isArray(collection.emails) || !collection.emails.every((email) =>
         typeof email.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(email.date) &&

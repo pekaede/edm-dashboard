@@ -57,13 +57,14 @@ function getSupabaseConfig(): { baseUrl: string; publishableKey: string } {
 
 const PAGE_SIZE = 200;
 const MAX_ATTEMPTS = 3;
+const EMAIL_REQUEST_TIMEOUT_MS = 30_000;
 const SOURCE_KEY = ["market", "brand", "sent_date", "source_index", "day_seq"];
 
-async function getEmailKeyColumns(baseUrl: string, publishableKey: string): Promise<string[]> {
+async function getEmailKeyColumns(baseUrl: string, publishableKey: string, signal: AbortSignal): Promise<string[]> {
   try {
     const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/rest/v1/`, {
       headers: { apikey: publishableKey, Accept: "application/openapi+json" },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
     });
     if (response.ok) {
       const schema = await response.json();
@@ -78,7 +79,10 @@ async function getEmailKeyColumns(baseUrl: string, publishableKey: string): Prom
         }
       }
     }
-  } catch {}
+  } catch {
+    signal.throwIfAborted();
+  }
+  signal.throwIfAborted();
   return SOURCE_KEY;
 }
 
@@ -123,7 +127,8 @@ function isEmailRow(value: unknown): value is SupabaseEmailRow {
   );
 }
 
-async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
+async function fetchEmailDatasetPages(signal: AbortSignal): Promise<EmailDataset> {
+  signal.throwIfAborted();
   const { baseUrl, publishableKey } = getSupabaseConfig();
 
   let endpoint: URL;
@@ -132,7 +137,8 @@ async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
   } catch {
     throw new Error("Supabase 环境配置无效。");
   }
-  const keyColumns = await getEmailKeyColumns(baseUrl, publishableKey);
+  const keyColumns = await getEmailKeyColumns(baseUrl, publishableKey, signal);
+  signal.throwIfAborted();
   const columns = new Set(["brand", "sent_date", "day_seq", "source_index", "theme", "keywords", "original_url", "market", "subject", "preheader", "banner_url", ...keyColumns]);
   endpoint.searchParams.set("select", [...columns].join(","));
   endpoint.searchParams.append("sent_date", `gte.${LIVE_WINDOW.start}`);
@@ -143,10 +149,12 @@ async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
 
   const headers = { apikey: publishableKey, Prefer: "count=exact" };
   async function requestPage(method: "GET" | "HEAD" = "GET"): Promise<Response> {
+    signal.throwIfAborted();
     let response: Response;
     try {
-      response = await fetch(endpoint, { method, headers });
+      response = await fetch(endpoint, { method, headers, signal });
     } catch {
+      signal.throwIfAborted();
       throw new Error("邮件请求失败，请检查网络后重试。");
     }
     if (!response.ok) throw new Error(`邮件请求失败（HTTP ${response.status}）。`);
@@ -166,6 +174,7 @@ async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
         const response = await requestPage();
         if (readExactTotal(response) !== exactTotal) throw new IncompleteDataError("邮件总数在加载期间发生变化，请重试。");
         const page: unknown = await response.json();
+        signal.throwIfAborted();
         if (!Array.isArray(page) || !page.every(isEmailRow)) throw new IncompleteDataError("邮件记录格式无效。");
         if (page.length === 0) throw new IncompleteDataError(`邮件分页未取齐（已取 ${rows.length} / ${exactTotal} 封）。`);
         for (const row of page) {
@@ -185,12 +194,32 @@ async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
       if (rows.length !== exactTotal || identities.size !== rows.length || sourceIdentities.size !== rows.length) {
         throw new IncompleteDataError("邮件条数或唯一标识数与精确总数不一致。");
       }
+      signal.throwIfAborted();
       return { rows, exactTotal };
     } catch (error) {
+      signal.throwIfAborted();
       lastError = error;
     }
   }
   throw lastError instanceof Error ? lastError : new Error("邮件加载失败，请重试。");
+}
+
+async function fetchEmailDatasetUncached(): Promise<EmailDataset> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error("邮件加载超时，请重试。");
+      controller.abort(error);
+      reject(error);
+    }, EMAIL_REQUEST_TIMEOUT_MS);
+  });
+  try {
+    // 覆盖 schema、HEAD、全部分页/响应体和完整性重试；即使底层未响应 abort 也按时结算。
+    return await Promise.race([fetchEmailDatasetPages(controller.signal), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 export async function fetchAllEmails(): Promise<SupabaseEmailRow[]> {

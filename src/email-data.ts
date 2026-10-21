@@ -86,10 +86,11 @@ export interface ExtendedEmailsResult extends ExtendedEmailsState {
 }
 
 const jsonAdapter = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
-  ? async (): Promise<ExtendedEmailsData> => {
+  ? async (signal?: AbortSignal): Promise<ExtendedEmailsData> => {
     try {
       const adapter = await import("./email-data-json");
-      const { emails, expectedTotal } = await adapter.loadJsonEmailDataset();
+      signal?.throwIfAborted();
+      const { emails, expectedTotal } = await adapter.loadJsonEmailDataset(signal);
       return {
         emails: sortEmails(emails),
         meta: {
@@ -102,6 +103,7 @@ const jsonAdapter = import.meta.env.VITE_EDM_DATA_SOURCE === "json"
         },
       };
     } catch {
+      signal?.throwIfAborted();
       throw new Error("本地回滚数据加载失败。");
     }
   }
@@ -146,6 +148,7 @@ async function supabaseAdapter(force = false): Promise<ExtendedEmailsData> {
 
 // 每日更新为主、白天偶有补数：5 分钟兼顾补数可见时效与全量分页查询的开销。
 const STALE_TIME = 5 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 interface EmailCacheEntry {
   request: Promise<ExtendedEmailsData>;
@@ -155,16 +158,31 @@ interface EmailCacheEntry {
 const promiseCache = new Map<EmailDataSource, EmailCacheEntry>();
 const inFlightRequests = new Map<EmailDataSource, Promise<ExtendedEmailsData>>();
 
-function requestExtendedEmails(source: EmailDataSource, force = false): Promise<ExtendedEmailsData> {
+function requestExtendedEmails(source: EmailDataSource, refresh = false, force = false): Promise<ExtendedEmailsData> {
   const cached = promiseCache.get(source);
   const pending = inFlightRequests.get(source);
-  if (cached && (
-    cached.request === pending ||
-    (!force && (cached.updatedAt === null || Date.now() - cached.updatedAt < STALE_TIME))
-  )) return cached.request;
+  if (!force && pending) return pending;
+  if (!force && !refresh && cached && cached.updatedAt !== null && Date.now() - cached.updatedAt < STALE_TIME) {
+    return cached.request;
+  }
 
-  const fetchDataset = () => source === "json" ? jsonAdapter() : supabaseAdapter(force);
-  const request = pending ? pending.then(fetchDataset, fetchDataset) : fetchDataset();
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error("邮件加载超时，请重试。");
+      controller.abort(error);
+      reject(error);
+    }, REQUEST_TIMEOUT_MS);
+  });
+  // Supabase 自身会取消网络请求；此处同时限制 JSON 懒加载和整个适配过程。
+  // 显式 force 直接启动新一轮，不再串接旧 pending。
+  const request = Promise.race([
+    source === "json" ? jsonAdapter(controller.signal) : supabaseAdapter(force),
+    timeout,
+  ]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
   const entry: EmailCacheEntry = { request, updatedAt: null };
   promiseCache.set(source, entry);
   inFlightRequests.set(source, request);
@@ -176,6 +194,8 @@ function requestExtendedEmails(source: EmailDataSource, force = false): Promise<
       entry.updatedAt = Date.now();
     } else if (cached && cached.updatedAt !== null) {
       promiseCache.set(source, cached);
+    } else {
+      promiseCache.delete(source);
     }
   }
 
@@ -260,14 +280,15 @@ function getSnapshot() {
   return state;
 }
 
-function loadExtendedEmails(force = false) {
-  const request = requestExtendedEmails(DEFAULT_SOURCE, force);
+function loadExtendedEmails(refresh = false, force = false) {
+  const request = requestExtendedEmails(DEFAULT_SOURCE, refresh, force);
   if (activeRequest === request) return;
   activeRequest = request;
 
   request.then(
     ({ emails, meta }) => {
       if (activeRequest !== request) return;
+      activeRequest = null;
       const complete = meta.total !== null && emails.length === meta.total;
       if (state.status === "ready" && !complete) return;
       setState({
@@ -279,7 +300,9 @@ function loadExtendedEmails(force = false) {
       });
     },
     (error: unknown) => {
-      if (activeRequest !== request || state.status === "ready") return;
+      if (activeRequest !== request) return;
+      activeRequest = null;
+      if (state.status === "ready") return;
       // 完整性失败（分页未取齐/总数变化/标识不一致）映射为 incomplete，
       // 与网络失败（error）区分，避免分页不完整被展示为网络失败。
       setState({
@@ -293,13 +316,14 @@ function loadExtendedEmails(force = false) {
 
 export function resetExtendedEmailsCache() {
   promiseCache.clear();
+  inFlightRequests.clear();
   activeRequest = null;
   setState(loadingState);
 }
 
 export function retryExtendedEmails() {
   resetExtendedEmailsCache();
-  loadExtendedEmails();
+  loadExtendedEmails(true, true);
 }
 
 export function useExtendedEmails(): ExtendedEmailsResult {
