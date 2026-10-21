@@ -9,6 +9,7 @@ import {
 } from "react";
 import { matchesMarket, useExtendedEmails, type EmailRecord, type ExtendedEmailsResult } from "./email-data";
 import { getMarketLabel, type MarketFilterValue } from "./components/MarketFilter";
+import { useLocale } from "./i18n";
 
 export interface SiteSelection {
   market: MarketFilterValue;
@@ -86,9 +87,17 @@ interface CachedSiteData {
   meta: ExtendedEmailsResult["meta"];
 }
 
+/** 当前语言下的站点标签（getMarketLabel 走当前语言翻译）。 */
+function siteMarketLabel(market: MarketFilterValue, dataSource: string): string {
+  return `${getMarketLabel(market)}${dataSource === "json" ? "（历史 US 回滚源）" : ""}`;
+}
+
 export function useSiteEmails(): ExtendedEmailsResult {
   const data = useExtendedEmails();
   const { market } = useSiteSelection();
+  // 订阅语言：meta.market 是按当前语言生成的标签，切换语言时必须重算，
+  // 否则站点缓存会把上一种语言的标签（如 "United States"）带进新语言界面。
+  const { locale } = useLocale();
 
   // 站点邮件缓存：已访问站点不重复过滤计算；底层数据变更时失效
   const cacheRef = useRef<{
@@ -114,14 +123,15 @@ export function useSiteEmails(): ExtendedEmailsResult {
         ...data,
         emails: cached.emails,
         total: cached.total,
-        meta: cached.meta,
+        // 缓存里的 market 标签可能是旧语言生成的，返回前按当前语言重算。
+        meta: { ...cached.meta, market: siteMarketLabel(market, data.meta.dataSource) },
       };
     }
 
     const emails = data.emails.filter((email) => matchesMarket(email, market));
     const nextMeta = {
       ...data.meta,
-      market: `${getMarketLabel(market)}${data.meta.dataSource === "json" ? "（历史 US 回滚源）" : ""}`,
+      market: siteMarketLabel(market, data.meta.dataSource),
       total: data.status === "ready" ? emails.length : null,
       brandCount: new Set(emails.map((email) => email.brand)).size,
     };
@@ -142,5 +152,5 @@ export function useSiteEmails(): ExtendedEmailsResult {
       total: emails.length,
       meta: nextMeta,
     };
-  }, [data, market]);
+  }, [data, market, locale]);
 }
