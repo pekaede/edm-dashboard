@@ -3,7 +3,7 @@ import { DATA, type Brand } from "./data";
 import type { EmailRecord } from "./email-data";
 
 // 3 周窗口：实时聚合从 emails 表逐封过滤，滑动 = 改这两个日期。
-// 默认 2026-09-27 至 2026-10-18（含首尾）共 22 天；周按窗口起算：
+// 默认 2026-09-29 至 2026-10-20（含首尾）共 22 天；周按窗口起算：
 // W1 = 起始日起 7 天，W2 = 接下来 7 天，W3 = 剩余天数至窗口末。
 //
 export interface ThreeWeekWindow {
@@ -12,8 +12,8 @@ export interface ThreeWeekWindow {
 }
 
 export const THREE_WEEK_WINDOW: ThreeWeekWindow = {
-  start: "2026-09-27",
-  end: "2026-10-18",
+  start: "2026-09-29",
+  end: "2026-10-20",
 };
 
 export interface ThreeWeekWeekDef {
