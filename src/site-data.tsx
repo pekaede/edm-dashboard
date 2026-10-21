@@ -27,12 +27,78 @@ export interface SiteSelection {
 
 const SiteContext = createContext<SiteSelection | null>(null);
 
+interface CachedSiteData {
+  emails: EmailRecord[];
+  total: number;
+  threeWeekData: ReturnType<typeof aggregateThreeWeek> | null;
+}
+
+interface SiteDataValue {
+  site: ExtendedEmailsResult;
+  threeWeekData: CachedSiteData["threeWeekData"];
+}
+
+const SiteDataContext = createContext<SiteDataValue | null>(null);
+
+/** 每个 Provider 独享缓存；同一数据版本按站点复用过滤和聚合结果。 */
+function createSiteDataCache() {
+  let sourceEmails: EmailRecord[] | null = null;
+  const sites = new Map<MarketFilterValue, CachedSiteData>();
+
+  return (
+    emails: EmailRecord[],
+    status: ExtendedEmailsResult["status"],
+    market: MarketFilterValue,
+  ): CachedSiteData => {
+    // 刷新/重试/reset 后不复用旧版本；非 ready 的部分数据不进入缓存。
+    if (sourceEmails !== emails || status !== "ready") {
+      sourceEmails = emails;
+      sites.clear();
+    }
+    const cached = sites.get(market);
+    if (cached) return cached;
+
+    const siteEmails = emails.filter((email) => matchesMarket(email, market));
+    const siteData: CachedSiteData = {
+      emails: siteEmails,
+      total: siteEmails.length,
+      threeWeekData: status === "ready" ? aggregateThreeWeek(siteEmails) : null,
+    };
+    if (status === "ready") sites.set(market, siteData);
+    return siteData;
+  };
+}
+
 export function SiteProvider({ children }: { children: ReactNode }) {
+  const data = useExtendedEmails();
+  const { locale } = useLocale();
   const [market, setMarket] = useState<MarketFilterValue>("US");
   // 跨市场对比视图独立多选：默认 US + UK，切换全局站点时不被覆盖
   const [comparisonMarkets, setComparisonMarkets] = useState<string[]>(["US", "UK"]);
   // 切站点时保留的筛选条件字典（如主题、品牌、排序等）
   const [filters, setFilters] = useState<Record<string, unknown>>({});
+
+  const cacheRef = useRef<ReturnType<typeof createSiteDataCache> | null>(null);
+  if (cacheRef.current === null) cacheRef.current = createSiteDataCache();
+  const cached = useMemo(
+    () => cacheRef.current!(data.emails, data.status, market),
+    [data.emails, data.status, market],
+  );
+  const siteData = useMemo<SiteDataValue>(() => ({
+    site: {
+      ...data,
+      emails: cached.emails,
+      total: cached.total,
+      // 元数据不缓存：语言、来源、窗口或完整性变化时使用当前值。
+      meta: {
+        ...data.meta,
+        market: siteMarketLabel(market, data.meta.dataSource),
+        total: data.status === "ready" ? cached.total : null,
+        brandCount: new Set(cached.emails.map((email) => email.brand)).size,
+      },
+    },
+    threeWeekData: cached.threeWeekData,
+  }), [data, cached, market, locale]);
 
   const setFilter = useCallback((key: string, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -63,7 +129,11 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     [market, comparisonMarkets, filters, setFilter, getFilter, clearFilters],
   );
 
-  return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
+  return (
+    <SiteContext.Provider value={value}>
+      <SiteDataContext.Provider value={siteData}>{children}</SiteDataContext.Provider>
+    </SiteContext.Provider>
+  );
 }
 
 export function useSiteSelection(): SiteSelection {
@@ -82,86 +152,23 @@ export function useSiteFilters() {
   return { filters, setFilter, getFilter, clearFilters };
 }
 
-interface CachedSiteData {
-  emails: EmailRecord[];
-  total: number;
-  meta: ExtendedEmailsResult["meta"];
-}
-
 /** 当前语言下的站点标签（getMarketLabel 走当前语言翻译）。 */
 function siteMarketLabel(market: MarketFilterValue, dataSource: string): string {
   return `${getMarketLabel(market)}${dataSource === "json" ? "（历史 US 回滚源）" : ""}`;
 }
 
+function useSiteData(): SiteDataValue {
+  const data = useContext(SiteDataContext);
+  if (!data) throw new Error("站点视图需要 SiteProvider。");
+  return data;
+}
+
 export function useSiteEmails(): ExtendedEmailsResult {
-  const data = useExtendedEmails();
-  const { market } = useSiteSelection();
-  // 订阅语言：meta.market 是按当前语言生成的标签，切换语言时必须重算，
-  // 否则站点缓存会把上一种语言的标签（如 "United States"）带进新语言界面。
-  const { locale } = useLocale();
-
-  // 站点邮件缓存：已访问站点不重复过滤计算；底层数据变更时失效
-  const cacheRef = useRef<{
-    sourceEmails: EmailRecord[];
-    sites: Map<MarketFilterValue, CachedSiteData>;
-  }>({
-    sourceEmails: [],
-    sites: new Map(),
-  });
-
-  return useMemo(() => {
-    // 数据源引用变化时重置缓存
-    if (cacheRef.current.sourceEmails !== data.emails) {
-      cacheRef.current = {
-        sourceEmails: data.emails,
-        sites: new Map(),
-      };
-    }
-
-    const cached = cacheRef.current.sites.get(market);
-    if (cached && data.status === "ready") {
-      return {
-        ...data,
-        emails: cached.emails,
-        total: cached.total,
-        // 缓存里的 market 标签可能是旧语言生成的，返回前按当前语言重算。
-        meta: { ...cached.meta, market: siteMarketLabel(market, data.meta.dataSource) },
-      };
-    }
-
-    const emails = data.emails.filter((email) => matchesMarket(email, market));
-    const nextMeta = {
-      ...data.meta,
-      market: siteMarketLabel(market, data.meta.dataSource),
-      total: data.status === "ready" ? emails.length : null,
-      brandCount: new Set(emails.map((email) => email.brand)).size,
-    };
-
-    const siteData: CachedSiteData = {
-      emails,
-      total: emails.length,
-      meta: nextMeta,
-    };
-
-    if (data.status === "ready") {
-      cacheRef.current.sites.set(market, siteData);
-    }
-
-    return {
-      ...data,
-      emails,
-      total: emails.length,
-      meta: nextMeta,
-    };
-  }, [data, market, locale]);
+  return useSiteData().site;
 }
 
 /** 共享当前站点的三周聚合入口；非 ready 状态保持空值，meta 沿用三个月口径。 */
 export function useSiteThreeWeekData() {
-  const site = useSiteEmails();
-  const data = useMemo(
-    () => (site.status === "ready" ? aggregateThreeWeek(site.emails) : null),
-    [site.status, site.emails],
-  );
-  return { ...site, data };
+  const { site, threeWeekData } = useSiteData();
+  return { ...site, data: threeWeekData };
 }
