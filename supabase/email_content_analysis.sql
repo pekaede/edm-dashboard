@@ -106,6 +106,7 @@ create index if not exists email_content_analysis_status_idx
 
 -- ----------------------------------------------------------------------------
 -- 视图：每（邮件，类型）一行；成功优先（取最新成功尝试），无成功时取最新尝试。
+-- is_stale 仅比较所选行与最新尝试的输入，不改变成功优先的行选择语义。
 -- 前端只读此视图。
 -- ----------------------------------------------------------------------------
 create or replace view public.email_content_analysis_current
@@ -119,14 +120,20 @@ select distinct on (market, brand, sent_date, day_seq, analysis_type)
   status,
   result,
   -- analyzed_at = 成功时间；未成功时为 null，前端据此区分“已分析”与“未分析”。
-  succeeded_at as analyzed_at
+  succeeded_at as analyzed_at,
+  -- 窗口在 DISTINCT ON 选行前计算，按 attempted_at / id 定位最新尝试。
+  -- input_hash 非空；无成功时所选行即最新尝试，因此 is_stale = false。
+  input_hash <> first_value(input_hash) over (
+    partition by market, brand, sent_date, day_seq, analysis_type
+    order by attempted_at desc, id desc
+  ) as is_stale
 from public.email_content_analysis
 order by
   market, brand, sent_date, day_seq, analysis_type,
   (status = 'success') desc, attempted_at desc, id desc;
 
 comment on view public.email_content_analysis_current is
-  '每（邮件，类型）最新一行分析结果；前端只读此视图，不直接读基表。';
+  '每（邮件，类型）成功优先的最新分析结果；is_stale 表示所选结果的输入与最新尝试不同；前端只读此视图。';
 
 -- ----------------------------------------------------------------------------
 -- RLS：anon / authenticated 仅 SELECT；写操作只走 service_role

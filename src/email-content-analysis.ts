@@ -67,6 +67,8 @@ export interface EmailContentAnalysisRow {
   status: AnalysisStatus;
   result: SubjectAnalysis | BannerAnalysis | null;
   analyzed_at: string | null;
+  /** 视图所选结果的输入是否与最新尝试不同；不改变 status / analyzed_at 的历史结果语义。 */
+  is_stale: boolean;
 }
 
 export interface FetchContentAnalysisParams {
@@ -262,7 +264,8 @@ function isContentAnalysisRow(value: unknown): value is Record<string, unknown> 
     (value.analysis_type === "subject" || value.analysis_type === "banner") &&
     typeof value.status === "string" &&
     (ANALYSIS_STATUSES as readonly string[]).includes(value.status) &&
-    (value.analyzed_at === null || typeof value.analyzed_at === "string")
+    (value.analyzed_at === null || typeof value.analyzed_at === "string") &&
+    typeof value.is_stale === "boolean"
   );
 }
 
@@ -302,7 +305,7 @@ export async function fetchContentAnalysis(
   // 显式选列：绝不 select *（视图列变更时不静默吞入脏字段）。
   endpoint.searchParams.set(
     "select",
-    "market,brand,sent_date,day_seq,analysis_type,status,result,analyzed_at",
+    "market,brand,sent_date,day_seq,analysis_type,status,result,analyzed_at,is_stale",
   );
   endpoint.searchParams.append("market", `eq.${market}`);
   endpoint.searchParams.append("sent_date", `gte.${start}`);
@@ -414,6 +417,7 @@ export async function fetchContentAnalysis(
                 status: "failed",
                 result: null,
                 analyzed_at: null,
+                is_stale: raw.is_stale as boolean,
               });
               continue;
             }
@@ -427,6 +431,7 @@ export async function fetchContentAnalysis(
             status,
             result,
             analyzed_at: raw.analyzed_at as string | null,
+            is_stale: raw.is_stale as boolean,
           });
         }
         if (rows.length > exactTotal) {

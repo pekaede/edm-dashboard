@@ -73,12 +73,12 @@ interface WindowEmail {
   banner_url: string | null;
 }
 
-/** 每封邮件的分析结论：success 需同时通过结果校验，否则按失败计。 */
-type AnalysisOutcome = "success" | "queued" | "failed" | "missing" | "skipped";
+/** 每封邮件的互斥状态：success 需结果有效且对应最新尝试输入；过期结果单独计数。 */
+type AnalysisOutcome = "success" | "queued" | "failed" | "missing" | "skipped" | "expired";
 
 interface EmailAnalysis {
-  subject: { outcome: AnalysisOutcome; expired: boolean; result: SubjectAnalysis | null };
-  banner: { outcome: AnalysisOutcome; expired: boolean; result: BannerAnalysis | null };
+  subject: { outcome: AnalysisOutcome; result: SubjectAnalysis | null };
+  banner: { outcome: AnalysisOutcome; result: BannerAnalysis | null };
 }
 
 interface Coverage {
@@ -89,8 +89,8 @@ interface Coverage {
   withSubject: number;
   withPreheader: number;
   withBanner: number;
-  subject: Record<AnalysisOutcome, number> & { expired: number };
-  banner: Record<AnalysisOutcome, number> & { expired: number };
+  subject: Record<AnalysisOutcome, number>;
+  banner: Record<AnalysisOutcome, number>;
   subjectSuccessRate: number;
   bannerSuccessRate: number;
   /** Banner 成功率的补充口径：分母仅为有 Banner 图的邮件。 */
@@ -162,34 +162,36 @@ function isNotEnabledError(error: unknown): boolean {
 }
 
 function subjectOutcome(row: EmailContentAnalysisRow | undefined): EmailAnalysis["subject"] {
-  if (!row) return { outcome: "missing", expired: false, result: null };
+  if (!row) return { outcome: "missing", result: null };
   if (row.status === "pending" || row.status === "processing") {
-    return { outcome: "queued", expired: false, result: null };
+    return { outcome: "queued", result: null };
   }
-  if (row.status === "skipped") return { outcome: "skipped", expired: false, result: null };
-  if (row.status === "failed") return { outcome: "failed", expired: false, result: null };
+  if (row.status === "skipped") return { outcome: "skipped", result: null };
+  if (row.status === "failed") return { outcome: "failed", result: null };
   if (row.status === "success" && row.result !== null && validateSubjectAnalysis(row.result)) {
-    // 结果过期口径：success 但 analyzed_at 为空，无法证明新鲜度，计入过期（仍计入成功）。
-    return { outcome: "success", expired: row.analyzed_at == null, result: row.result };
+    // 回退到其他输入的成功，或缺少成功时间：待更新，不参与当前覆盖率、聚合和展开。
+    if (row.is_stale !== false || row.analyzed_at == null) return { outcome: "expired", result: null };
+    return { outcome: "success", result: row.result };
   }
   // success 标记但结果缺失/校验失败：不能当成成功，按失败计，不静默丢弃。
-  return { outcome: "failed", expired: false, result: null };
+  return { outcome: "failed", result: null };
 }
 
 function bannerOutcome(row: EmailContentAnalysisRow | undefined): EmailAnalysis["banner"] {
-  if (!row) return { outcome: "missing", expired: false, result: null };
+  if (!row) return { outcome: "missing", result: null };
   if (row.status === "pending" || row.status === "processing") {
-    return { outcome: "queued", expired: false, result: null };
+    return { outcome: "queued", result: null };
   }
-  if (row.status === "skipped") return { outcome: "skipped", expired: false, result: null };
-  if (row.status === "failed") return { outcome: "failed", expired: false, result: null };
+  if (row.status === "skipped") return { outcome: "skipped", result: null };
+  if (row.status === "failed") return { outcome: "failed", result: null };
   if (row.status === "success" && row.result !== null && validateBannerAnalysis(row.result)) {
-    return { outcome: "success", expired: row.analyzed_at == null, result: row.result };
+    if (row.is_stale !== false || row.analyzed_at == null) return { outcome: "expired", result: null };
+    return { outcome: "success", result: row.result };
   }
-  return { outcome: "failed", expired: false, result: null };
+  return { outcome: "failed", result: null };
 }
 
-/** 纯函数：标题分析聚合。分布类占比的分母是已分析（success）封数；缺失行不计入“无 CTA/零 Emoji”。 */
+/** 纯函数：标题分析聚合。分布类分母仅含当前输入的 success；过期/缺失行不计入“无 CTA/零 Emoji”。 */
 function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
   const analyzedCount = results.length;
   if (analyzedCount === 0) {
@@ -413,7 +415,7 @@ function OutcomeBreakdown({
   sample: number;
   extra?: string;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const pct = (n: number) => (sample > 0 ? `${Math.round((n / sample) * 100)}%` : "—");
   return (
     <div className="space-y-1 text-xs">
@@ -422,7 +424,9 @@ function OutcomeBreakdown({
         {t("caOutcomeLine", { s: counts.success, sp: pct(counts.success), q: counts.queued, qp: pct(counts.queued), f: counts.failed, fp: pct(counts.failed), m: counts.missing, mp: pct(counts.missing), sk: counts.skipped, skp: pct(counts.skipped) })}
       </p>
       <p className="text-[var(--text-secondary)]">
-        {t("caOutcomeExpired", { n: counts.expired })}
+        {locale === "en"
+          ? `Stale / awaiting update ${counts.expired} (${pct(counts.expired)})`
+          : `过期/待更新 ${counts.expired} 封 (${pct(counts.expired)})`}
         {extra ? ` · ${extra}` : ""}
       </p>
     </div>
@@ -643,6 +647,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
     let withSubject = 0;
     let withPreheader = 0;
     let withBanner = 0;
+    let bannerSuccessWithBanner = 0;
     const subject: Coverage["subject"] = { success: 0, queued: 0, failed: 0, missing: 0, skipped: 0, expired: 0 };
     const banner: Coverage["banner"] = { success: 0, queued: 0, failed: 0, missing: 0, skipped: 0, expired: 0 };
     for (const { email, analysis } of joined) {
@@ -650,10 +655,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       if (email.subject !== null) withSubject += 1;
       if (email.preheader !== null) withPreheader += 1;
       if (email.banner_url !== null) withBanner += 1;
+      if (email.banner_url !== null && analysis.banner.outcome === "success") bannerSuccessWithBanner += 1;
+      // 六种状态互斥，合计等于样本数；过期结果不重复计入成功。
       subject[analysis.subject.outcome] += 1;
       banner[analysis.banner.outcome] += 1;
-      if (analysis.subject.expired) subject.expired += 1;
-      if (analysis.banner.expired) banner.expired += 1;
     }
     return {
       sample,
@@ -667,7 +672,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
       subjectSuccessRate: sample > 0 ? Math.round((subject.success / sample) * 100) : 0,
       bannerSuccessRate: sample > 0 ? Math.round((banner.success / sample) * 100) : 0,
       bannerSuccessRateAmongWithBanner:
-        withBanner > 0 ? Math.round((banner.success / withBanner) * 100) : null,
+        withBanner > 0 ? Math.round((bannerSuccessWithBanner / withBanner) * 100) : null,
     };
   }, [joined]);
 
