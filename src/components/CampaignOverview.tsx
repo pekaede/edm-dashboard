@@ -5,6 +5,7 @@ import {
   buildAggregatedBrand,
   formatWindowRange,
   THREE_WEEK_WINDOW,
+  windowDays,
 } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
@@ -92,6 +93,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                 <th key={w.id} scope="col" className="px-2 py-2 text-center font-semibold">
                   <div>{w.label}</div>
                   <div className="text-xs font-normal text-[var(--text-secondary)]">{w.range}</div>
+                  <div className="text-xs font-normal text-[var(--text-secondary)]">{t("campaignWeekDays", { days: windowDays(w) })}</div>
                 </th>
               ))}
               <th scope="col" className="border-l border-[var(--border-default)] px-2 py-2 text-center font-semibold text-[var(--text-body)]">
@@ -120,6 +122,9 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   const week = data.weeks[colIndex];
                   // 空窗口（grandTotal = 0）时 0/0 为 NaN，守分母显 0.0%。
                   const pct = grandTotal > 0 ? ((n / grandTotal) * 100).toFixed(1) : "0.0";
+                  // 各周覆盖天数不一（W3 为窗口余数天），tooltip 给日均便于横向比。
+                  const days = windowDays(week);
+                  const perDay = days > 0 ? (n / days).toFixed(1) : "0.0";
 
                   return (
                     <td key={colIndex} className="p-1 text-center">
@@ -129,6 +134,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                         content={<>
                           <div className="font-semibold">{b.name} · {week.label}（{week.range}）</div>
                           <div className="mt-1 font-mono font-bold">{n} {t("campaignTooltipEmails")} · {t("campaignTooltipShare")} {pct}%</div>
+                          <div className="mt-1">{t("campaignTooltipPerDay")} {perDay} {t("campaignTooltipEmails")} · {t("campaignWeekDays", { days })}</div>
                           <div className="mt-1">{meta.market} · {t("campaignTooltipDenominator")} {grandTotal} {t("campaignTooltipEmails")} · {t("campaignTooltipVisible")}</div>
                         </>}
                       >

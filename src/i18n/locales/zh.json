@@ -105,6 +105,8 @@
   "campaignTooltipShare": "三周样本占比",
   "campaignTooltipDenominator": "分母",
   "campaignTooltipVisible": "可见收录",
+  "campaignWeekDays": "{days} 天",
+  "campaignTooltipPerDay": "日均",
   "campaignLegendAriaLabel": "固定邮件量色阶，单位：封",
   "campaignVolumeLabel": "邮件量（封）",
   "campaignFooterNote": "各周桶覆盖天数可能不同；0 表示未收录，不代表实际未发送。",

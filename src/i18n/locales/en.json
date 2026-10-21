@@ -105,6 +105,8 @@
   "campaignTooltipShare": "Share of 3-week sample",
   "campaignTooltipDenominator": "Denominator",
   "campaignTooltipVisible": "visible archived",
+  "campaignWeekDays": "{days} days",
+  "campaignTooltipPerDay": "Daily avg",
   "campaignLegendAriaLabel": "Fixed email volume color scale, unit: emails",
   "campaignVolumeLabel": "Email Volume (emails)",
   "campaignFooterNote": "Days covered per weekly bucket may vary; 0 indicates not archived, not necessarily unsent.",
