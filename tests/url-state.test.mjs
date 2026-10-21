@@ -115,6 +115,29 @@ describe("URL 状态恢复", () => {
     assert.equal(buildHash(state), "#emails?to=2026-10-20");
   });
 
+  it("大月超限与非闰年 02-29 被丢弃（Date.parse 会滚入下月，不可依赖）", () => {
+    const state = parseHash("#emails?from=2026-02-30&to=2026-04-31");
+    assert.equal(state.dateFrom, "");
+    assert.equal(state.dateTo, "");
+    assert.equal(buildHash(state), "#emails");
+    const nonLeap = parseHash("#emails?from=2025-02-29");
+    assert.equal(nonLeap.dateFrom, "");
+    assert.equal(parseHash("#emails?from=2026-00-15").dateFrom, "");
+    assert.equal(parseHash("#emails?to=2026-05-00").dateTo, "");
+    assert.equal(parseHash("#emails?from=1900-02-29").dateFrom, "");
+    // buildHash 入口同样过滤脏日期，不写入 URL
+    const dirty = { ...DEFAULT_PAGE_STATE, view: "emails", dateFrom: "2026-02-30" };
+    assert.equal(buildHash(dirty).includes("from="), false);
+  });
+
+  it("闰年 02-29 与月末合法日期被保留", () => {
+    const state = parseHash("#emails?from=2024-02-29&to=2026-01-31");
+    assert.equal(state.dateFrom, "2024-02-29");
+    assert.equal(state.dateTo, "2026-01-31");
+    assert.equal(buildHash(state), "#emails?from=2024-02-29&to=2026-01-31");
+    assert.equal(parseHash("#emails?from=2000-02-29").dateFrom, "2000-02-29");
+  });
+
   it("仅设单边日期时只写一个查询参数", () => {
     const state = { ...DEFAULT_PAGE_STATE, view: "emails", dateFrom: "2026-10-01" };
     assert.equal(buildHash(state), "#emails?from=2026-10-01");

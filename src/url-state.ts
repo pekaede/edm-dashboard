@@ -84,8 +84,16 @@ function normalizeTheme(theme: string | null): string | null {
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function normalizeISODate(value: string | null | undefined): string {
   const v = value?.trim() ?? "";
-  // 正则只看形状；Date.parse 再挡掉 2026-99-99 这类不存在的日历日期。
-  return ISO_DATE_RE.test(v) && !Number.isNaN(Date.parse(v)) ? v : "";
+  // 正则只看形状；再做严格日历反向比对——Date.parse 会把 2026-02-30 这类
+  // 越界日期自动滚入下月（不返回 NaN），必须挡掉。
+  if (!ISO_DATE_RE.test(v)) return "";
+  const [y, m, d] = v.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+    ? v
+    : "";
 }
 
 /**
