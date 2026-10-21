@@ -54,6 +54,18 @@ npm run build
 
 产物在 `dist/`。
 
+构建同时预渲染首页介绍、生成 8 个中文市场落地页（`/markets/us/` 等）及 `dist/sitemap.xml`，无新增依赖。首页与 React 共用简介组件，启动后原位接管；市场页复用全站样式与分享标签，不加载 SPA 脚本。生成型 SEO 文案 v1 仅中文，不随看板语言切换。
+
+构建环境沿用 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY`，以公开只读 `HEAD` 查询当前 `LIVE_WINDOW` 内各市场的精确邮件计数。缺配置、网络失败、响应缺少精确总数或 JSON 回滚模式时不展示数字；零样本市场显示“持续收录中”。计数标注构建日期与查询窗口，重新构建才会更新。sitemap 的 `lastmod` 使用构建环境 UTC 日期，首页 daily、市场页 weekly；不再维护 `public/sitemap.xml`。
+
+构建后执行独立产物自验：
+
+```bash
+node scripts/verify-seo.mjs
+```
+
+实现、测试、产物核验及环境限制见 [SEO 实施结果](reports/seo-implementation.md)。
+
 ## 更新数据
 
 `src/data.ts` 仅作为品牌 / 主题顺序、标签等结构定义及历史资料；当前页面不使用其冻结计数或 US 编辑结论。KPI、图表、洞察、品牌弹窗、OnePage 与词云均从共享逐封数据按所选站点聚合。

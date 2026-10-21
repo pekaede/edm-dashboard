@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { DATA } from "../data";
+import { SiteIntroduction } from "./SiteIntroduction";
 import { countEmailsByMarket, useExtendedEmails } from "../email-data";
 import { useLocale } from "../i18n";
 import { LanguageToggle } from "../i18n/LanguageToggle";
@@ -27,15 +27,8 @@ export function DashboardHeader() {
 
   return (
     <header className="dashboard-header dashboard-container flex flex-col gap-[var(--card-padding)] py-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] sm:py-[var(--card-padding-sm)]">
-      <div className="flex flex-col gap-[var(--card-padding)] lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="dashboard-title text-[var(--text-heading)]">
-            {DATA.meta.title}
-          </h1>
-          <p className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-body-size)] leading-[var(--type-body-leading)] text-[var(--text-secondary)]">
-            Email Marketing Intelligence
-          </p>
-        </div>
+      <SiteIntroduction />
+      <div className="flex justify-end">
         <div className="flex flex-col items-start gap-[calc(var(--card-padding)/2)] lg:items-end">
           <div className="flex flex-wrap items-center gap-2">
             <LanguageToggle />

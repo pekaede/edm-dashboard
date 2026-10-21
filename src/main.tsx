@@ -24,6 +24,8 @@ function PageErrorFallback() {
   );
 }
 
+// 构建期首屏与 DashboardHeader 共用 SiteIntroduction；保留静态树直到首次
+// React commit 原位替换，不提前清空 root，也不在外部再挂一份简介。
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary fallback={<PageErrorFallback />}>
