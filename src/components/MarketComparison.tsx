@@ -237,7 +237,7 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
         <caption className="sr-only">{(isTheme ? t("mcCaptionTheme") : t("mcCaptionBrand")) + t("mcCaptionSuffix")}</caption>
         <thead className="bg-[var(--surface-subtle)] text-[var(--text-heading)]">
           <tr className="border-b border-[var(--border-default)]">
-            <th scope="col" className="px-3 py-3 text-left">{isTheme ? t("mcColTheme") : t("mcColBrand")}</th>
+            <th scope="col" className="sticky left-0 z-10 bg-[var(--surface-subtle)] px-3 py-3 text-left shadow-[1px_0_0_0_var(--border-default)]">{isTheme ? t("mcColTheme") : t("mcColBrand")}</th>
             {selected.map((market) => <th key={market} scope="col" className="min-w-40 px-3 py-3 text-left">{getMarketLabel(market)} · {market}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcMarketSample", { n: data.marketTotals.get(market) ?? 0 })}</span></th>)}
             <th scope="col" className="min-w-32 px-3 py-3 text-right">{t("mcColAllMarkets")}<span className="mt-1 block text-xs font-normal text-[var(--text-secondary)]">{t("mcColAllMarketsSub")}</span></th>
           </tr>
@@ -250,7 +250,7 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
             const total = totalsByRow.get(row.key) ?? 0;
             return (
               <tr key={row.key} className="border-b border-[var(--divider-table)]">
-                <th scope="row" className="px-3 py-3 text-left font-semibold text-[var(--text-heading)]"><span className="inline-flex items-center gap-2">{isTheme ? <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: themeColor(row.key) }} /> : null}{row.label}</span></th>
+                <th scope="row" className="sticky left-0 z-10 bg-[var(--surface-card)] px-3 py-3 text-left font-semibold text-[var(--text-heading)] shadow-[1px_0_0_0_var(--border-default)]"><span className="inline-flex items-center gap-2">{isTheme ? <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: themeColor(row.key) }} /> : null}{row.label}</span></th>
                 {selected.map((market, index) => {
                   const count = counts[index];
                   const marketTotal = data.marketTotals.get(market) ?? 0;
@@ -283,7 +283,7 @@ function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; sele
         </tbody>
         <tfoot className="bg-[var(--surface-subtle)] font-bold text-[var(--text-heading)]">
           <tr>
-            <th scope="row" className="px-3 py-3 text-left">{t("mcMarketTotal")}</th>
+            <th scope="row" className="sticky left-0 z-10 bg-[var(--surface-subtle)] px-3 py-3 text-left shadow-[1px_0_0_0_var(--border-default)]">{t("mcMarketTotal")}</th>
             {selected.map((market) => {
               const total = data.marketTotals.get(market) ?? 0;
               return (
