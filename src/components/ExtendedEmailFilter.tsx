@@ -341,6 +341,7 @@ export function ExtendedEmailFilter() {
   );
 
   const listId = useId();
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
   const lastWindowScrollRef = useRef<number>(0);
@@ -858,6 +859,7 @@ export function ExtendedEmailFilter() {
   const handleClearSearch = () => {
     setVisibleCount(PAGE_SIZE);
     setQuery("");
+    searchInputRef.current?.focus();
   };
 
   const handleToggleFavorite = (email: EmailRecord) => {
@@ -1147,6 +1149,7 @@ export function ExtendedEmailFilter() {
               </div>
               <input
                 id={`${listId}-search`}
+                ref={searchInputRef}
                 type="search"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
