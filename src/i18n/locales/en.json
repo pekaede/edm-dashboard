@@ -630,7 +630,7 @@
   "opVerify2": "Sending frequency should be tested against your own users' intent and unsubscribe feedback; do not treat competitors' visibly collected volume as a sending target.",
   "opVerify3": "All copy and banner approaches still require separate evidence; this report only summarizes the current site's records and does not reuse historical US editorial conclusions.",
   "viewBrands": "Brand overview",
-  "boHint": "Laid out like Panoramata company pages: a last-30-days statistics card plus last-90-days email and ad cards; — means unavailable.",
+  "boHint": "Laid out like Panoramata company pages: a last-30-days statistics card plus last-90-days email and ad cards; metrics the source does not provide are not shown.",
   "boEmpty": "No brand overview data",
   "boError": "Failed to load brand overview",
   "boMarket": "Market",

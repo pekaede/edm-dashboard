@@ -116,6 +116,7 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const fmtInt = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 0 });
   const fmtDec = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 2 });
   const fmtPct1 = (value: number | null) => value === null ? "—" : `${value.toLocaleString(localeTag, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  const hasWords = (words: string[] | null) => (words ?? []).some(Boolean);
   return <div className="min-w-0 space-y-6">
     <h1 className="card-title text-[var(--text-heading)]">{t("viewBrands")}</h1>
     <p className="text-sm text-[var(--text-secondary)]">{t("boHint")}</p>
@@ -136,7 +137,40 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
           {sourceUrl && <a href={sourceUrl} target="_blank" rel="noreferrer" className="text-[13px] font-medium text-[var(--accent-ink)] underline underline-offset-2">Panoramata ↗</a>}
         </header>
         {brandRows.map((row) => {
-          const imagesPct = row.video_share_pct === null ? null : Math.round((100 - row.video_share_pct) * 10) / 10;
+          // 无数据的指标不展示；整张卡片无数据时整卡不展示（与 Panoramata 页面行为一致）。
+          const stats30: ReactNode[] = [];
+          if (row.new_emails_sent_30d !== null) stats30.push(<Stat30 key="emails" label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)}>
+            <DeltaSub prev={row.prev_new_emails_sent_30d} delta={row.delta_new_emails_sent_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+          </Stat30>);
+          if (row.new_ads_30d !== null) stats30.push(<Stat30 key="ads" label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)}>
+            <DeltaSub prev={row.prev_new_ads_30d} delta={row.delta_new_ads_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+          </Stat30>);
+          if (row.avg_email_scoring_pct !== null) stats30.push(<Stat30 key="scoring" label={t("boAvgScoringPlain")} value={`${fmtDec(row.avg_email_scoring_pct)}%`}>
+            <DeltaSub prev={row.prev_avg_email_scoring_pct} delta={row.delta_avg_email_scoring_pct} formatPrev={(v) => `${fmtDec(v)}%`} fromLabel={t("boFromPrev")} />
+          </Stat30>);
+          if (row.unique_copy_30d !== null) stats30.push(<Stat30 key="copy" label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)}>
+            <DeltaSub prev={row.prev_unique_copy_30d} delta={row.delta_unique_copy_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+          </Stat30>);
+          const emailLeft: ReactNode[] = [];
+          if (row.avg_subject_length !== null) emailLeft.push(<MetricRow key="subject" label={t("boSubjectPlain")}><HealthValue dot={healthDot("subject", row.avg_subject_length)}>{`${fmtDec(row.avg_subject_length)} ${t("boUnitChars")}`}</HealthValue></MetricRow>);
+          if (row.avg_email_size_kb !== null) emailLeft.push(<MetricRow key="size" label={t("boSizePlain")}><HealthValue dot={healthDot("size", row.avg_email_size_kb)}>{`${fmtDec(row.avg_email_size_kb)} Kb`}</HealthValue></MetricRow>);
+          if (row.avg_spam_score !== null) emailLeft.push(<MetricRow key="spam" label={t("boSpamPlain")}><HealthValue dot={healthDot("spam", row.avg_spam_score)}>{fmtDec(row.avg_spam_score)}</HealthValue></MetricRow>);
+          if (row.sending_provider) emailLeft.push(<MetricRow key="provider" label={t("boProvider")}>{row.sending_provider}</MetricRow>);
+          const emailRight: ReactNode[] = [];
+          if (hasWords(row.email_top_keywords)) emailRight.push(<MetricRow key="words" label={t("boEmailWords")}><KeywordChips words={row.email_top_keywords} /></MetricRow>);
+          const adsLeft: ReactNode[] = [];
+          if (row.avg_ad_live_days !== null) adsLeft.push(<MetricRow key="live" label={t("boAvgLivePlain")}>{`${fmtDec(row.avg_ad_live_days)} ${t("boUnitDays")}`}</MetricRow>);
+          if (row.video_share_pct !== null) {
+            const imagesPct = Math.round((100 - row.video_share_pct) * 10) / 10;
+            adsLeft.push(<MetricRow key="media" label={t("boMediaSplit")}>{`${fmtPct1(imagesPct)} ${t("boImagesWord")} | ${fmtPct1(row.video_share_pct)} ${t("boVideosWord")}`}</MetricRow>);
+          }
+          if (row.new_ads_90d !== null && row.new_copy_90d !== null) adsLeft.push(<MetricRow key="newvs" label={t("boNewVsCopy")}>{`${fmtInt(row.new_ads_90d)} ${t("boNewAdsWord")} / ${fmtInt(row.new_copy_90d)} ${t("boNewCopyWord")}`}</MetricRow>);
+          const adsRight: ReactNode[] = [];
+          if (hasWords(row.top_keywords)) adsRight.push(<MetricRow key="words" label={t("boAdWords")}><KeywordChips words={row.top_keywords} /></MetricRow>);
+          if (row.emoji_use_pct !== null) adsRight.push(<MetricRow key="emoji" label={t("boEmojiPlain")}>{fmtPct1(row.emoji_use_pct)}</MetricRow>);
+          const showStats = stats30.length > 0;
+          const showEmails = emailLeft.length + emailRight.length > 0;
+          const showAds = adsLeft.length + adsRight.length > 0;
           return <div key={row.market} className="mb-8 last:mb-0">
             <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
               <h3 className="text-[15px] font-bold text-[var(--text-heading)]">{row.market}</h3>
@@ -144,50 +178,23 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
               {row.tracked_site_url && <a href={row.tracked_site_url} target="_blank" rel="noreferrer" className="text-[13px] text-[var(--accent-ink)] underline underline-offset-2">{row.tracked_site_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>}
               <span className="text-xs tabular-nums text-[var(--text-secondary)]">{t("bo_emails_archived")} {fmtInt(row.emails_archived)} · {t("bo_total_ads")} {fmtInt(row.total_ads)} · {t("bo_landing_pages_tracked")} {fmtInt(row.landing_pages_tracked)}{row.latest_activity_date ? ` · ${t("boLatest")} ${row.latest_activity_date}` : ""}</span>
             </div>
-            <div className="space-y-4">
-              <PanaCard title={t("boStats30Title")}>
-                <div className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
-                  <Stat30 label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)}>
-                    <DeltaSub prev={row.prev_new_emails_sent_30d} delta={row.delta_new_emails_sent_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
-                  </Stat30>
-                  <Stat30 label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)}>
-                    <DeltaSub prev={row.prev_new_ads_30d} delta={row.delta_new_ads_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
-                  </Stat30>
-                  <Stat30 label={t("boAvgScoringPlain")} value={row.avg_email_scoring_pct === null ? "—" : `${fmtDec(row.avg_email_scoring_pct)}%`}>
-                    <DeltaSub prev={row.prev_avg_email_scoring_pct} delta={row.delta_avg_email_scoring_pct} formatPrev={(v) => `${fmtDec(v)}%`} fromLabel={t("boFromPrev")} />
-                  </Stat30>
-                  <Stat30 label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)}>
-                    <DeltaSub prev={row.prev_unique_copy_30d} delta={row.delta_unique_copy_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
-                  </Stat30>
-                </div>
-              </PanaCard>
-              <PanaCard title={t("boEmails90Title")}>
+            {(showStats || showEmails || showAds) && <div className="space-y-4">
+              {showStats && <PanaCard title={t("boStats30Title")}>
+                <div className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">{stats30}</div>
+              </PanaCard>}
+              {showEmails && <PanaCard title={t("boEmails90Title")}>
                 <div className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <MetricRow label={t("boSubjectPlain")}><HealthValue dot={healthDot("subject", row.avg_subject_length)}>{row.avg_subject_length === null ? "—" : `${fmtDec(row.avg_subject_length)} ${t("boUnitChars")}`}</HealthValue></MetricRow>
-                    <MetricRow label={t("boSizePlain")}><HealthValue dot={healthDot("size", row.avg_email_size_kb)}>{row.avg_email_size_kb === null ? "—" : `${fmtDec(row.avg_email_size_kb)} Kb`}</HealthValue></MetricRow>
-                    <MetricRow label={t("boSpamPlain")}><HealthValue dot={healthDot("spam", row.avg_spam_score)}>{fmtDec(row.avg_spam_score)}</HealthValue></MetricRow>
-                    <MetricRow label={t("boProvider")}>{row.sending_provider || "—"}</MetricRow>
-                  </div>
-                  <div className="space-y-4">
-                    <MetricRow label={t("boEmailWords")}><KeywordChips words={row.email_top_keywords} /></MetricRow>
-                  </div>
+                  {emailLeft.length > 0 && <div className={`space-y-4 ${emailRight.length === 0 ? "md:col-span-2" : ""}`}>{emailLeft}</div>}
+                  {emailRight.length > 0 && <div className={`space-y-4 ${emailLeft.length === 0 ? "md:col-span-2" : ""}`}>{emailRight}</div>}
                 </div>
-              </PanaCard>
-              <PanaCard title={t("boAds90Title")}>
+              </PanaCard>}
+              {showAds && <PanaCard title={t("boAds90Title")}>
                 <div className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <MetricRow label={t("boAvgLivePlain")}>{row.avg_ad_live_days === null ? "—" : `${fmtDec(row.avg_ad_live_days)} ${t("boUnitDays")}`}</MetricRow>
-                    <MetricRow label={t("boMediaSplit")}>{imagesPct === null ? "—" : `${fmtPct1(imagesPct)} ${t("boImagesWord")} | ${fmtPct1(row.video_share_pct)} ${t("boVideosWord")}`}</MetricRow>
-                    <MetricRow label={t("boNewVsCopy")}>{row.new_ads_90d === null || row.new_copy_90d === null ? "—" : `${fmtInt(row.new_ads_90d)} ${t("boNewAdsWord")} / ${fmtInt(row.new_copy_90d)} ${t("boNewCopyWord")}`}</MetricRow>
-                  </div>
-                  <div className="space-y-4">
-                    <MetricRow label={t("boAdWords")}><KeywordChips words={row.top_keywords} /></MetricRow>
-                    <MetricRow label={t("boEmojiPlain")}>{fmtPct1(row.emoji_use_pct)}</MetricRow>
-                  </div>
+                  {adsLeft.length > 0 && <div className={`space-y-4 ${adsRight.length === 0 ? "md:col-span-2" : ""}`}>{adsLeft}</div>}
+                  {adsRight.length > 0 && <div className={`space-y-4 ${adsLeft.length === 0 ? "md:col-span-2" : ""}`}>{adsRight}</div>}
                 </div>
-              </PanaCard>
-            </div>
+              </PanaCard>}
+            </div>}
           </div>;
         })}
       </div>;
