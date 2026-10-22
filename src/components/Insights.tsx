@@ -11,7 +11,7 @@ import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 const INSIGHT_THEMES = ["price", "behavior", "new", "lifestyle"];
 
 export function Insights() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const emailData = useSiteEmails();
   const { market, setMarket } = useSiteSelection();
 
@@ -21,8 +21,9 @@ export function Insights() {
   );
 
   const insights = useMemo(
-    () => (aggregated ? buildSiteInsights(aggregated) : []),
-    [aggregated],
+    () => (aggregated ? buildSiteInsights(aggregated, t) : []),
+    // locale 必须入依赖：洞察句由注入的 t 按当前语言生成，切换语言要重算（t 本身每渲染重建，不直接入依赖）。
+    [aggregated, locale],
   );
 
   if (emailData.status !== "ready") {

@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  aggregateThreeWeek,
-  buildAggregatedBrand,
-} from "../src/three-week-aggregation.ts";
+import { sourceGraph } from "./mounted-source.mjs";
+
+// buildAggregatedBrand 的 strategy 是生成型文本，改走注入翻译函数后用真实 i18n 固定 zh 验证。
+const graph = sourceGraph();
+const { aggregateThreeWeek, buildAggregatedBrand } = graph.load("three-week-aggregation.ts");
+const { translateIn } = graph.load("i18n/index.tsx");
+const trZh = (key, values) => translateIn("zh", key, values);
 
 describe("品牌 0 收录文案（免责口径）", () => {
   const emails = [
@@ -12,7 +15,7 @@ describe("品牌 0 收录文案（免责口径）", () => {
   const data = aggregateThreeWeek(emails);
 
   it("窗口内 0 收录的品牌文案声明未收录不等于未发送", () => {
-    const brand = buildAggregatedBrand(data, "Temu");
+    const brand = buildAggregatedBrand(data, "Temu", trZh);
     assert.equal(brand.total, 0);
     assert.equal(
       brand.strategy,
@@ -22,7 +25,7 @@ describe("品牌 0 收录文案（免责口径）", () => {
   });
 
   it("有收录的品牌文案保持收录口径不变", () => {
-    const brand = buildAggregatedBrand(data, "Zara");
+    const brand = buildAggregatedBrand(data, "Zara", trZh);
     assert.equal(brand.total, 1);
     assert.ok(brand.strategy.includes("三周窗口收录 1 封"));
   });

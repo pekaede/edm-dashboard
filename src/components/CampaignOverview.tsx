@@ -111,7 +111,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
                   <button
                     type="button"
                     className="inline-flex min-h-9 items-center rounded-md px-1.5 py-0.5 text-left font-semibold text-[var(--text-body)] transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ink)]"
-                    onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name))}
+                    onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name, t))}
                   >
                     {b.name}
                   </button>
