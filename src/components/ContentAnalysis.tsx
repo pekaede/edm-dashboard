@@ -865,7 +865,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   // 3. 错误状态（请求失败重试）
   if (error) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
+      <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
         <h3 className="text-base font-semibold">{t("caFailedTitle")}</h3>
         <p className="mt-2 text-xs leading-relaxed opacity-90 break-words">{error}</p>
         <button
