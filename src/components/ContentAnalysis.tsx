@@ -1198,7 +1198,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           type="button"
                           aria-expanded={isSelected}
                           onClick={() => setSelectedTrend(isSelected ? null : key)}
-                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
+                          className={`relative before:absolute before:-inset-1 before:content-[""] inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
                               ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]"
                               : "border-[var(--border-default)] bg-[var(--surface-subtle)] text-[var(--text-body)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
