@@ -1229,6 +1229,7 @@ export function ExtendedEmailFilter() {
                 );
                 setShowOnlyFavorites(false);
                 setVisibleCount(PAGE_SIZE);
+                searchInputRef.current?.focus();
               }}
             />
           </div>
