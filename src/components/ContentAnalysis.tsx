@@ -565,8 +565,8 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   const [selectedBrands, setSelectedBrands] = useState<ReadonlySet<string>>(new Set());
   const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
   const [selectedTrend, setSelectedTrend] = useState<string | null>(null);
-  const tacticChipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const trendChipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const tacticChipRefs = useRef(new Map<string, HTMLButtonElement>());
+  const trendChipRefs = useRef(new Map<string, HTMLButtonElement>());
   // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
   const activeWindow =
     period === "threeWeeks"
@@ -1042,8 +1042,8 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         <button
                           key={item.key}
                           ref={(el) => {
-                            if (el) tacticChipRefs.current[item.key] = el;
-                            else delete tacticChipRefs.current[item.key];
+                            if (el) tacticChipRefs.current.set(item.key, el);
+                            else tacticChipRefs.current.delete(item.key);
                           }}
                           type="button"
                           aria-expanded={isSelected}
@@ -1084,7 +1084,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         onClick={() => {
                           setSelectedTactic(null);
                           const k = effectiveTactic;
-                          if (k) tacticChipRefs.current[k]?.focus();
+                          if (k) tacticChipRefs.current.get(k)?.focus();
                         }}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
@@ -1206,8 +1206,8 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         <button
                           key={key}
                           ref={(el) => {
-                            if (el) trendChipRefs.current[key] = el;
-                            else delete trendChipRefs.current[key];
+                            if (el) trendChipRefs.current.set(key, el);
+                            else trendChipRefs.current.delete(key);
                           }}
                           type="button"
                           aria-expanded={isSelected}
@@ -1253,7 +1253,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                         onClick={() => {
                           setSelectedTrend(null);
                           const k = effectiveTrend;
-                          if (k) trendChipRefs.current[k]?.focus();
+                          if (k) trendChipRefs.current.get(k)?.focus();
                         }}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
