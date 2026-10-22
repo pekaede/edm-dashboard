@@ -412,7 +412,7 @@ function Dashboard() {
   return (
     <div className="dashboard-shell min-h-screen font-sans text-[var(--text-body)] antialiased">
       <SectionErrorBoundary>
-        <DashboardHeader />
+        <DashboardHeader view={view} />
       </SectionErrorBoundary>
 
       <main className="dashboard-container space-y-[var(--card-padding)] pb-[calc(var(--card-padding)*2)] sm:space-y-[var(--card-padding-sm)] sm:pb-[calc(var(--card-padding-sm)*2)]">

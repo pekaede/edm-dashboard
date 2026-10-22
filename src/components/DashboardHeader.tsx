@@ -8,8 +8,10 @@ import { useSiteThreeWeekData, useSiteSelection } from "../site-data";
 import { MarketFilter } from "./MarketFilter";
 import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
 
-export function DashboardHeader() {
+export function DashboardHeader({ view }: { view?: string }) {
   const { t } = useLocale();
+  // 品牌概览用的是 Panoramata 数据，与邮件样本无关：不展示研究周期与全局站点（市场）选择区。
+  const isBrands = view === "brands";
   const { status, meta, data } = useSiteThreeWeekData();
   const allEmails = useExtendedEmails();
   const { market, setMarket } = useSiteSelection();
@@ -33,13 +35,13 @@ export function DashboardHeader() {
             <LanguageToggle />
             <ThemeToggle />
           </div>
-          <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
+          {!isBrands && <div className="min-w-0 max-w-full border-l-2 border-[var(--accent-ink)] pl-[var(--card-padding)] lg:text-right">
             <p className="text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">{t("headerStudyPeriod")}</p>
             <p className="mt-[calc(var(--card-padding)/4)] text-[length:var(--type-body-size)] font-[number:var(--type-h3-weight)] leading-[var(--type-body-leading)] text-[var(--text-body)] tabular-nums">{formatWindowRange(THREE_WEEK_WINDOW)}</p>
-          </div>
+          </div>}
         </div>
       </div>
-      <section
+      {!isBrands && <section
         aria-labelledby="global-site-title"
         className="space-y-[var(--card-padding)] rounded-[var(--card-radius)] border border-[var(--border-strong)] bg-[var(--surface-raised)] p-[var(--card-padding)] shadow-[var(--card-shadow)] sm:p-[var(--card-padding-sm)]"
       >
@@ -68,7 +70,7 @@ export function DashboardHeader() {
           {meta.source} · {t("headerQueryFixedTo")} {meta.windowEnd}{t("headerSiteLinkedDescription")}
           {status === "loading" ? t("headerCountLoading") : null}
         </p>
-      </section>
+      </section>}
     </header>
   );
 }
