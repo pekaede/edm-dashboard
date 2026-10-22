@@ -1219,7 +1219,11 @@ export function ExtendedEmailFilter() {
               description={t("efNoResultDesc", { summary: filterSummary })}
               actionLabel={t("efResetFilterSearch")}
               onAction={() => {
-                setUrlState((current) => ({ ...current, brand: "all", theme: null, query: "", dateFrom: "", dateTo: "" }));
+                // 重置走 replace 语义：不把空结果页本身写入历史栈，避免按后退又退回空结果。
+                setUrlState(
+                  (current) => ({ ...current, brand: "all", theme: null, query: "", dateFrom: "", dateTo: "" }),
+                  { replace: true },
+                );
                 setShowOnlyFavorites(false);
                 setVisibleCount(PAGE_SIZE);
               }}
