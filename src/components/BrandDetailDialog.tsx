@@ -4,7 +4,7 @@ import type { Brand } from "../data";
 import { DATA } from "../data";
 import { useLocale } from "../i18n";
 import { themeColor, themeTint } from "../three-week-aggregation";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 
 interface BrandDetailDialogProps {
   brand: Brand;
@@ -13,8 +13,10 @@ interface BrandDetailDialogProps {
 
 export function BrandDetailDialog({ brand, onClose }: BrandDetailDialogProps) {
   const { t } = useLocale();
-  const themeName = (theme: { key: string; labelZh: string }) =>
-    THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh;
+  const themeName = (theme: { key: string; labelZh: string }) => {
+    const key = themeLabelKeyOf(theme.key);
+    return key ? t(key) : theme.labelZh;
+  };
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();

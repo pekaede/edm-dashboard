@@ -9,7 +9,7 @@ import {
 } from "../email-data";
 import { useLocale, type DictionaryKey } from "../i18n";
 import { Card } from "./Card";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
 import { Tooltip } from "./Tooltip";
@@ -227,8 +227,12 @@ function shareLabel(count: number, total: number): string {
 
 function ComparisonMatrix({ data, selected, view }: { data: ComparisonData; selected: string[]; view: "brand" | "theme" }) {
   const { t } = useLocale();
+  const themeName = (theme: { key: string; labelZh: string }) => {
+    const key = themeLabelKeyOf(theme.key);
+    return key ? t(key) : theme.labelZh;
+  };
   const isTheme = view === "theme";
-  const rows = isTheme ? data.themes.map((theme) => ({ key: theme.key, label: THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh })) : data.brands.map((brand) => ({ key: brand, label: brand }));
+  const rows = isTheme ? data.themes.map((theme) => ({ key: theme.key, label: themeName(theme) })) : data.brands.map((brand) => ({ key: brand, label: brand }));
   const countsByRow = isTheme ? data.themeMarket : data.brandMarket;
   const totalsByRow = isTheme ? data.themeTotals : data.brandTotals;
   return (

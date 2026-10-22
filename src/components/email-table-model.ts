@@ -11,7 +11,7 @@ import {
 import { getEmailMarket, matchesMarket, type EmailRecord } from "../email-data";
 import { createFavoriteKey } from "../favorites";
 import { translateIn } from "../i18n";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 
 // 仅注册邮件列表使用的功能；URL、日期和收藏仍由原有入口提供受控状态。
 export const emailTableFeatures = tableFeatures({
@@ -53,7 +53,7 @@ function matchesEmail(email: EmailRecord, filters: EmailTableFilters): boolean {
   if (filters.favoritesOnly && !filters.favoriteKeys.has(getEmailRowKey(email))) return false;
   const q = filters.query.trim().toLowerCase();
   if (!q) return true;
-  const themeKey = THEME_LABEL_KEYS[email.theme];
+  const themeKey = themeLabelKeyOf(email.theme);
   const matchesTheme = themeKey
     ? translateIn("zh", themeKey).toLowerCase().includes(q) || translateIn("en", themeKey).toLowerCase().includes(q)
     : email.theme.toLowerCase().includes(q);

@@ -11,7 +11,7 @@ import {
 import { getEmailMarket } from "../email-data";
 import { getCurrentLocale, translate, useLocale, type DictionaryKey } from "../i18n";
 import { useSiteEmails, useSiteSelection } from "../site-data";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
@@ -145,7 +145,7 @@ function getHeatColor(count: number, minimum: number, maximum: number): string {
 }
 
 function getThemeLabel(theme: string): string {
-  const key = THEME_LABEL_KEYS[theme];
+  const key = themeLabelKeyOf(theme);
   return key ? translate(key) : theme;
 }
 
