@@ -139,7 +139,7 @@ export function renderMarketDocument(homeHtml: string, page: MarketPage): string
       ${page.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n      ")}
       <section aria-labelledby="brands-title">
         <h2 id="brands-title" class="section-title">关注品牌</h2>
-        <ul class="seo-link-list">${page.brands.map((brand) => `<li>${escapeHtml(brand)}</li>`).join("")}</ul>
+        <ul class="seo-link-list">${page.brands.map((brand) => `<li><a href="/#brands/all/${encodeURIComponent(brand)}">${escapeHtml(brand)}</a></li>`).join("")}</ul>
         <small>全站关注品牌列表，各市场不保证覆盖全部品牌。</small>
       </section>
       <nav aria-label="进入看板"><a href="${escapeHtml(page.emailsUrl)}">进入${escapeHtml(page.name)}市场看板 · 邮件视图</a></nav>

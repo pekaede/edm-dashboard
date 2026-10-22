@@ -60,7 +60,7 @@ assert.ok(staticRoot?.includes("<h1"));
 assert.match(staticRoot, /覆盖 8 个市场、6 个品牌/);
 assert.doesNotMatch(staticRoot, /\d[\d,]*\s*封/);
 assert.equal(tags(staticRoot, "a").filter((tag) => attr(tag, "href").startsWith("/markets/")).length, 8);
-for (const brand of brands) assert.ok(staticRoot.includes(`<li>${brand}</li>`));
+for (const brand of brands) assert.ok(staticRoot.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
 for (const view of ["emails", "dashboard", "report"]) assert.ok(staticRoot.includes(`href="/#${view}"`));
 assert.ok(tags(home, "script").some((tag) => attr(tag, "type") === "module"));
 console.log("PASS dist/index.html: root 内 H1 + 简介 + 8 市场入口 + 6 品牌 + 3 视图链接；WebSite/Organization JSON-LD");
@@ -85,7 +85,7 @@ for (const [code, name] of markets) {
   assert.ok(html.includes(`<h1 class="dashboard-title">${name}市场邮件营销分析</h1>`));
   assert.equal(tags(html, "p").length, 3);
   for (const brand of brands) {
-    assert.ok(html.includes(`<li>${brand}</li>`));
+    assert.ok(html.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
     assert.ok(meta(html, "description").includes(brand));
   }
   assert.ok(html.includes('href="/">返回首页'));

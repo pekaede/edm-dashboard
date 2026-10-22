@@ -33,7 +33,11 @@ export function SiteIntroduction() {
         </ul>
       </nav>
       <ul className="seo-link-list seo-brand-list" aria-label={t("introBrandsLabel")}>
-        {SEO_BRANDS.map((brand) => <li key={brand}>{brand}</li>)}
+        {SEO_BRANDS.map((brand) => (
+          <li key={brand}>
+            <a href={`/#brands/all/${encodeURIComponent(brand)}`}>{brand}</a>
+          </li>
+        ))}
       </ul>
       <p>
         {t("introOutroA")}<a href="/#emails">{t("introOutroEmails")}</a>{t("introOutroB")}<a href="/#dashboard">{t("introOutroDashboard")}</a>{t("introOutroC")}<a href="/#report">{t("introOutroReport")}</a>{t("introOutroD")}

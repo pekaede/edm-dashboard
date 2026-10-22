@@ -24,6 +24,11 @@ const metrics = [
   "avg_spam_score",
 ] as const;
 
+/** 品牌锚点 id：小写连字符 slug（Halara→halara、ALO Yoga→alo-yoga），供深链接与页内导航共用。 */
+export function brandOverviewSlug(brand: string): string {
+  return brand.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 function displayDate(value: string | null, locale: string): string {
   if (!value) return "—";
   const date = new Date(value);
@@ -31,11 +36,12 @@ function displayDate(value: string | null, locale: string): string {
     ? date.toLocaleString(locale === "zh" ? "zh-CN" : "en-US", { timeZone: "UTC" }) : "—";
 }
 
-export function BrandOverview() {
+export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const { t, locale } = useLocale();
   const [rows, setRows] = useState<BrandOverviewRow[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     setRows(null);
@@ -46,6 +52,20 @@ export function BrandOverview() {
     );
     return () => controller.abort();
   }, [attempt]);
+  // 深链接聚焦：URL 带品牌段（如 #brands/all/Halara）时，数据就绪后滚动到该品牌区块并短暂高亮。
+  useEffect(() => {
+    if (!rows || !focusBrand) return;
+    const wanted = focusBrand.trim().toLowerCase();
+    const target = rows.find((row) => row.brand.toLowerCase() === wanted)?.brand;
+    if (!target) return;
+    const slug = brandOverviewSlug(target);
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(`brand-overview-${slug}`)?.scrollIntoView({ block: "start" });
+      setHighlight(slug);
+    }, 60);
+    const clearTimer = window.setTimeout(() => setHighlight(null), 2200);
+    return () => { window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
+  }, [rows, focusBrand]);
   if (failed) return <EmptyState title={t("boError")} actionLabel={t("ebRetry")} onAction={() => setAttempt((n) => n + 1)} />;
   if (!rows) return <LoadingBlock label={t("loading")} />;
   if (rows.length === 0) return <EmptyState title={t("boEmpty")} />;
@@ -56,8 +76,8 @@ export function BrandOverview() {
   return <div className="min-w-0 space-y-6">
     <h1 className="card-title text-[var(--text-heading)]">{t("viewBrands")}</h1>
     <p className="text-sm text-[var(--text-secondary)]">{t("boHint")}</p>
-    <PageNav sections={brands.map((brand, index) => ({ id: `brand-overview-${index}`, label: brand }))} />
-    {brands.map((brand, index) => <div key={brand} id={`brand-overview-${index}`} className="scroll-mt-20 min-w-0">
+    <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />
+    {brands.map((brand) => <div key={brand} id={`brand-overview-${brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === brandOverviewSlug(brand) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
       <Card title={brand}>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">

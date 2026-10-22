@@ -116,7 +116,7 @@ describe("SEO 首页预渲染与静态文档", () => {
     assert.ok(root.includes(SITE_TITLE));
     assert.ok(root.includes("覆盖 8 个市场、6 个品牌"));
     for (const { code, name } of SEO_MARKETS) assert.ok(root.includes(`href="/markets/${code}/">${name}</a>`));
-    for (const brand of SEO_BRANDS) assert.ok(root.includes(`<li>${brand}</li>`));
+    for (const brand of SEO_BRANDS) assert.ok(root.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
     for (const view of ["emails", "dashboard", "report"]) assert.ok(root.includes(`href="/#${view}"`));
     assert.doesNotMatch(root, /\d[\d,]*\s*封|Milled|Supabase/i);
     assert.match(html, /<script type="module" src="\/src\/main.tsx"><\/script>/);
@@ -168,7 +168,7 @@ describe("SEO 首页预渲染与静态文档", () => {
       assert.ok(html.includes('href="/">返回首页'));
       assert.equal((html.match(/<h1\b/g) ?? []).length, 1);
       assert.equal((html.match(/<p>/g) ?? []).length, 3);
-      for (const brand of SEO_BRANDS) assert.ok(html.includes(`<li>${brand}</li>`));
+      for (const brand of SEO_BRANDS) assert.ok(html.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
       assert.match(html, /各市场不保证覆盖全部品牌/);
       assert.match(html, /\/assets\/index-test.css/);
       assert.match(html, /application\/ld\+json/);

@@ -59,7 +59,7 @@ describe("SiteIntroduction i18n 接入", () => {
     const zhMarkup = renderToStaticMarkup(createElement(SiteIntroduction));
     assert.ok(zhMarkup.includes(`<h1 class="dashboard-title seo-intro-title text-[var(--text-heading)]">${SITE_TITLE}</h1>`));
     for (const { code, name } of SEO_MARKETS) assert.ok(zhMarkup.includes(`href="/markets/${code}/">${name}</a>`));
-    for (const brand of SEO_BRANDS) assert.ok(zhMarkup.includes(`<li>${brand}</li>`));
+    for (const brand of SEO_BRANDS) assert.ok(zhMarkup.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
     for (const view of ["emails", "dashboard", "report"]) assert.ok(zhMarkup.includes(`href="/#${view}"`));
 
     await i18n.changeLanguage("en");
@@ -73,7 +73,7 @@ describe("SiteIntroduction i18n 接入", () => {
       assert.ok(enMarkup.includes("Open the "));
       assert.doesNotMatch(enMarkup, /品牌营销|覆盖 8 个市场|邮件视图|数据看板|市场入口|关注品牌|美国|英国|澳大利亚|法国|德国|意大利|西班牙|荷兰/);
       // 品牌专名与副标题两语一致，保留原文。
-      for (const brand of SEO_BRANDS) assert.ok(enMarkup.includes(`<li>${brand}</li>`));
+      for (const brand of SEO_BRANDS) assert.ok(enMarkup.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
       assert.ok(enMarkup.includes("Email Marketing Intelligence"));
       for (const { code } of SEO_MARKETS) assert.ok(enMarkup.includes(`href="/markets/${code}/"`));
     } finally {
@@ -81,10 +81,10 @@ describe("SiteIntroduction i18n 接入", () => {
     }
   });
 
-  it("市场链接为胶囊样式且 href 不变，品牌 li 无属性（样式走父级）", () => {
+  it("市场链接为胶囊样式且 href 不变，品牌为直达品牌概览的链接（样式走父级）", () => {
     assert.ok(source.includes('className="seo-market-pill"'), "市场链接必须带胶囊类");
     assert.ok(source.indexOf('className="seo-market-pill"') < source.indexOf("href={`/markets/"), "class 须在 href 之前，保证预渲染字面形态");
     assert.ok(source.includes('className="seo-link-list seo-brand-list"'), "品牌列表须走 seo-brand-list 父级样式");
-    assert.ok(source.includes("{SEO_BRANDS.map((brand) => <li key={brand}>{brand}</li>)}"), "品牌 li 不得带 class 等属性");
+    assert.ok(source.includes('href={`/#brands/all/${encodeURIComponent(brand)}`}'), "品牌须链接到品牌概览对应品牌（#brands/all/<品牌>）");
   });
 });

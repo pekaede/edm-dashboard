@@ -493,6 +493,23 @@ summary,
   letter-spacing: 0.04em;
 }
 
+.seo-introduction .seo-brand-list a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.seo-introduction .seo-brand-list a:hover {
+  color: var(--text-heading);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.seo-introduction .seo-brand-list a:focus-visible {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

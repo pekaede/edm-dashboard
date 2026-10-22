@@ -489,7 +489,7 @@ function Dashboard() {
         ) : view === "brands" ? (
           <>
             {viewNavigation}
-            <LazySection load={loadBrandOverview} componentProps={{}} className="min-h-96" />
+            <LazySection load={loadBrandOverview} componentProps={{ focusBrand: urlState.brand && urlState.brand !== "all" ? urlState.brand : null }} className="min-h-96" />
           </>
         ) : view === "report" ? (
           <>
