@@ -4,6 +4,7 @@ import { it } from "node:test";
 
 const tooltip = readFileSync(new URL("../src/components/Tooltip.tsx", import.meta.url), "utf8");
 const themeDistribution = readFileSync(new URL("../src/components/ThemeDistribution.tsx", import.meta.url), "utf8");
+const brandThemeBreakdown = readFileSync(new URL("../src/components/BrandThemeBreakdown.tsx", import.meta.url), "utf8");
 
 it("Tooltip 声明可选 anchorRole，默认 img 并用于锚点角色", () => {
   const props = tooltip.match(/export interface TooltipProps\s*\{([\s\S]*?)\n\}/)?.[1];
@@ -21,4 +22,8 @@ it("Tooltip 声明可选 anchorRole，默认 img 并用于锚点角色", () => {
 
 it("主题环图的 Tooltip 使用 group 保留 SVG 切片链接语义", () => {
   assert.match(themeDistribution, /<Tooltip\b[^>]*\banchorRole="group"/);
+});
+
+it("BrandBar 的 Tooltip 使用 group 保留 SVG 分段语义", () => {
+  assert.match(brandThemeBreakdown, /<Tooltip\b[^>]*\banchorRole="group"/);
 });

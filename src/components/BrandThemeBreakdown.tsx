@@ -180,6 +180,7 @@ const BrandBar = memo(function BrandBar({ brandName, brandTotal, segs, chartConf
     <div className="relative order-3 col-span-2 flex h-8 min-w-0 flex-1 rounded-lg bg-[var(--surface-subtle)] sm:order-none">
       {brandTotal > 0 ? (
         <Tooltip
+          anchorRole="group"
           className="block h-full w-full rounded-lg"
           label={activeSeg ? segLabel(activeSeg) : `${brandName} · ${brandTotal} ${t("marketUnitEmails", { count: brandTotal })}`}
           onOpenChange={(open) => {
