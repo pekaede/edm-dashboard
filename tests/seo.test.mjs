@@ -202,7 +202,7 @@ describe("SEO 首页预渲染与静态文档", () => {
       assert.match(html, /rel="icon" type="image\/png" sizes="32x32" href="\/favicon-32.png"/);
       assert.match(html, /rel="apple-touch-icon" href="\/apple-touch-icon.png"/);
       assert.match(html, /rel="icon" type="image\/png" href="\/favicon.png"/);
-      assert.match(html, /name="theme-color" content="#f7f1e8"/);
+      assert.match(html, /name="theme-color" content="#f7f8fa"/);
       for (const description of html.match(/<meta (?:name|property)="(?:description|og:description|twitter:description)"[^>]*>/g)) assert.doesNotMatch(description, /Milled|Supabase|基于/i);
     }
   });

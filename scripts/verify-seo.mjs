@@ -32,7 +32,7 @@ function verifyShared(html, canonical) {
   assert.equal(meta(html, "og:image:height"), "1120");
   assert.equal(meta(html, "twitter:card"), "summary_large_image");
   assert.equal(meta(html, "twitter:image"), "https://edmwatch.com/og-image.jpg");
-  assert.equal(meta(html, "theme-color"), "#f7f1e8");
+  assert.equal(meta(html, "theme-color"), "#f7f8fa");
   for (const key of ["description", "og:description", "twitter:description"]) {
     assert.doesNotMatch(meta(html, key), /Milled|Supabase/i);
   }

@@ -24,7 +24,7 @@ function HintMark() {
 
 /** Panoramata 风格的白色统计卡：标题 + 内容区。 */
 function PanaCard({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-5 shadow-[0_1px_2px_rgba(60,50,30,0.05)]">
+  return <section className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-5 shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
     <h4 className="mb-4 text-[15px] font-semibold text-[var(--text-heading)]">{title}</h4>
     {children}
   </section>;
@@ -46,7 +46,7 @@ function DeltaSub({ prev, delta, formatPrev, formatDelta, fromLabel }: { prev: n
   const up = delta !== null && delta > 0;
   return <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] tabular-nums text-[var(--text-secondary)]">
     {prev !== null && <span>{fromLabel} {formatPrev(prev)}</span>}
-    {delta !== null && <span className={`rounded-full px-2 py-px text-xs font-semibold ${down ? "bg-[#fee2e2] text-[#b42318]" : up ? "bg-[#d3f8df] text-[#067647]" : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"}`}>{down ? "↓ " : up ? "↑ " : ""}{formatDelta(delta)}%</span>}
+    {delta !== null && <span className={`rounded-full px-2 py-px text-xs font-semibold ${down ? "bg-[#fee2e2] text-[#b91c1c]" : up ? "bg-[#dcfce7] text-[#15803d]" : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"}`}>{down ? "↓ " : up ? "↑ " : ""}{formatDelta(delta)}%</span>}
   </p>;
 }
 
@@ -62,7 +62,7 @@ function MetricRow({ label, children }: { label: string; children: ReactNode }) 
 function KeywordChips({ words }: { words: string[] | null }) {
   const list = (words ?? []).filter(Boolean);
   if (list.length === 0) return <span>—</span>;
-  return <span className="flex flex-wrap gap-1.5">{list.map((word, index) => <span key={`${word}-${index}`} className="rounded-full bg-[#d8f9e6] px-2.5 py-[3px] text-xs font-medium leading-4 text-[#0a6640]">{word}</span>)}</span>;
+  return <span className="flex flex-wrap gap-1.5">{list.map((word, index) => <span key={`${word}-${index}`} className="rounded-full bg-[#e6f9ec] px-2.5 py-[3px] text-xs font-medium leading-4 text-[#166534]">{word}</span>)}</span>;
 }
 
 /** Panoramata 邮件健康指示：✅ 正常 / 🔴 异常（主题 10–60 字符、体积 ≤1000 Kb、垃圾评分 <1 视为正常）。 */
