@@ -255,3 +255,72 @@ export function fetchEmailDataset(force = false): Promise<EmailDataset> {
   );
   return entry.request;
 }
+
+
+export interface BrandOverviewRow {
+  brand: string;
+  market: string;
+  source: string | null;
+  company_name: string | null;
+  tracked_site_url: string | null;
+  source_page_url: string | null;
+  latest_activity_date: string | null;
+  sending_provider: string | null;
+  notes: string | null;
+  captured_at: string | null;
+  emails_archived: number | null;
+  total_ads: number | null;
+  new_ads_30d: number | null;
+  unique_copy_30d: number | null;
+  new_ads_90d: number | null;
+  new_copy_90d: number | null;
+  avg_ad_live_days: number | null;
+  video_share_pct: number | null;
+  emoji_use_pct: number | null;
+  landing_pages_tracked: number | null;
+  new_emails_sent_30d: number | null;
+  avg_email_scoring_pct: number | null;
+  avg_subject_length: number | null;
+  avg_email_size_kb: number | null;
+  avg_spam_score: number | null;
+  top_keywords: string[] | null;
+  email_top_keywords: string[] | null;
+}
+
+export function isBrandOverviewRow(value: unknown): value is BrandOverviewRow {
+  if (typeof value !== "object" || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return ["brand", "market"].every((key) => typeof row[key] === "string" && row[key].trim().length > 0)
+    && ["source", "company_name", "tracked_site_url", "source_page_url", "latest_activity_date", "sending_provider", "notes", "captured_at"].every((key) => row[key] === null || typeof row[key] === "string")
+    && ["emails_archived", "total_ads", "new_ads_30d", "unique_copy_30d", "new_ads_90d", "new_copy_90d", "avg_ad_live_days", "video_share_pct", "emoji_use_pct", "landing_pages_tracked", "new_emails_sent_30d", "avg_email_scoring_pct", "avg_subject_length", "avg_email_size_kb", "avg_spam_score"].every((key) => row[key] === null || (typeof row[key] === "number" && Number.isFinite(row[key])))
+    && ["top_keywords", "email_top_keywords"].every((key) => row[key] === null || (Array.isArray(row[key]) && row[key].every((word: unknown) => typeof word === "string")));
+}
+
+export async function fetchBrandOverview(signal?: AbortSignal): Promise<BrandOverviewRow[]> {
+  const { baseUrl, publishableKey } = getSupabaseConfig();
+  let endpoint: URL;
+  try {
+    endpoint = new URL(`${baseUrl.replace(/\/+$/, "")}/rest/v1/brand_overview`);
+  } catch {
+    throw new Error("Supabase 环境配置无效。");
+  }
+  endpoint.searchParams.set("select", "*");
+  endpoint.searchParams.set("order", "brand,market");
+  const timeout = AbortSignal.timeout(30_000);
+  const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+  try {
+    const response = await fetch(endpoint, {
+      headers: { apikey: publishableKey, Authorization: `Bearer ${publishableKey}` },
+      signal: requestSignal,
+    });
+    if (!response.ok) throw new Error(`品牌概览请求失败（HTTP ${response.status}）。`);
+    const rows: unknown = await response.json();
+    if (!Array.isArray(rows) || !rows.every(isBrandOverviewRow)) {
+      throw new Error("品牌概览记录格式无效。");
+    }
+    return rows;
+  } catch (error) {
+    requestSignal.throwIfAborted();
+    throw error instanceof Error ? error : new Error("品牌概览加载失败，请重试。");
+  }
+}

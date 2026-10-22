@@ -1,4 +1,4 @@
-export type ViewType = "report" | "emails" | "calendar" | "dashboard";
+export type ViewType = "report" | "emails" | "calendar" | "dashboard" | "brands";
 
 export interface PageState {
   view: ViewType;
@@ -103,6 +103,7 @@ export function buildHash(state: PageState): string {
   const view: ViewType =
     state.view === "report" ||
     state.view === "emails" ||
+    state.view === "brands" ||
     state.view === "calendar" ||
     state.view === "dashboard"
       ? state.view
@@ -201,6 +202,7 @@ export function parseHash(hash: string): PageState {
   const view: ViewType =
     rawView === "report" ||
     rawView === "emails" ||
+    rawView === "brands" ||
     rawView === "calendar" ||
     rawView === "dashboard"
       ? rawView

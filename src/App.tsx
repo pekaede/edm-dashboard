@@ -35,6 +35,8 @@ import { THREE_WEEK_WINDOW } from "./three-week-aggregation";
 
 // 重组件按需加载：非默认视图（报告/邮件）与看板下半区（内容分析/跨市场对比）
 // 不进首屏包；品牌弹窗只在点开时才加载。
+const loadBrandOverview = () =>
+  import("./components/BrandOverview").then((m) => ({ default: m.BrandOverview }));
 const loadContentAnalysis = () =>
   import("./components/ContentAnalysis").then((m) => ({ default: m.ContentAnalysis }));
 const loadMarketComparison = () =>
@@ -126,7 +128,7 @@ function ChunkFallback({ className = "" }: { className?: string }) {
   );
 }
 
-type View = "dashboard" | "report" | "emails";
+type View = "dashboard" | "report" | "emails" | "brands";
 
 const DASHBOARD_SECTIONS = [
   { id: "onepage-summary", labelKey: "sectionSummary" },
@@ -140,9 +142,10 @@ const DASHBOARD_SECTIONS = [
 // URL 原始 hash 的视图段；空 hash / "#" / 未知视图返回 null（旧行为：显示看板）。
 function getRawView(
   hash: string,
-): "dashboard" | "report" | "emails" | "calendar" | null {
+): "dashboard" | "report" | "emails" | "calendar" | "brands" | null {
   const seg = (hash.startsWith("#") ? hash.slice(1) : hash).split(/[/?]/)[0];
   if (
+    seg === "brands" ||
     seg === "report" ||
     seg === "emails" ||
     seg === "dashboard" ||
@@ -398,6 +401,10 @@ function Dashboard() {
         >
           {t("viewEmails")}
         </a>
+        <a href="#brands" aria-current={view === "brands" ? "page" : undefined}
+          className={`view-switcher-link ${view === "brands" ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)]" : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)]"}`}>
+          {t("viewBrands")}
+        </a>
       </div>
     </nav>
   );
@@ -478,6 +485,11 @@ function Dashboard() {
             <SectionErrorBoundary>
               <DashboardFooter />
             </SectionErrorBoundary>
+          </>
+        ) : view === "brands" ? (
+          <>
+            {viewNavigation}
+            <LazySection load={loadBrandOverview} componentProps={{}} className="min-h-96" />
           </>
         ) : view === "report" ? (
           <>
