@@ -1041,6 +1041,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                           key={item.key}
                           type="button"
                           aria-expanded={isSelected}
+                          aria-controls="ca-tactic-detail"
                           onClick={() => setSelectedTactic(isSelected ? null : item.key)}
                           className={`block w-full rounded-lg px-2 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
@@ -1064,7 +1065,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </p>
                 )}
                 {tacticDetail && effectiveTactic !== null ? (
-                  <div className="mt-4 space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
+                  <div id="ca-tactic-detail" className="mt-4 space-y-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
                         {labelText(TACTIC_LABEL_MAP, effectiveTactic)}
