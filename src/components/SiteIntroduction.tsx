@@ -1,21 +1,43 @@
-import { SEO_BRANDS, SEO_MARKETS, SITE_TITLE } from "../seo";
+import { SEO_BRANDS, SEO_MARKETS } from "../seo";
+import { useLocale, type DictionaryKey } from "../i18n";
 
-/** 构建期与浏览器共用首屏内容；生成型中文文案暂不参与语言切换。 */
+/** 市场链接显示名走 intro* 键：zh 与改版前 SEO_MARKETS.name 一致，预渲染产物不变。 */
+const MARKET_LABEL_KEYS = {
+  us: "introMarketUS",
+  uk: "introMarketUK",
+  au: "introMarketAU",
+  fr: "introMarketFR",
+  de: "introMarketDE",
+  it: "introMarketIT",
+  es: "introMarketES",
+  nl: "introMarketNL",
+} as const satisfies Record<string, DictionaryKey>;
+
+/** 构建期预渲染与浏览器共用首屏内容；文案走 i18n，构建期默认中文保证 SEO 产物与历史一致。副标题为英文专名，两语相同，保留常量。 */
 export function SiteIntroduction() {
+  const { t } = useLocale();
   return (
     <div className="seo-introduction">
-      <h1 className="dashboard-title text-[var(--text-heading)]">{SITE_TITLE}</h1>
-      <p className="seo-subtitle">Email Marketing Intelligence</p>
-      <p>覆盖 8 个市场、6 个品牌，按市场分析邮件收录趋势、主题分布与营销节奏，结合日历、关键词和实时 OnePage 报告开展竞品研究。</p>
-      <nav aria-label="市场入口">
-        <ul className="seo-link-list">
-          {SEO_MARKETS.map(({ code, name }) => <li key={code}><a href={`/markets/${code}/`}>{name}</a></li>)}
+      <div className="seo-intro-heading">
+        <h1 className="dashboard-title seo-intro-title text-[var(--text-heading)]">{t("introTitle")}</h1>
+        <p className="seo-subtitle">Email Marketing Intelligence</p>
+      </div>
+      <p className="seo-intro-lead">{t("introLead")}</p>
+      <nav aria-label={t("introMarketsLabel")}>
+        <ul className="seo-link-list seo-market-list">
+          {SEO_MARKETS.map(({ code }) => (
+            <li key={code}>
+              <a className="seo-market-pill" href={`/markets/${code}/`}>{t(MARKET_LABEL_KEYS[code])}</a>
+            </li>
+          ))}
         </ul>
       </nav>
-      <ul className="seo-link-list" aria-label="关注品牌">
+      <ul className="seo-link-list seo-brand-list" aria-label={t("introBrandsLabel")}>
         {SEO_BRANDS.map((brand) => <li key={brand}>{brand}</li>)}
       </ul>
-      <p>进入<a href="/#emails">邮件视图</a>筛选品牌与主题，或查看<a href="/#dashboard">数据看板</a>中的日历与词云，以及<a href="/#report">OnePage 报告</a>。各市场收录覆盖可能不同。</p>
+      <p>
+        {t("introOutroA")}<a href="/#emails">{t("introOutroEmails")}</a>{t("introOutroB")}<a href="/#dashboard">{t("introOutroDashboard")}</a>{t("introOutroC")}<a href="/#report">{t("introOutroReport")}</a>{t("introOutroD")}
+      </p>
     </div>
   );
 }
