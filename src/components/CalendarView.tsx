@@ -172,6 +172,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
   const searchHelpId = useId();
   const monthPanelId = useId();
   const monthPanelRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusDetailRef = useRef(false);
@@ -266,6 +267,11 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
       (left, right) => right.date.localeCompare(left.date) || left.brand.localeCompare(right.brand),
     );
   }, [filteredEmails, normalizedSearchTerm]);
+
+  function handleClearCalendarSearch() {
+    setSearchTerm("");
+    searchInputRef.current?.focus();
+  }
 
   function selectBrand(brand: BrandKey | typeof ALL_BRANDS) {
     setSelectedBrand(brand);
@@ -642,6 +648,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
           </p>
           <input
             id={`${searchHelpId}-input`}
+            ref={searchInputRef}
             type="search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -689,7 +696,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                     title={t("calNoMatchTitle")}
                     description={t("calNoMatchDesc", { term: searchTerm.trim() })}
                     actionLabel={t("calClearSearch")}
-                    onAction={() => setSearchTerm("")}
+                    onAction={handleClearCalendarSearch}
                   />
                 </div>
               )}
