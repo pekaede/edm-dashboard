@@ -673,5 +673,6 @@
   "boNewAdsWord": "new ads",
   "boNewCopyWord": "new copy",
   "boMarketsUnit": "markets",
-  "boDataAsOf": "Data captured"
+  "boDataAsOf": "Data captured",
+  "boFromPrev": "from"
 }

@@ -30,12 +30,24 @@ function PanaCard({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-/** 近 30 天卡片的大数字指标：小灰标签 + 粗体大数字。 */
-function Stat30({ label, value }: { label: string; value: string }) {
+/** 近 30 天卡片的大数字指标：小灰标签 + 粗体大数字 + 可选的上期对比行（from 上期值 + 涨跌胶囊）。 */
+function Stat30({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
   return <div>
     <p className="text-[13px] text-[var(--text-secondary)]">{label}</p>
     <p className="mt-0.5 text-[26px] font-bold leading-8 tabular-nums text-[var(--text-heading)]">{value}</p>
+    {children}
   </div>;
+}
+
+/** Panoramata 的上期对比：from X 文案 + 红跌绿涨胶囊（数值与箭头均为 Panoramata 页面原样展示）。 */
+function DeltaSub({ prev, delta, formatPrev, fromLabel }: { prev: number | null; delta: number | null; formatPrev: (value: number) => string; fromLabel: string }) {
+  if (prev === null && delta === null) return null;
+  const down = delta !== null && delta < 0;
+  const up = delta !== null && delta > 0;
+  return <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] tabular-nums text-[var(--text-secondary)]">
+    {prev !== null && <span>{fromLabel} {formatPrev(prev)}</span>}
+    {delta !== null && <span className={`rounded-full px-2 py-px text-xs font-semibold ${down ? "bg-[#fee2e2] text-[#b42318]" : up ? "bg-[#d3f8df] text-[#067647]" : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"}`}>{down ? "↓ " : up ? "↑ " : ""}{delta}%</span>}
+  </p>;
 }
 
 /** 90 天卡片的指标行：小灰标签（带问号圈）+ 常规字重数值。 */
@@ -135,10 +147,18 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
             <div className="space-y-4">
               <PanaCard title={t("boStats30Title")}>
                 <div className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
-                  <Stat30 label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)} />
-                  <Stat30 label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)} />
-                  <Stat30 label={t("boAvgScoringPlain")} value={row.avg_email_scoring_pct === null ? "—" : `${fmtDec(row.avg_email_scoring_pct)}%`} />
-                  <Stat30 label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)} />
+                  <Stat30 label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)}>
+                    <DeltaSub prev={row.prev_new_emails_sent_30d} delta={row.delta_new_emails_sent_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+                  </Stat30>
+                  <Stat30 label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)}>
+                    <DeltaSub prev={row.prev_new_ads_30d} delta={row.delta_new_ads_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+                  </Stat30>
+                  <Stat30 label={t("boAvgScoringPlain")} value={row.avg_email_scoring_pct === null ? "—" : `${fmtDec(row.avg_email_scoring_pct)}%`}>
+                    <DeltaSub prev={row.prev_avg_email_scoring_pct} delta={row.delta_avg_email_scoring_pct} formatPrev={(v) => `${fmtDec(v)}%`} fromLabel={t("boFromPrev")} />
+                  </Stat30>
+                  <Stat30 label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)}>
+                    <DeltaSub prev={row.prev_unique_copy_30d} delta={row.delta_unique_copy_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+                  </Stat30>
                 </div>
               </PanaCard>
               <PanaCard title={t("boEmails90Title")}>

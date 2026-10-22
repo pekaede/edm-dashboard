@@ -673,5 +673,6 @@
   "boNewAdsWord": "新广告",
   "boNewCopyWord": "新文案",
   "boMarketsUnit": "个市场",
-  "boDataAsOf": "数据抓取于"
+  "boDataAsOf": "数据抓取于",
+  "boFromPrev": "上期"
 }

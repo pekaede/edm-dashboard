@@ -283,6 +283,14 @@ export interface BrandOverviewRow {
   avg_subject_length: number | null;
   avg_email_size_kb: number | null;
   avg_spam_score: number | null;
+  prev_new_emails_sent_30d: number | null;
+  delta_new_emails_sent_30d_pct: number | null;
+  prev_new_ads_30d: number | null;
+  delta_new_ads_30d_pct: number | null;
+  prev_avg_email_scoring_pct: number | null;
+  delta_avg_email_scoring_pct: number | null;
+  prev_unique_copy_30d: number | null;
+  delta_unique_copy_30d_pct: number | null;
   top_keywords: string[] | null;
   email_top_keywords: string[] | null;
 }
@@ -292,7 +300,7 @@ export function isBrandOverviewRow(value: unknown): value is BrandOverviewRow {
   const row = value as Record<string, unknown>;
   return ["brand", "market"].every((key) => typeof row[key] === "string" && row[key].trim().length > 0)
     && ["source", "company_name", "tracked_site_url", "source_page_url", "latest_activity_date", "sending_provider", "notes", "captured_at"].every((key) => row[key] === null || typeof row[key] === "string")
-    && ["emails_archived", "total_ads", "new_ads_30d", "unique_copy_30d", "new_ads_90d", "new_copy_90d", "avg_ad_live_days", "video_share_pct", "emoji_use_pct", "landing_pages_tracked", "new_emails_sent_30d", "avg_email_scoring_pct", "avg_subject_length", "avg_email_size_kb", "avg_spam_score"].every((key) => row[key] === null || (typeof row[key] === "number" && Number.isFinite(row[key])))
+    && ["emails_archived", "total_ads", "new_ads_30d", "unique_copy_30d", "new_ads_90d", "new_copy_90d", "avg_ad_live_days", "video_share_pct", "emoji_use_pct", "landing_pages_tracked", "new_emails_sent_30d", "avg_email_scoring_pct", "avg_subject_length", "avg_email_size_kb", "avg_spam_score", "prev_new_emails_sent_30d", "delta_new_emails_sent_30d_pct", "prev_new_ads_30d", "delta_new_ads_30d_pct", "prev_avg_email_scoring_pct", "delta_avg_email_scoring_pct", "prev_unique_copy_30d", "delta_unique_copy_30d_pct"].every((key) => row[key] === null || (typeof row[key] === "number" && Number.isFinite(row[key])))
     && ["top_keywords", "email_top_keywords"].every((key) => row[key] === null || (Array.isArray(row[key]) && row[key].every((word: unknown) => typeof word === "string")));
 }
 
