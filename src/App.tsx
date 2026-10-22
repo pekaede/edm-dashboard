@@ -430,17 +430,17 @@ function Dashboard() {
 
             <div id="overview" className="dashboard-overview-grid scroll-mt-20 grid items-stretch gap-[var(--card-padding)] sm:gap-[var(--card-padding-sm)] xl:grid-cols-[1.1fr_0.85fr_1.1fr]">
               <div className="min-w-0">
-                <SectionErrorBoundary>
+                <SectionErrorBoundary className="h-full">
                   <CampaignOverview onSelectBrand={setSelectedBrand} />
                 </SectionErrorBoundary>
               </div>
               <div className="min-w-0">
-                <SectionErrorBoundary>
+                <SectionErrorBoundary className="h-full">
                   <ThemeDistribution />
                 </SectionErrorBoundary>
               </div>
               <div className="min-w-0">
-                <SectionErrorBoundary>
+                <SectionErrorBoundary className="h-full">
                   <BrandThemeBreakdown onSelectBrand={setSelectedBrand} />
                 </SectionErrorBoundary>
               </div>
