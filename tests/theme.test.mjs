@@ -136,6 +136,91 @@ it("契约：主题按钮为纯图标按钮——带 aria-label 与 title 提示
   assert.equal(button.childNodes.filter((node) => node.nodeType === 1).length, 1, "按钮只能有图标一个子元素");
 });
 
+it("中英语言按钮始终使用 ghost，只有激活项使用 accent 柔和底色与文字色", async (t) => {
+  const dom = await mountDOM(t);
+  const variants = [];
+  const { Button } = sourceGraph().load("components/ui/button.tsx");
+  // 观察实际传入的 variant，再委托真实 Button 合并样式；仅看最终 class 会漏掉被覆盖的 default。
+  const graph = sourceGraph({ overrides: {
+    "components/ui/button.tsx": { Button: (props) => {
+      variants.push(props.variant);
+      return h(Button, props);
+    } },
+  } });
+  const i18n = graph.load("i18n/index.tsx");
+  const { LanguageToggle } = graph.load("i18n/LanguageToggle.tsx");
+  await act(() => i18n.default.changeLanguage("zh"));
+  await dom.render(h(LanguageToggle));
+  for (const locale of ["zh", "en"]) {
+    variants.length = 0;
+    await act(() => i18n.default.changeLanguage(locale));
+    await dom.render(h(LanguageToggle));
+    assert.ok(variants.length >= 2, "必须观察到两种语言按钮的真实 props");
+    assert.ok(variants.every((variant) => variant === "ghost"), `${locale} 激活和未激活项的 variant 均须为 ghost`);
+    const buttons = descendants(dom.container, (node) => node.nodeName === "BUTTON");
+    assert.equal(buttons.length, 2);
+    const active = buttons.filter((button) => button.getAttribute("aria-pressed") === "true");
+    assert.equal(active.length, 1, "每次只能激活一个语言");
+    assert.equal(active[0].textContent, locale === "zh" ? "中文" : "EN");
+    for (const button of buttons) {
+      const classes = button.getAttribute("class").split(/\s+/);
+      assert.ok(classes.every((name) => !name.includes("--control-active-")), "语言按钮不得沿用实心激活 token（含悬停态）");
+      for (const name of ["bg-[var(--accent-tint)]", "text-[var(--accent-ink)]", "hover:bg-[var(--accent-tint)]", "hover:text-[var(--accent-ink)]"]) {
+        assert.equal(classes.includes(name), button === active[0], `${locale}：${name} 仅用于激活项`);
+      }
+    }
+  }
+});
+
+// mounted-dom 不计算布局：读取真实 Button 合并后的 Tailwind 类，按默认 16px 根字号、4px 间距单位换算。
+function utilityPixels(node, utility) {
+  const pattern = new RegExp(`^${utility}-(\\d+(?:\\.\\d+)?|\\[(\\d+(?:\\.\\d+)?)(px|rem)\\])$`);
+  const matches = node.getAttribute("class").split(/\s+/).flatMap((name) => {
+    if (utility === "border" && name === "border") return [1];
+    const match = name.match(pattern);
+    if (!match) return [];
+    return [match[2] ? Number(match[2]) * (match[3] === "rem" ? 16 : 1) : Number(match[1]) * (utility === "border" ? 1 : 4)];
+  });
+  assert.equal(matches.length, 1, `${utility} 必须有唯一、可换算的尺寸类：${node.getAttribute("class")}`);
+  return matches[0];
+}
+
+it("主题按钮与语言控件的组成尺寸在中英激活态下均合计为 34px", async (t) => {
+  const dom = await mountDOM(t);
+  const graph = sourceGraph();
+  const i18n = graph.load("i18n/index.tsx");
+  const { ThemeToggle } = graph.load("components/ThemeToggle.tsx");
+  const { LanguageToggle } = graph.load("i18n/LanguageToggle.tsx");
+  await dom.render(h("div", null, h(ThemeToggle), h(LanguageToggle)));
+  for (const locale of ["zh", "en"]) {
+    await act(() => i18n.default.changeLanguage(locale));
+    const group = descendants(dom.container, (node) => node.getAttribute("role") === "group")[0];
+    assert.ok(group, "语言分段控件必须存在");
+    const theme = descendants(dom.container, (node) => node.nodeName === "BUTTON" && !group.contains(node))[0];
+    assert.ok(theme, "主题按钮必须存在");
+    const themeHeight = utilityPixels(theme, "h");
+    assert.equal(themeHeight, 34, "主题按钮高度必须为 34px");
+    assert.equal(utilityPixels(theme, "min-h"), 0, "主题按钮不得被通用最小高度撑大");
+    // 外框由内容撑高，禁止另加高度或纵向覆盖类使下方的组成公式失效。
+    assert.doesNotMatch(group.getAttribute("class"), /(?:^|\s)(?:h|min-h|max-h|size|py|pt|pb|border-y|border-t|border-b)-/);
+    const padding = utilityPixels(group, "p");
+    const border = utilityPixels(group, "border");
+    assert.equal(padding, 2, "语言外框上下内边距各为 2px");
+    assert.equal(border, 1, "语言外框上下边框各为 1px");
+    const buttons = descendants(group, (node) => node.nodeName === "BUTTON");
+    assert.equal(buttons.length, 2);
+    for (const button of buttons) {
+      const height = utilityPixels(button, "h");
+      const minHeight = utilityPixels(button, "min-h");
+      assert.equal(height, 28, "语言按钮高度必须为 28px");
+      assert.equal(minHeight, 28, "语言按钮最小高度必须覆盖通用 Button 的尺寸");
+      const languageHeight = Math.max(height, minHeight) + 2 * padding + 2 * border;
+      assert.equal(languageHeight, 34, "语言总高度 = 28 + 2×2 + 1×2 = 34px");
+      assert.equal(languageHeight, themeHeight, "主题按钮与语言控件必须等高");
+    }
+  }
+});
+
 it("中英翻译键完全一致，外观按钮的无障碍标签和悬停提示都有翻译", () => {
   const zh = JSON.parse(readFileSync(new URL("../src/i18n/locales/zh.json", import.meta.url), "utf8"));
   const en = JSON.parse(readFileSync(new URL("../src/i18n/locales/en.json", import.meta.url), "utf8"));

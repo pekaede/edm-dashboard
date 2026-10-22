@@ -58,6 +58,20 @@ it("邮件列表实际表头的文字与背景在深浅两种模式下至少 4.5
   }
 });
 
+for (const [mode, tokens] of [["浅色", light], ["深色", dark]]) {
+  it(`语言激活按钮的实际文字与柔和背景在${mode}模式下至少 4.5:1`, () => {
+    const source = readFileSync(new URL("../src/i18n/LanguageToggle.tsx", import.meta.url), "utf8");
+    const active = source.match(/\bisActive\s*\?\s*"([^"]+)"/)?.[1];
+    assert.ok(active, "必须读取组件实际激活分支的 className");
+    const classes = active.split(/\s+/);
+    const foreground = classes.map((name) => name.match(/^text-\[var\((--[\w-]+)\)\]$/)?.[1]).find(Boolean);
+    const background = classes.map((name) => name.match(/^bg-\[var\((--[\w-]+)\)\]$/)?.[1]).find(Boolean);
+    assert.ok(foreground && background, "语言激活项必须使用文字和背景 CSS 变量");
+    const ratio = contrast(resolve(tokens, foreground), resolve(tokens, background));
+    assert.ok(ratio >= 4.5, `${mode} 语言激活项 ${foreground} / ${background}: ${ratio.toFixed(2)} < 4.5`);
+  });
+}
+
 it("深色文字、词云、控件和六档热力标签至少 4.5:1，数据图形至少 3:1", () => {
   for (const background of ["surface-page", "surface-card", "surface-raised", "surface-subtle", "surface-table-hover"]) {
     for (const foreground of ["text-primary", "text-body", "text-heading", "text-secondary", "text-muted", "text-description", "text-caption"]) {
