@@ -1,6 +1,28 @@
-import { THEME_COLORS, THEME_LABEL_COLORS, THEME_TINTS } from "./components/dashboard";
+import { THEME_COLORS, THEME_LABEL_COLORS, THEME_TINTS, THEME_LABEL_KEYS } from "./components/dashboard";
 import { DATA, type Brand } from "./data";
 import type { EmailRecord } from "./email-data";
+import type { DictionaryKey } from "./i18n";
+
+// 生成型文本（洞察 / 品牌策略句）一律经调用方注入的翻译函数生成：
+// 组件传 useLocale().t，测试可传 translateIn 固定语言。聚合层不直接依赖 i18n 运行时，
+// 以免纯逻辑模块的直载测试被 i18n 入口（.tsx）拖挂。
+export type GeneratedTextTranslator = (
+  key: DictionaryKey,
+  values?: Record<string, unknown>,
+) => string;
+
+// 主题名与组件同口径：优先字典键（当前语言），未知主题回落聚合层 labelZh。
+// 查表必须先判自有属性：主题 key 可能是 toString/constructor/__proto__ 等原型属性名，
+// 直接索引会命中 Object.prototype（与 themeColor 等处的守卫同一原因）。
+function themeDisplayName(
+  tr: GeneratedTextTranslator,
+  theme: { key: string; labelZh: string },
+): string {
+  const dictKey = Object.prototype.hasOwnProperty.call(THEME_LABEL_KEYS, theme.key)
+    ? THEME_LABEL_KEYS[theme.key]
+    : undefined;
+  return dictKey ? tr(dictKey) : theme.labelZh;
+}
 
 // 3 周窗口由 THREE_WEEK_WINDOW 定义；实时聚合从 emails 表逐封过滤，按窗口起算：
 // W1 = 起始日起 7 天，W2 = 接下来 7 天，W3 = 剩余天数至窗口末。
@@ -219,20 +241,36 @@ export function aggregateThreeWeek(
   };
 }
 
-export function buildSiteInsights(data: ThreeWeekAggregatedData): string[] {
-  if (data.total === 0) return ["该站点在三周窗口内暂无邮件，不推断主题偏好或触达策略。"];
+export function buildSiteInsights(data: ThreeWeekAggregatedData, tr: GeneratedTextTranslator): string[] {
+  if (data.total === 0) return [tr("genInsightEmpty")];
   const leadingBrand = [...data.brands].sort((left, right) => right.total - left.total)[0];
   const leadingTheme = [...data.themes].sort((left, right) => right.count - left.count)[0];
   const peakIndex = data.weekTotals.indexOf(Math.max(...data.weekTotals));
   return [
-    `当前站点三周收录 ${data.total} 封，覆盖 ${data.windowDays} 天，日均 ${(data.total / data.windowDays).toFixed(1)} 封；这是可见收录量，不是实际全量发送。`,
-    `${leadingBrand.name} 收录最多：${leadingBrand.total} 封，占当前站点三周样本 ${(leadingBrand.total / data.total * 100).toFixed(1)}%。`,
-    `${leadingTheme.labelZh}是当前主要主题：${leadingTheme.count} 封，占 ${(leadingTheme.count / data.total * 100).toFixed(1)}%；含服务/法务通知的其他主题不等于营销。`,
-    `${data.weeks[peakIndex].label}（${data.weeks[peakIndex].range}）收录 ${data.weekTotals[peakIndex]} 封；各桶覆盖天数可能不同，不能仅凭总量判断营销效果。`,
+    tr("genInsightTotal", {
+      total: data.total,
+      days: data.windowDays,
+      perDay: (data.total / data.windowDays).toFixed(1),
+    }),
+    tr("genInsightTopBrand", {
+      brand: leadingBrand.name,
+      count: leadingBrand.total,
+      pct: (leadingBrand.total / data.total * 100).toFixed(1),
+    }),
+    tr("genInsightTopTheme", {
+      theme: themeDisplayName(tr, leadingTheme),
+      count: leadingTheme.count,
+      pct: (leadingTheme.count / data.total * 100).toFixed(1),
+    }),
+    tr("genInsightPeakWeek", {
+      week: data.weeks[peakIndex].label,
+      range: data.weeks[peakIndex].range,
+      count: data.weekTotals[peakIndex],
+    }),
   ];
 }
 
-export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: string): Brand {
+export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: string, tr: GeneratedTextTranslator): Brand {
   const aggregatedBrand = data.brands.find((brand) => brand.name === brandName);
   if (!aggregatedBrand) {
     throw new Error(`聚合结果中缺少品牌 ${brandName}。`);
@@ -246,10 +284,10 @@ export function buildAggregatedBrand(data: ThreeWeekAggregatedData, brandName: s
         ? Math.round((aggregatedBrand.total / data.windowDays) * 10) / 10
         : 0,
     strategy: aggregatedBrand.total > 0
-      ? `${brandName} 在当前站点三周窗口收录 ${aggregatedBrand.total} 封；下列主题和周分布均为实时聚合，不代表营销效果。`
-      : `${brandName} 在当前站点三周窗口内暂未收录到邮件；未收录不代表该品牌未发送，可能存在渠道未覆盖。`,
+      ? tr("genBrandStrategyHas", { brand: brandName, total: aggregatedBrand.total })
+      : tr("genBrandStrategyZero", { brand: brandName }),
     themes: { ...aggregatedBrand.themes },
-    campaigns: data.weeks.map((week, index) => `当前站点 ${week.range} 收录 ${aggregatedBrand.weekly[index]} 封邮件。`),
+    campaigns: data.weeks.map((week, index) => tr("genBrandCampaignLine", { range: week.range, count: aggregatedBrand.weekly[index] })),
     // 聚合周标签（m1）：弹窗周标签用此处 weeks，不再用静态 DATA.weeks。
     weeks: data.weeks.map((week) => ({ id: week.id, label: week.label, range: week.range })),
   };

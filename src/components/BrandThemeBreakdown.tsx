@@ -136,7 +136,7 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
               <button
                 type="button"
                 className="min-h-11 w-fit shrink-0 rounded-md px-1 py-0.5 text-left text-xs font-semibold text-[var(--text-body)] transition hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)] sm:w-22 sm:text-sm"
-                onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name))}
+                onClick={() => onSelectBrand(buildAggregatedBrand(data, b.name, t))}
               >
                 {b.name}
               </button>

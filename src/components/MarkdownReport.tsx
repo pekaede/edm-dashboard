@@ -146,15 +146,17 @@ export function MarkdownReport() {
   const { blocks, summary } = useMemo(
     () => {
       if (status !== "ready" || emails.length === 0) return { blocks: [], summary: null };
-      const parsed = parseMarkdown(buildLiveOnePage(emails, meta));
-      const appendixIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === "完整报告附录");
-      const summaryIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === "决策摘要");
+      const parsed = parseMarkdown(buildLiveOnePage(emails, meta, t));
+      // 分节标题由报告生成器按当前语言产出，这里同样按当前语言匹配，不能再写死中文。
+      const appendixIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === t("opAppendixTitle"));
+      const summaryIndex = parsed.findIndex((block) => block.type === "heading" && block.level === 2 && block.content === t("opSummaryTitle"));
       return {
         blocks: [...parsed.slice(1, summaryIndex), ...parsed.slice(appendixIndex + 1)],
-        summary: buildOnePageSummary(emails, meta),
+        summary: buildOnePageSummary(emails, meta, t),
       };
     },
-    [status, emails, meta],
+    // locale 入依赖：报告全文按当前语言生成，切换语言要重算（t 本身每渲染重建，不直接入依赖）。
+    [status, emails, meta, locale],
   );
 
   if (status !== "ready" || emails.length === 0) {
