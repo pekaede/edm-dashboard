@@ -16,15 +16,15 @@ export function ThemeToggle() {
       type="button"
       variant="outline"
       size="sm"
-      className="rounded-full"
+      className="h-[2.125rem] w-[2.125rem] min-h-0 shrink-0 rounded-full p-0 shadow-(--shadow-switcher)"
       aria-label={label}
+      title={label}
       onClick={() => {
         setTheme(next);
         updateTheme(next);
       }}
     >
       <Icon aria-hidden="true" />
-      {label}
     </Button>
   );
 }

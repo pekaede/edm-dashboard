@@ -83,8 +83,9 @@ for (const locale of ["zh", "en"]) {
     });
     const check = (theme, key, icon) => {
       assert.equal(dom.document.documentElement.getAttribute("data-theme"), theme);
-      assert.equal(button().textContent, i18n.translate(key));
+      assert.equal(button().textContent, "");
       assert.equal(button().getAttribute("aria-label"), i18n.translate(key));
+      assert.equal(button().getAttribute("title"), i18n.translate(key));
       assert.equal(button().getAttribute("type"), "button");
       assert.ok(descendants(button(), (node) => node.getAttribute("class")?.includes(`lucide-${icon}`)).length);
     };
@@ -119,7 +120,23 @@ it("持久化被禁用时按钮仍双向切换当前页面主题", async (t) => 
   }
 });
 
-it("中英翻译键完全一致，外观按钮的可见文案和无障碍标签都有翻译", () => {
+it("契约：主题按钮为纯图标按钮——带 aria-label 与 title 提示、无任何可见文字", async (t) => {
+  const dom = await mountDOM(t);
+  dom.document.documentElement.setAttribute("data-theme", "light");
+  const { ThemeToggle } = sourceGraph().load("components/ThemeToggle.tsx");
+  await dom.render(h(ThemeToggle));
+  const button = descendants(dom.container, (node) => node.nodeName === "BUTTON")[0];
+  assert.ok(button, "主题切换按钮必须存在");
+  assert.equal(button.textContent.trim(), "", "按钮不得渲染可见文字，只保留图标");
+  const label = button.getAttribute("aria-label");
+  assert.ok(label, "纯图标按钮必须带 aria-label");
+  assert.equal(button.getAttribute("title"), label, "悬停提示应与无障碍标签一致");
+  const icons = descendants(button, (node) => node.getAttribute("class")?.includes("lucide-"));
+  assert.equal(icons.length, 1, "按钮内应恰有一个 Lucide 图标");
+  assert.equal(button.childNodes.filter((node) => node.nodeType === 1).length, 1, "按钮只能有图标一个子元素");
+});
+
+it("中英翻译键完全一致，外观按钮的无障碍标签和悬停提示都有翻译", () => {
   const zh = JSON.parse(readFileSync(new URL("../src/i18n/locales/zh.json", import.meta.url), "utf8"));
   const en = JSON.parse(readFileSync(new URL("../src/i18n/locales/en.json", import.meta.url), "utf8"));
   assert.deepEqual(Object.keys(zh).sort(), Object.keys(en).sort());

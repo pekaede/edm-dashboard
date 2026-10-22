@@ -19,15 +19,15 @@ export function LanguageToggle() {
         const isActive = locale === option.code;
         return (
           <Button
-            variant={isActive ? "default" : "ghost"}
+            variant="ghost"
             size="sm"
             key={option.code}
             type="button"
             aria-pressed={isActive}
             onClick={() => setLocale(option.code)}
-            className={`h-7 min-h-7 rounded-full px-3 text-xs font-bold focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--control-bg)] ${
+            className={`h-7 min-h-7 rounded-full px-2.5 text-xs font-bold focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--control-bg)] ${
               isActive
-                ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-switcher)]"
+                ? "bg-[var(--accent-tint)] text-[var(--accent-ink)] hover:bg-[var(--accent-tint)] hover:text-[var(--accent-ink)]"
                 : "text-[var(--control-text)] hover:bg-[var(--control-hover-bg)] hover:text-[var(--control-hover-text)]"
             }`}
           >
