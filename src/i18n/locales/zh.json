@@ -404,6 +404,7 @@
   "efFavAria": "{action} {brand} {date} 的邮件",
   "efFavAdd": "收藏",
   "efFavRemove": "取消收藏",
+  "efFavoriteSaveFailed": "收藏保存失败，请稍后重试。",
   "efOriginalAria": "查看 {brand} {date} 的邮件原文（新窗口打开）",
   "efShownPrefix": "已显示",
   "efSortDesc": "按日期倒序",

@@ -404,6 +404,7 @@
   "efFavAria": "{action} the email from {brand} on {date}",
   "efFavAdd": "Favorite",
   "efFavRemove": "Unfavorite",
+  "efFavoriteSaveFailed": "Could not save favorites. Please try again later.",
   "efOriginalAria": "View the original email from {brand} on {date} (opens in a new window)",
   "efShownPrefix": "Showing",
   "efSortDesc": "Newest first",

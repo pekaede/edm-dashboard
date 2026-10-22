@@ -334,6 +334,27 @@ export function ExtendedEmailFilter() {
     () => new Set(loadFavorites()),
   );
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [favoriteSaveError, setFavoriteSaveError] = useState(false);
+  const favoriteSaveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (favoriteSaveErrorTimerRef.current !== null) {
+        clearTimeout(favoriteSaveErrorTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showError = () => {
+    setFavoriteSaveError(true);
+    if (favoriteSaveErrorTimerRef.current !== null) {
+      clearTimeout(favoriteSaveErrorTimerRef.current);
+    }
+    favoriteSaveErrorTimerRef.current = setTimeout(() => {
+      favoriteSaveErrorTimerRef.current = null;
+      setFavoriteSaveError(false);
+    }, 5000);
+  };
 
   // Content expansion state for truncated keyword cells
   const [expandedRowKeys, setExpandedRowKeys] = useState<Set<string>>(
@@ -864,7 +885,9 @@ export function ExtendedEmailFilter() {
 
   const handleToggleFavorite = (email: EmailRecord) => {
     const key = getEmailKey(email);
-    toggleFavorite(key);
+    if (!toggleFavorite(key)) {
+      showError();
+    }
   };
 
   const toggleRowExpand = (key: string) => {
@@ -1212,6 +1235,11 @@ export function ExtendedEmailFilter() {
               </button>
             </div>
           </div>
+          {favoriteSaveError ? (
+            <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
+              {t("efFavoriteSaveFailed")}
+            </div>
+          ) : null}
         </div>
 
         {/* Empty state when filters or search yield 0 results */}

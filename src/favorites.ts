@@ -11,46 +11,51 @@ function dispatchFavoritesChange(): void {
   }
 }
 
+function readFavoritesOrThrow(): string[] {
+  if (typeof window === "undefined") {
+    throw new Error("Favorites storage is unavailable");
+  }
+  const storage = window.localStorage;
+  if (!storage) {
+    throw new Error("Favorites storage is unavailable");
+  }
+  const raw = storage.getItem(FAVORITES_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+  const parsed = JSON.parse(raw);
+  if (Array.isArray(parsed)) {
+    return parsed.filter((item): item is string => typeof item === "string");
+  }
+  return [];
+}
+
 /**
  * Loads favorite email keys from localStorage.
  * Returns an empty array if unavailable or parsing fails.
  */
 export function loadFavorites(): string[] {
   try {
-    if (typeof window === "undefined") {
-      return [];
-    }
-    const storage = window.localStorage;
-    if (!storage) {
-      return [];
-    }
-    const raw = storage.getItem(FAVORITES_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.filter((item): item is string => typeof item === "string");
-    }
-    return [];
+    return readFavoritesOrThrow();
   } catch {
     return [];
   }
 }
 
-function saveFavorites(favorites: string[]): void {
+function saveFavorites(favorites: string[]): boolean {
   try {
     if (typeof window === "undefined") {
-      return;
+      return false;
     }
     const storage = window.localStorage;
     if (!storage) {
-      return;
+      return false;
     }
     storage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
     dispatchFavoritesChange();
+    return true;
   } catch {
-    // Fail silently when storage quota is exceeded or storage is disabled
+    return false;
   }
 }
 
@@ -99,22 +104,19 @@ export function removeFavorite(key: string): void {
 }
 
 /**
- * Toggles favorite state of an email key. Returns new boolean state.
+ * Toggles favorite state of an email key. Returns whether the write succeeded.
  */
 export function toggleFavorite(key: string): boolean {
   try {
     if (!key) return false;
-    const favorites = loadFavorites();
+    const favorites = readFavoritesOrThrow();
     const index = favorites.indexOf(key);
     if (index >= 0) {
       favorites.splice(index, 1);
-      saveFavorites(favorites);
-      return false;
     } else {
       favorites.push(key);
-      saveFavorites(favorites);
-      return true;
     }
+    return saveFavorites(favorites);
   } catch {
     return false;
   }
