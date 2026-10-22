@@ -3,6 +3,7 @@ const viewPaths = new Map([
   ["dashboard", "/dashboard"],
   ["report", "/report"],
   ["emails", "/emails"],
+  ["brands", "/brands"],
 ]);
 
 declare global {
