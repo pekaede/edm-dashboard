@@ -20,6 +20,18 @@ test('品牌概览允许 NULL、零值与关键词数组，拒绝无效行', () 
   }
 });
 
+test('品牌概览上期/涨跌字段接受负涨跌与零上期，拒绝字符串与非有限值', () => {
+  const { isBrandOverviewRow } = load();
+  const compareFields = ['prev_new_emails_sent_30d', 'delta_new_emails_sent_30d_pct', 'prev_new_ads_30d', 'delta_new_ads_30d_pct', 'prev_avg_email_scoring_pct', 'delta_avg_email_scoring_pct', 'prev_unique_copy_30d', 'delta_unique_copy_30d_pct'];
+  for (const field of compareFields) {
+    assert.equal(isBrandOverviewRow({ ...row, [field]: -33 }), true, `${field} 应接受负数`);
+    assert.equal(isBrandOverviewRow({ ...row, [field]: 0 }), true, `${field} 应接受零`);
+    assert.equal(isBrandOverviewRow({ ...row, [field]: '12' }), false, `${field} 应拒绝字符串`);
+    assert.equal(isBrandOverviewRow({ ...row, [field]: NaN }), false, `${field} 应拒绝 NaN`);
+    assert.equal(isBrandOverviewRow({ ...row, [field]: undefined }), false, `${field} 应拒绝缺失`);
+  }
+});
+
 test('品牌概览一次请求正确端点和认证，拒绝 HTTP 错误与无效响应', async () => {
   const { fetchBrandOverview } = load(async (url, options) => {
     assert.equal(url.href, 'https://example.supabase.co/rest/v1/brand_overview?select=*&order=brand%2Cmarket');

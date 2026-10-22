@@ -675,5 +675,7 @@
   "boMarketsUnit": "个市场",
   "boDataAsOf": "数据抓取于",
   "boFromPrev": "上期",
-  "boAllBrands": "全部品牌"
+  "boAllBrands": "全部品牌",
+  "boHealthOk": "正常",
+  "boHealthBad": "异常"
 }

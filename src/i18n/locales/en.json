@@ -675,5 +675,7 @@
   "boMarketsUnit": "markets",
   "boDataAsOf": "Data captured",
   "boFromPrev": "from",
-  "boAllBrands": "All brands"
+  "boAllBrands": "All brands",
+  "boHealthOk": "Healthy",
+  "boHealthBad": "Needs attention"
 }

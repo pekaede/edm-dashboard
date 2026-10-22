@@ -40,13 +40,13 @@ function Stat30({ label, value, children }: { label: string; value: string; chil
 }
 
 /** Panoramata 的上期对比：from X 文案 + 红跌绿涨胶囊（数值与箭头均为 Panoramata 页面原样展示）。 */
-function DeltaSub({ prev, delta, formatPrev, fromLabel }: { prev: number | null; delta: number | null; formatPrev: (value: number) => string; fromLabel: string }) {
+function DeltaSub({ prev, delta, formatPrev, formatDelta, fromLabel }: { prev: number | null; delta: number | null; formatPrev: (value: number) => string; formatDelta: (value: number) => string; fromLabel: string }) {
   if (prev === null && delta === null) return null;
   const down = delta !== null && delta < 0;
   const up = delta !== null && delta > 0;
   return <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] tabular-nums text-[var(--text-secondary)]">
     {prev !== null && <span>{fromLabel} {formatPrev(prev)}</span>}
-    {delta !== null && <span className={`rounded-full px-2 py-px text-xs font-semibold ${down ? "bg-[#fee2e2] text-[#b42318]" : up ? "bg-[#d3f8df] text-[#067647]" : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"}`}>{down ? "↓ " : up ? "↑ " : ""}{delta}%</span>}
+    {delta !== null && <span className={`rounded-full px-2 py-px text-xs font-semibold ${down ? "bg-[#fee2e2] text-[#b42318]" : up ? "bg-[#d3f8df] text-[#067647]" : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"}`}>{down ? "↓ " : up ? "↑ " : ""}{formatDelta(delta)}%</span>}
   </p>;
 }
 
@@ -62,18 +62,18 @@ function MetricRow({ label, children }: { label: string; children: ReactNode }) 
 function KeywordChips({ words }: { words: string[] | null }) {
   const list = (words ?? []).filter(Boolean);
   if (list.length === 0) return <span>—</span>;
-  return <span className="flex flex-wrap gap-1.5">{list.map((word) => <span key={word} className="rounded-full bg-[#d8f9e6] px-2.5 py-[3px] text-xs font-medium leading-4 text-[#0a6640]">{word}</span>)}</span>;
+  return <span className="flex flex-wrap gap-1.5">{list.map((word, index) => <span key={`${word}-${index}`} className="rounded-full bg-[#d8f9e6] px-2.5 py-[3px] text-xs font-medium leading-4 text-[#0a6640]">{word}</span>)}</span>;
 }
 
 /** Panoramata 邮件健康指示：✅ 正常 / 🔴 异常（主题 10–60 字符、体积 ≤1000 Kb、垃圾评分 <1 视为正常）。 */
-function healthDot(kind: "subject" | "size" | "spam", value: number | null): string | null {
+function healthState(kind: "subject" | "size" | "spam", value: number | null): "ok" | "bad" | null {
   if (value === null) return null;
   const ok = kind === "subject" ? value >= 10 && value <= 60 : kind === "size" ? value <= 1000 : value < 1;
-  return ok ? "✅" : "🔴";
+  return ok ? "ok" : "bad";
 }
 
-function HealthValue({ dot, children }: { dot: string | null; children: ReactNode }) {
-  return <>{dot && <span aria-hidden className="mr-1.5">{dot}</span>}{children}</>;
+function HealthValue({ state, okLabel, badLabel, children }: { state: "ok" | "bad" | null; okLabel: string; badLabel: string; children: ReactNode }) {
+  return <>{state && <span aria-hidden className="mr-1.5">{state === "ok" ? "✅" : "🔴"}</span>}{state && <span className="sr-only">{state === "ok" ? okLabel : badLabel}：</span>}{children}</>;
 }
 
 export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
@@ -94,7 +94,8 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   }, [attempt]);
   // 深链接聚焦：URL 带品牌段（如 #brands/all/Halara）时，数据就绪后滚动到该品牌区块并短暂高亮。
   useEffect(() => {
-    if (!rows || !focusBrand) return;
+    if (!rows) return;
+    if (!focusBrand) { setHighlight(null); return; }
     const wanted = focusBrand.trim().toLowerCase();
     const target = rows.find((row) => row.brand.toLowerCase() === wanted)?.brand;
     if (!target) return;
@@ -119,6 +120,7 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const fmtInt = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 0 });
   const fmtDec = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 2 });
   const fmtPct1 = (value: number | null) => value === null ? "—" : `${value.toLocaleString(localeTag, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  const fmtDelta = (value: number) => value.toLocaleString(localeTag, { maximumFractionDigits: 2 });
   const hasWords = (words: string[] | null) => (words ?? []).some(Boolean);
   return <div className="min-w-0 space-y-6">
     <h1 className="card-title text-[var(--text-heading)]">{t("viewBrands")}</h1>
@@ -129,15 +131,26 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
     </nav> : <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />}
     {visibleBrands.map((brand) => {
       const brandRows = groups.get(brand)!;
-      const sum = (key: "emails_archived" | "total_ads" | "landing_pages_tracked") => brandRows.reduce((acc, row) => acc + (row[key] ?? 0), 0);
+      // 汇总只统计有值的行；整项无数据时不展示（避免把缺失显示成 0）。
+      const totalOf = (key: "emails_archived" | "total_ads" | "landing_pages_tracked") => {
+        const values = brandRows.map((row) => row[key]).filter((value): value is number => value !== null);
+        return values.length ? values.reduce((acc, value) => acc + value, 0) : null;
+      };
       const latestCaptured = brandRows.map((row) => row.captured_at).filter(Boolean).sort().at(-1) ?? null;
+      const brandMeta = [
+        totalOf("emails_archived") !== null ? `${t("bo_emails_archived")} ${fmtInt(totalOf("emails_archived"))}` : null,
+        totalOf("total_ads") !== null ? `${t("bo_total_ads")} ${fmtInt(totalOf("total_ads"))}` : null,
+        totalOf("landing_pages_tracked") !== null ? `${t("bo_landing_pages_tracked")} ${fmtInt(totalOf("landing_pages_tracked"))}` : null,
+        `${brandRows.length} ${t("boMarketsUnit")}`,
+        `${t("boDataAsOf")} ${displayDate(latestCaptured, locale)}`,
+      ].filter(Boolean).join(" · ");
       const sourceUrl = brandRows.find((row) => row.source_page_url)?.source_page_url ?? null;
       return <div key={brand} id={`brand-overview-${brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === brandOverviewSlug(brand) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
         <header className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-1">
           <div>
             <h2 className="text-[22px] font-bold leading-7 text-[var(--text-heading)]">{brand}</h2>
             <p className="mt-1 text-[13px] tabular-nums text-[var(--text-secondary)]">
-              {t("bo_emails_archived")} {fmtInt(sum("emails_archived"))} · {t("bo_total_ads")} {fmtInt(sum("total_ads"))} · {t("bo_landing_pages_tracked")} {fmtInt(sum("landing_pages_tracked"))} · {brandRows.length} {t("boMarketsUnit")} · {t("boDataAsOf")} {displayDate(latestCaptured, locale)}
+              {brandMeta}
             </p>
           </div>
           {sourceUrl && <a href={sourceUrl} target="_blank" rel="noreferrer" className="text-[13px] font-medium text-[var(--accent-ink)] underline underline-offset-2">Panoramata ↗</a>}
@@ -146,43 +159,52 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
           // 无数据的指标不展示；整张卡片无数据时整卡不展示（与 Panoramata 页面行为一致）。
           const stats30: ReactNode[] = [];
           if (row.new_emails_sent_30d !== null) stats30.push(<Stat30 key="emails" label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)}>
-            <DeltaSub prev={row.prev_new_emails_sent_30d} delta={row.delta_new_emails_sent_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+            <DeltaSub prev={row.prev_new_emails_sent_30d} delta={row.delta_new_emails_sent_30d_pct} formatPrev={(v) => fmtInt(v)} formatDelta={fmtDelta} fromLabel={t("boFromPrev")} />
           </Stat30>);
           if (row.new_ads_30d !== null) stats30.push(<Stat30 key="ads" label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)}>
-            <DeltaSub prev={row.prev_new_ads_30d} delta={row.delta_new_ads_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+            <DeltaSub prev={row.prev_new_ads_30d} delta={row.delta_new_ads_30d_pct} formatPrev={(v) => fmtInt(v)} formatDelta={fmtDelta} fromLabel={t("boFromPrev")} />
           </Stat30>);
           if (row.avg_email_scoring_pct !== null) stats30.push(<Stat30 key="scoring" label={t("boAvgScoringPlain")} value={`${fmtDec(row.avg_email_scoring_pct)}%`}>
-            <DeltaSub prev={row.prev_avg_email_scoring_pct} delta={row.delta_avg_email_scoring_pct} formatPrev={(v) => `${fmtDec(v)}%`} fromLabel={t("boFromPrev")} />
+            <DeltaSub prev={row.prev_avg_email_scoring_pct} delta={row.delta_avg_email_scoring_pct} formatPrev={(v) => `${fmtDec(v)}%`} formatDelta={fmtDelta} fromLabel={t("boFromPrev")} />
           </Stat30>);
           if (row.unique_copy_30d !== null) stats30.push(<Stat30 key="copy" label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)}>
-            <DeltaSub prev={row.prev_unique_copy_30d} delta={row.delta_unique_copy_30d_pct} formatPrev={(v) => fmtInt(v)} fromLabel={t("boFromPrev")} />
+            <DeltaSub prev={row.prev_unique_copy_30d} delta={row.delta_unique_copy_30d_pct} formatPrev={(v) => fmtInt(v)} formatDelta={fmtDelta} fromLabel={t("boFromPrev")} />
           </Stat30>);
           const emailLeft: ReactNode[] = [];
-          if (row.avg_subject_length !== null) emailLeft.push(<MetricRow key="subject" label={t("boSubjectPlain")}><HealthValue dot={healthDot("subject", row.avg_subject_length)}>{`${fmtDec(row.avg_subject_length)} ${t("boUnitChars")}`}</HealthValue></MetricRow>);
-          if (row.avg_email_size_kb !== null) emailLeft.push(<MetricRow key="size" label={t("boSizePlain")}><HealthValue dot={healthDot("size", row.avg_email_size_kb)}>{`${fmtDec(row.avg_email_size_kb)} Kb`}</HealthValue></MetricRow>);
-          if (row.avg_spam_score !== null) emailLeft.push(<MetricRow key="spam" label={t("boSpamPlain")}><HealthValue dot={healthDot("spam", row.avg_spam_score)}>{fmtDec(row.avg_spam_score)}</HealthValue></MetricRow>);
+          if (row.avg_subject_length !== null) emailLeft.push(<MetricRow key="subject" label={t("boSubjectPlain")}><HealthValue state={healthState("subject", row.avg_subject_length)} okLabel={t("boHealthOk")} badLabel={t("boHealthBad")}>{`${fmtDec(row.avg_subject_length)} ${t("boUnitChars")}`}</HealthValue></MetricRow>);
+          if (row.avg_email_size_kb !== null) emailLeft.push(<MetricRow key="size" label={t("boSizePlain")}><HealthValue state={healthState("size", row.avg_email_size_kb)} okLabel={t("boHealthOk")} badLabel={t("boHealthBad")}>{`${fmtDec(row.avg_email_size_kb)} Kb`}</HealthValue></MetricRow>);
+          if (row.avg_spam_score !== null) emailLeft.push(<MetricRow key="spam" label={t("boSpamPlain")}><HealthValue state={healthState("spam", row.avg_spam_score)} okLabel={t("boHealthOk")} badLabel={t("boHealthBad")}>{fmtDec(row.avg_spam_score)}</HealthValue></MetricRow>);
           if (row.sending_provider) emailLeft.push(<MetricRow key="provider" label={t("boProvider")}>{row.sending_provider}</MetricRow>);
           const emailRight: ReactNode[] = [];
           if (hasWords(row.email_top_keywords)) emailRight.push(<MetricRow key="words" label={t("boEmailWords")}><KeywordChips words={row.email_top_keywords} /></MetricRow>);
           const adsLeft: ReactNode[] = [];
           if (row.avg_ad_live_days !== null) adsLeft.push(<MetricRow key="live" label={t("boAvgLivePlain")}>{`${fmtDec(row.avg_ad_live_days)} ${t("boUnitDays")}`}</MetricRow>);
           if (row.video_share_pct !== null) {
-            const imagesPct = Math.round((100 - row.video_share_pct) * 10) / 10;
-            adsLeft.push(<MetricRow key="media" label={t("boMediaSplit")}>{`${fmtPct1(imagesPct)} ${t("boImagesWord")} | ${fmtPct1(row.video_share_pct)} ${t("boVideosWord")}`}</MetricRow>);
+            // 两侧都按 0.1 精度取整且互补，保证相加恰为 100.0（避免各自四舍五入后凑出 100.1）。
+            const videoTenths = Math.round(row.video_share_pct * 10);
+            const imagesPct = (1000 - videoTenths) / 10;
+            adsLeft.push(<MetricRow key="media" label={t("boMediaSplit")}>{`${fmtPct1(imagesPct)} ${t("boImagesWord")} | ${fmtPct1(videoTenths / 10)} ${t("boVideosWord")}`}</MetricRow>);
           }
-          if (row.new_ads_90d !== null && row.new_copy_90d !== null) adsLeft.push(<MetricRow key="newvs" label={t("boNewVsCopy")}>{`${fmtInt(row.new_ads_90d)} ${t("boNewAdsWord")} / ${fmtInt(row.new_copy_90d)} ${t("boNewCopyWord")}`}</MetricRow>);
+          if (row.new_ads_90d !== null || row.new_copy_90d !== null) adsLeft.push(<MetricRow key="newvs" label={t("boNewVsCopy")}>{[row.new_ads_90d !== null ? `${fmtInt(row.new_ads_90d)} ${t("boNewAdsWord")}` : null, row.new_copy_90d !== null ? `${fmtInt(row.new_copy_90d)} ${t("boNewCopyWord")}` : null].filter(Boolean).join(" / ")}</MetricRow>);
           const adsRight: ReactNode[] = [];
           if (hasWords(row.top_keywords)) adsRight.push(<MetricRow key="words" label={t("boAdWords")}><KeywordChips words={row.top_keywords} /></MetricRow>);
           if (row.emoji_use_pct !== null) adsRight.push(<MetricRow key="emoji" label={t("boEmojiPlain")}>{fmtPct1(row.emoji_use_pct)}</MetricRow>);
           const showStats = stats30.length > 0;
           const showEmails = emailLeft.length + emailRight.length > 0;
           const showAds = adsLeft.length + adsRight.length > 0;
+          // 市场标题行同样只展示有数据的汇总项，缺失的不显示。
+          const marketMeta = [
+            row.emails_archived !== null ? `${t("bo_emails_archived")} ${fmtInt(row.emails_archived)}` : null,
+            row.total_ads !== null ? `${t("bo_total_ads")} ${fmtInt(row.total_ads)}` : null,
+            row.landing_pages_tracked !== null ? `${t("bo_landing_pages_tracked")} ${fmtInt(row.landing_pages_tracked)}` : null,
+            row.latest_activity_date ? `${t("boLatest")} ${row.latest_activity_date}` : null,
+          ].filter(Boolean).join(" · ");
           return <div key={row.market} className="mb-8 last:mb-0">
             <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
               <h3 className="text-[15px] font-bold text-[var(--text-heading)]">{row.market}</h3>
               {row.company_name && row.company_name !== brand && <span className="text-[13px] text-[var(--text-secondary)]">{row.company_name}</span>}
               {row.tracked_site_url && <a href={row.tracked_site_url} target="_blank" rel="noreferrer" className="text-[13px] text-[var(--accent-ink)] underline underline-offset-2">{row.tracked_site_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>}
-              <span className="text-xs tabular-nums text-[var(--text-secondary)]">{t("bo_emails_archived")} {fmtInt(row.emails_archived)} · {t("bo_total_ads")} {fmtInt(row.total_ads)} · {t("bo_landing_pages_tracked")} {fmtInt(row.landing_pages_tracked)}{row.latest_activity_date ? ` · ${t("boLatest")} ${row.latest_activity_date}` : ""}</span>
+              {marketMeta && <span className="text-xs tabular-nums text-[var(--text-secondary)]">{marketMeta}</span>}
             </div>
             {(showStats || showEmails || showAds) && <div className="space-y-4">
               {showStats && <PanaCard title={t("boStats30Title")}>
