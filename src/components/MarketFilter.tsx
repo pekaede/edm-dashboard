@@ -46,14 +46,19 @@ export function MarketFilter({
   const extraMarkets = Object.keys(counts)
     .filter((code) => counts[code] > 0 && !MARKET_OPTIONS.some((option) => option.code === code))
     .sort();
-  const options: Array<{ code: MarketFilterValue; name: string; count: number }> = [
-    { code: null, name: t("marketAll"), count: total },
+  // 排序：全部市场固定第一；其余按封数从大到小（同量保持原有固定顺序），
+  // 让高数据量市场先被看到，空市场自然沉底。
+  const sortedMarkets = [
     ...MARKET_OPTIONS.map((option) => ({
       code: option.code as MarketFilterValue,
       name: t(option.labelKey),
       count: counts[option.code] ?? 0,
     })),
     ...extraMarkets.map((code) => ({ code: code as MarketFilterValue, name: code, count: counts[code] })),
+  ].sort((a, b) => b.count - a.count);
+  const options: Array<{ code: MarketFilterValue; name: string; count: number }> = [
+    { code: null, name: t("marketAll"), count: total },
+    ...sortedMarkets,
   ];
 
   return (
@@ -61,24 +66,29 @@ export function MarketFilter({
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-label)]">
         {resolvedLabel}
       </p>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={resolvedLabel}>
+      <div
+        className="grid grid-cols-2 gap-1 rounded-3xl bg-[color-mix(in_srgb,var(--text-heading)_5%,transparent)] p-1.5 min-[480px]:grid-cols-3 xl:grid-cols-5"
+        role="group"
+        aria-label={resolvedLabel}
+      >
         {options.map((option) => {
           const isSelected = value === option.code;
+          const isEmpty = option.code !== null && option.count === 0;
           return (
             <Button
-              variant={isSelected ? "default" : "outline"}
+              variant={isSelected ? "default" : "ghost"}
               key={option.code ?? "all"}
               type="button"
               aria-pressed={isSelected}
               onClick={() => onChange(option.code)}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)] ${
+              className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)] ${
                 isSelected
                   ? "border-[var(--control-active-border)] bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-[var(--shadow-filter-active)]"
-                  : "border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] text-[var(--text-control)] hover:-translate-y-0.5 hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)]"
+                  : `border-transparent bg-transparent text-[var(--text-control)] hover:border-[var(--control-filter-hover-border)] hover:bg-[var(--control-filter-hover-bg)] ${isEmpty ? "opacity-55" : ""}`
               }`}
             >
               {option.name}
-              <span className={`text-xs font-semibold ${isSelected ? "text-[var(--control-active-text)]/70" : "text-[var(--text-description)]"}`}>
+              <span className={`text-xs font-medium tabular-nums ${isSelected ? "text-[var(--control-active-text)]/70" : "text-[var(--text-description)]"}`}>
                 {option.count} {t("marketUnitEmails", { count: option.count })}
               </span>
             </Button>

@@ -7,7 +7,6 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useSiteThreeWeekData, useSiteSelection } from "../site-data";
 import { MarketFilter } from "./MarketFilter";
 import { formatWindowRange, THREE_WEEK_WINDOW } from "../three-week-aggregation";
-import { THEME_COLORS, THEME_TINTS } from "./dashboard";
 
 export function DashboardHeader() {
   const { t } = useLocale();
@@ -55,15 +54,11 @@ export function DashboardHeader() {
             <MarketFilter value={market} onChange={setMarket} counts={marketCounts} total={allEmails.total} label={t("globalSiteThreeMonths")} />
           </div>
         </div>
-        <ul className="flex flex-wrap gap-[calc(var(--card-padding)/2)]" aria-label={t("headerDataScopeSummary")}>
-          {tags.map(({ label, theme }) => (
+        <ul className="flex flex-wrap gap-1.5" aria-label={t("headerDataScopeSummary")}>
+          {tags.map(({ label }) => (
             <li
               key={label}
-              className="min-w-0 max-w-full rounded-[var(--card-radius)] border px-[calc(var(--card-padding)/2)] py-[calc(var(--card-padding)/4)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-body)]"
-              style={{
-                borderColor: `color-mix(in srgb, ${THEME_COLORS[theme]} 35%, var(--border-default))`,
-                background: THEME_TINTS[theme],
-              }}
+              className="min-w-0 max-w-full rounded-full border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--text-heading)_4%,transparent)] px-3 py-1 text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-body)]"
             >
               {label}
             </li>
