@@ -112,6 +112,9 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const groups = new Map<string, BrandOverviewRow[]>();
   for (const row of rows) groups.set(row.brand, [...(groups.get(row.brand) ?? []), row]);
   const brands = [...groups.keys()];
+  // 深链接带品牌段时进入单品牌视图：只展示该品牌，并提供返回全部品牌与其他品牌的入口。
+  const focus = focusBrand ? brands.find((brand) => brand.toLowerCase() === focusBrand.trim().toLowerCase()) ?? null : null;
+  const visibleBrands = focus ? [focus] : brands;
   const localeTag = locale === "zh" ? "zh-CN" : "en-US";
   const fmtInt = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 0 });
   const fmtDec = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 2 });
@@ -120,8 +123,11 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   return <div className="min-w-0 space-y-6">
     <h1 className="card-title text-[var(--text-heading)]">{t("viewBrands")}</h1>
     <p className="text-sm text-[var(--text-secondary)]">{t("boHint")}</p>
-    <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />
-    {brands.map((brand) => {
+    {focus ? <nav aria-label={focus} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+      <a href="#brands/all" className="font-semibold text-[var(--accent-ink)] underline underline-offset-2">← {t("boAllBrands")}</a>
+      {brands.filter((brand) => brand !== focus).map((brand) => <a key={brand} href={`#brands/all/${encodeURIComponent(brand)}`} className="text-[var(--text-secondary)] underline-offset-2 hover:underline">{brand}</a>)}
+    </nav> : <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />}
+    {visibleBrands.map((brand) => {
       const brandRows = groups.get(brand)!;
       const sum = (key: "emails_archived" | "total_ads" | "landing_pages_tracked") => brandRows.reduce((acc, row) => acc + (row[key] ?? 0), 0);
       const latestCaptured = brandRows.map((row) => row.captured_at).filter(Boolean).sort().at(-1) ?? null;
