@@ -88,7 +88,7 @@ export function MarketFilter({
               }`}
             >
               {option.name}
-              <span className={`text-xs font-medium tabular-nums ${isSelected ? "text-[var(--control-active-text)]/70" : "text-[var(--text-description)]"}`}>
+              <span className={`text-xs font-medium tabular-nums ${isSelected ? "text-[var(--control-active-text)]" : "text-[var(--text-description)]"}`}>
                 {option.count} {t("marketUnitEmails", { count: option.count })}
               </span>
             </Button>

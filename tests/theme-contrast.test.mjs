@@ -58,6 +58,18 @@ it("邮件列表实际表头的文字与背景在深浅两种模式下至少 4.5
   }
 });
 
+it("选中市场计数使用无透明度文字，且在深浅两种模式下与选中背景至少 4.5:1", () => {
+  const source = readFileSync(new URL("../src/components/MarketFilter.tsx", import.meta.url), "utf8");
+  const count = source.match(/<span\b[^>]*\bclassName=\{`([^`]+)`\}>\s*\{option\.count\}/)?.[1];
+  assert.ok(count, "必须读取组件实际计数 span 的 className");
+  const selected = count.match(/\bisSelected\s*\?\s*"([^"]+)"/)?.[1];
+  assert.equal(selected, "text-[var(--control-active-text)]", "选中计数必须使用完整文字颜色，不含透明度");
+  for (const [mode, tokens] of [["浅色", light], ["深色", dark]]) {
+    const ratio = contrast(resolve(tokens, "--control-active-text"), resolve(tokens, "--control-active-bg"));
+    assert.ok(ratio >= 4.5, `${mode} 选中市场计数 / 选中背景: ${ratio.toFixed(2)} < 4.5`);
+  }
+});
+
 for (const [mode, tokens] of [["浅色", light], ["深色", dark]]) {
   it(`语言激活按钮的实际文字与柔和背景在${mode}模式下至少 4.5:1`, () => {
     const source = readFileSync(new URL("../src/i18n/LanguageToggle.tsx", import.meta.url), "utf8");
