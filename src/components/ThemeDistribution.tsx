@@ -100,7 +100,9 @@ export function ThemeDistribution() {
         }}
       >
         {canExcludeOther ? (
-          <div className="mb-1 flex w-full justify-end">
+          <div className="mb-1 flex w-full items-center justify-between gap-3">
+            {/* 口径注脚：开关只影响本卡的占比计算，其他区块仍按全量分母。 */}
+            <span className="text-xs text-[var(--text-secondary)]">{t("tdMarketingOnlyScope")}</span>
             <button
               type="button"
               aria-pressed={excludeOther}

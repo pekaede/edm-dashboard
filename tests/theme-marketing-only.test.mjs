@@ -14,6 +14,11 @@ describe("主题分布「仅营销主题」开关", () => {
     assert.ok(zh.tdMarketingOnly && en.tdMarketingOnly, "tdMarketingOnly 中英必须齐全");
   });
 
+  it("开关旁注明仅本卡生效，文案键中英齐全且组件已引用", () => {
+    assert.ok(zh.tdMarketingOnlyScope && en.tdMarketingOnlyScope, "tdMarketingOnlyScope 中英必须齐全");
+    assert.ok(source.includes('t("tdMarketingOnlyScope")'), "组件必须在开关附近渲染仅本卡生效注脚");
+  });
+
   it("仅在 0 < other < total 时提供开关，避免分母为 0", () => {
     assert.ok(
       source.includes("const canExcludeOther = otherCount > 0 && otherCount < data.total"),

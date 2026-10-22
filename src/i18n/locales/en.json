@@ -141,6 +141,7 @@
   "tdSwitchAll": "Switch to all markets",
   "tdAllThemes": "All Themes",
   "tdMarketingOnly": "Marketing themes only",
+  "tdMarketingOnlyScope": "Applies to this card only",
   "tdChartLabel": "Theme distribution, {market}, {range}, {total, plural, one {# email} other {# emails}} total. {parts}. Use a slice or legend link to view matching emails.",
   "tdChartPart": "{label} {count, plural, one {# email} other {# emails}}, {pct}%",
   "tdSliceAria": "View {label} theme emails: {count, plural, one {# email} other {# emails}}, {pct}% of the 3-week sample",
