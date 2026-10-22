@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { act, createElement as h } from "react";
+import { DEFAULT_PAGE_STATE, parseHash } from "../src/url-state.ts";
 import { descendants, mountDOM } from "./mounted-dom.mjs";
 import { sourceGraph } from "./mounted-source.mjs";
 import { flushPromises } from "./source-module.mjs";
@@ -120,7 +121,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     assert.equal(anchors.length, 8, "切片 4 + 图例 4 条邮件链接");
     assert.deepEqual(
       [...new Set(anchors.map((a) => a.getAttribute("href")))].sort(),
-      ["#emails/behavior", "#emails/new", "#emails/other", "#emails/price"],
+      ["#emails/US/all/behavior", "#emails/US/all/new", "#emails/US/all/other", "#emails/US/all/price"],
     );
 
     // 中心总数与默认文案。
@@ -145,10 +146,10 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     // （规则已在源码契约里钉住），且图表节点不得被替换——聚焦连续性正是复审 P1 的回归点。
     const chartWrap = descendants(container, (n) => (n.getAttribute("class") ?? "").includes("td-chart"))[0];
     assert.ok(chartWrap, "环形图 wrapper 应存在");
-    const priceSlice = anchors.find((a) => a.getAttribute("href") === "#emails/price"
+    const priceSlice = anchors.find((a) => a.getAttribute("href") === "#emails/US/all/price"
       && descendants(a, (n) => n.nodeName === "PATH").length > 0);
     const pricePath = descendants(priceSlice, (n) => n.nodeName === "PATH")[0];
-    const behaviorSlice = anchors.find((a) => a.getAttribute("href") === "#emails/behavior"
+    const behaviorSlice = anchors.find((a) => a.getAttribute("href") === "#emails/US/all/behavior"
       && descendants(a, (n) => n.nodeName === "PATH").length > 0);
     const behaviorPath = descendants(behaviorSlice, (n) => n.nodeName === "PATH")[0];
     assert.equal(pricePath.getAttribute("fill"), "var(--sector-color)", "切片填充应走自身主题色变量");
@@ -173,7 +174,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     await callProp(escWrap, "onKeyDownCapture", { key: "Escape" });
     assert.equal(chartWrap.getAttribute("data-hovered"), null, "Esc 应清除悬停主题");
     await callProp(priceSlice, "onKeyDown", { key: "Enter", preventDefault() {}, stopPropagation() {} });
-    assert.equal(dom.window.location.hash, "#emails/price", "Enter 应跳转到该主题邮件锚点");
+    assert.equal(dom.window.location.hash, "#emails/US/all/price", "Enter 应跳转到当前市场的主题邮件锚点");
     await callProp(priceSlice, "onMouseLeave");
 
     // 开「仅营销主题」：分母变 18、other 消失、占比按 activeTotal 重算。
@@ -183,7 +184,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     assert.equal(toggle.getAttribute("aria-pressed"), "true");
     const anchorsAfter = emailAnchors(container);
     assert.equal(anchorsAfter.length, 6, "剔除 other 后切片 3 + 图例 3");
-    assert.ok(!anchorsAfter.some((a) => a.getAttribute("href") === "#emails/other"));
+    assert.ok(!anchorsAfter.some((a) => a.getAttribute("href") === "#emails/US/all/other"));
     const centerExcluded = descendants(container, (n) => (n.getAttribute("class") ?? "").includes("text-3xl"))[0];
     assert.equal(centerExcluded.textContent, "18");
     const legendAfter = descendants(container, (n) => n.getAttribute("role") === "group" && n.getAttribute("aria-label") === translate("tdLegendAria"))[0];
@@ -191,6 +192,46 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     assert.ok(legendAfterText.some((text) => text.includes("价格促销") && text.includes("61%")), `剔除后 price 应为 61%：${legendAfterText}`);
     assert.ok(legendAfterText.some((text) => text.includes("行为触发") && text.includes("22%")), `剔除后 behavior 应为 22%：${legendAfterText}`);
     assert.ok(legendAfterText.some((text) => text.includes("上新") && text.includes("17%")), `剔除后 new 应为 17%：${legendAfterText}`);
+  });
+
+  it("切换市场后，切片/图例 href 与 Enter/Space 导航均携带当前市场", async (t) => {
+    let selection;
+    const emails = ["US", "UK", "AU", "JP"].flatMap((market) =>
+      ["price", "winback"].map((theme, source_index) => ({
+        date: "2026-10-05", brand: "Zara", theme, keywords: [], market, day_seq: 1, source_index,
+      })));
+    const { dom } = await mountWithFixture(t, "en", (graph) => {
+      const { ThemeDistribution } = graph.load("components/ThemeDistribution.tsx");
+      const { useSiteSelection } = graph.load("site-data.tsx");
+      function Chart() {
+        selection = useSiteSelection();
+        return h(ThemeDistribution);
+      }
+      return h(Chart);
+    }, emails);
+
+    for (const market of ["UK", null, "AU", "JP"]) {
+      await act(() => selection.setMarket(market));
+      await flushPromises();
+      const anchors = emailAnchors(dom.container);
+      assert.equal(anchors.length, 4, "两个主题各有切片与图例链接");
+      for (const theme of ["price", "winback"]) {
+        const hash = `#emails/${market ?? "all"}/all/${theme}`;
+        const links = anchors.filter((a) => a.getAttribute("href") === hash);
+        assert.equal(links.length, 2, `${market ?? "all"}/${theme} 的切片与图例链接均携带市场`);
+        for (const link of links) {
+          assert.deepEqual(parseHash(link.getAttribute("href")), {
+            ...DEFAULT_PAGE_STATE, view: "emails", market, marketSpecified: true, theme,
+          });
+        }
+        const slice = links.find((a) => a.getAttribute("data-sector-key") === theme);
+        assert.ok(slice, "必须存在实际渲染的切片链接");
+        for (const key of ["Enter", " "]) {
+          await callProp(slice, "onKeyDown", { key, preventDefault() {}, stopPropagation() {} });
+          assert.equal(dom.window.location.hash, hash, `${key} 导航应与 href 一致`);
+        }
+      }
+    }
   });
 
   it("图例英文长名不重叠：名称与计数是独立流式布局，名称可任意断行、计数不换行", async (t) => {
@@ -333,7 +374,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     const tdStyle = styleText(tdMount.dom.container);
     assert.ok(tdStyle.includes('.td-chart[data-hovered="winback"] .td-sector-link[data-sector-key="winback"] .td-sector-path'), "环形图应为未知主题生成恢复规则");
     assert.ok(tdStyle.includes('.td-chart[data-hovered="price"] .td-sector-link[data-sector-key="price"] .td-sector-path'), "已知主题的恢复规则同样生成");
-    const winbackSlice = emailAnchors(tdMount.dom.container).find((a) => a.getAttribute("href") === "#emails//all/winback"
+    const winbackSlice = emailAnchors(tdMount.dom.container).find((a) => a.getAttribute("href") === "#emails/US/all/winback"
       && descendants(a, (n) => n.nodeName === "PATH").length > 0);
     assert.ok(winbackSlice, "未知主题应有切片链接");
     await callProp(winbackSlice, "onMouseEnter");

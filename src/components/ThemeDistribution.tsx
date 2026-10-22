@@ -14,6 +14,7 @@ import { Card } from "./Card";
 import { themeLabelKeyOf } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
+import type { MarketFilterValue } from "./MarketFilter";
 import { Tooltip } from "./Tooltip";
 import { ChartContainer, type ChartConfig } from "./ui/chart";
 
@@ -28,11 +29,11 @@ interface ThemeSliceDatum {
   span: number;
 }
 
-function themeEmailsHash(key: string): string {
+function themeEmailsHash(market: MarketFilterValue, key: string): string {
   return buildHash({
     view: "emails",
-    market: null,
-    marketSpecified: false,
+    market,
+    marketSpecified: true,
     brand: "all",
     theme: key,
     query: "",
@@ -105,7 +106,7 @@ export function ThemeDistribution() {
       return (
         <a
           key={theme.key}
-          href={themeEmailsHash(theme.key)}
+          href={themeEmailsHash(market, theme.key)}
           tabIndex={0}
           aria-label={sliceAria(theme)}
           data-sector-key={theme.key}
@@ -122,7 +123,7 @@ export function ThemeDistribution() {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               event.stopPropagation();
-              window.location.hash = themeEmailsHash(theme.key);
+              window.location.hash = themeEmailsHash(market, theme.key);
             }
           }}
           className="td-sector-link cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
@@ -177,7 +178,7 @@ export function ThemeDistribution() {
     );
     // sliceAria/themeName 随 locale 变化，locale 已在依赖中。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, chartConfig, locale]);
+  }, [chartData, chartConfig, locale, market]);
 
   // 当前主题的恢复规则按数据中实际出现的键动态生成：聚合会保留未知主题键（如 winback），
   // 在 index.css 里写死六个固定键会让未知主题在悬停/聚焦时丢高亮，故这里按 chartData 生成。
@@ -266,7 +267,7 @@ export function ThemeDistribution() {
           {chartData.map((theme) => (
             <a
               key={theme.key}
-              href={themeEmailsHash(theme.key)}
+              href={themeEmailsHash(market, theme.key)}
               onMouseEnter={() => setHoveredKey(theme.key)}
               onMouseLeave={() => setHoveredKey(null)}
               onFocus={() => setHoveredKey(theme.key)}
