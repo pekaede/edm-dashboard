@@ -1,28 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocale } from "../i18n";
 import { fetchBrandOverview, type BrandOverviewRow } from "../supabase";
-import { Card } from "./Card";
 import { EmptyState } from "./EmptyState";
 import { PageNav } from "./PageNav";
 import { LoadingBlock } from "./ui/loading-block";
-
-const metrics = [
-  "emails_archived",
-  "total_ads",
-  "new_ads_30d",
-  "unique_copy_30d",
-  "new_ads_90d",
-  "new_copy_90d",
-  "avg_ad_live_days",
-  "video_share_pct",
-  "emoji_use_pct",
-  "landing_pages_tracked",
-  "new_emails_sent_30d",
-  "avg_email_scoring_pct",
-  "avg_subject_length",
-  "avg_email_size_kb",
-  "avg_spam_score",
-] as const;
 
 /** 品牌锚点 id：小写连字符 slug（Halara→halara、ALO Yoga→alo-yoga），供深链接与页内导航共用。 */
 export function brandOverviewSlug(brand: string): string {
@@ -34,6 +15,53 @@ function displayDate(value: string | null, locale: string): string {
   const date = new Date(value);
   return Number.isFinite(date.getTime())
     ? date.toLocaleString(locale === "zh" ? "zh-CN" : "en-US", { timeZone: "UTC" }) : "—";
+}
+
+/** Panoramata 90 天卡片里标签后的问号提示圈（版式还原）。 */
+function HintMark() {
+  return <span aria-hidden className="ml-1 inline-flex h-3.5 w-3.5 translate-y-[1px] items-center justify-center rounded-full border border-[var(--border-default)] text-[9px] leading-none text-[var(--text-secondary)]">?</span>;
+}
+
+/** Panoramata 风格的白色统计卡：标题 + 内容区。 */
+function PanaCard({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-5 shadow-[0_1px_2px_rgba(60,50,30,0.05)]">
+    <h4 className="mb-4 text-[15px] font-semibold text-[var(--text-heading)]">{title}</h4>
+    {children}
+  </section>;
+}
+
+/** 近 30 天卡片的大数字指标：小灰标签 + 粗体大数字。 */
+function Stat30({ label, value }: { label: string; value: string }) {
+  return <div>
+    <p className="text-[13px] text-[var(--text-secondary)]">{label}</p>
+    <p className="mt-0.5 text-[26px] font-bold leading-8 tabular-nums text-[var(--text-heading)]">{value}</p>
+  </div>;
+}
+
+/** 90 天卡片的指标行：小灰标签（带问号圈）+ 常规字重数值。 */
+function MetricRow({ label, children }: { label: string; children: ReactNode }) {
+  return <div>
+    <p className="text-[13px] text-[var(--text-secondary)]">{label}<HintMark /></p>
+    <div className="mt-0.5 text-[15px] font-medium tabular-nums text-[var(--text-heading)]">{children}</div>
+  </div>;
+}
+
+/** Panoramata 的薄荷绿关键词胶囊。 */
+function KeywordChips({ words }: { words: string[] | null }) {
+  const list = (words ?? []).filter(Boolean);
+  if (list.length === 0) return <span>—</span>;
+  return <span className="flex flex-wrap gap-1.5">{list.map((word) => <span key={word} className="rounded-full bg-[#d8f9e6] px-2.5 py-[3px] text-xs font-medium leading-4 text-[#0a6640]">{word}</span>)}</span>;
+}
+
+/** Panoramata 邮件健康指示：✅ 正常 / 🔴 异常（主题 10–60 字符、体积 ≤1000 Kb、垃圾评分 <1 视为正常）。 */
+function healthDot(kind: "subject" | "size" | "spam", value: number | null): string | null {
+  if (value === null) return null;
+  const ok = kind === "subject" ? value >= 10 && value <= 60 : kind === "size" ? value <= 1000 : value < 1;
+  return ok ? "✅" : "🔴";
+}
+
+function HealthValue({ dot, children }: { dot: string | null; children: ReactNode }) {
+  return <>{dot && <span aria-hidden className="mr-1.5">{dot}</span>}{children}</>;
 }
 
 export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
@@ -72,32 +100,77 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const groups = new Map<string, BrandOverviewRow[]>();
   for (const row of rows) groups.set(row.brand, [...(groups.get(row.brand) ?? []), row]);
   const brands = [...groups.keys()];
-  const format = (value: number | null) => value === null ? "—" : value.toLocaleString(locale === "zh" ? "zh-CN" : "en-US", { maximumFractionDigits: 2 });
+  const localeTag = locale === "zh" ? "zh-CN" : "en-US";
+  const fmtInt = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 0 });
+  const fmtDec = (value: number | null) => value === null ? "—" : value.toLocaleString(localeTag, { maximumFractionDigits: 2 });
+  const fmtPct1 = (value: number | null) => value === null ? "—" : `${value.toLocaleString(localeTag, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
   return <div className="min-w-0 space-y-6">
     <h1 className="card-title text-[var(--text-heading)]">{t("viewBrands")}</h1>
     <p className="text-sm text-[var(--text-secondary)]">{t("boHint")}</p>
     <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />
-    {brands.map((brand) => <div key={brand} id={`brand-overview-${brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === brandOverviewSlug(brand) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
-      <Card title={brand}>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <caption className="sr-only">{brand} · {t("viewBrands")}</caption>
-            <thead><tr className="border-b border-[var(--border-default)] bg-[var(--surface-subtle)]">
-              {[t("boMarket"), ...metrics.map((key) => t(`bo_${key}`)), t("boProvider"), t("boAdWords"), t("boEmailWords"), t("boLatest"), t("boSource"), t("boCaptured")].map((label) => <th key={label} scope="col" className="min-w-28 p-3 text-left font-semibold">{label}</th>)}
-            </tr></thead>
-            <tbody>{groups.get(brand)!.map((row, rowIndex) => <tr key={`${row.market}-${rowIndex}`} className="border-b border-[var(--border-default)] align-top">
-              <th scope="row" className="p-3 text-left">{row.market}</th>
-              {metrics.map((key) => <td key={key} className="p-3 tabular-nums">{format(row[key])}</td>)}
-              <td className="p-3">{row.sending_provider || "—"}</td>
-              <td className="min-w-48 p-3">{row.top_keywords?.filter(Boolean).join(" · ") || "—"}</td>
-              <td className="min-w-48 p-3">{row.email_top_keywords?.filter(Boolean).join(" · ") || "—"}</td>
-              <td className="whitespace-nowrap p-3">{row.latest_activity_date && Number.isFinite(Date.parse(row.latest_activity_date)) ? row.latest_activity_date : "—"}</td>
-              <td className="p-3">{row.source || "—"}</td>
-              <td className="min-w-48 p-3">{displayDate(row.captured_at, locale)}</td>
-            </tr>)}</tbody>
-          </table>
-        </div>
-      </Card>
-    </div>)}
+    {brands.map((brand) => {
+      const brandRows = groups.get(brand)!;
+      const sum = (key: "emails_archived" | "total_ads" | "landing_pages_tracked") => brandRows.reduce((acc, row) => acc + (row[key] ?? 0), 0);
+      const latestCaptured = brandRows.map((row) => row.captured_at).filter(Boolean).sort().at(-1) ?? null;
+      const sourceUrl = brandRows.find((row) => row.source_page_url)?.source_page_url ?? null;
+      return <div key={brand} id={`brand-overview-${brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === brandOverviewSlug(brand) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
+        <header className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-1">
+          <div>
+            <h2 className="text-[22px] font-bold leading-7 text-[var(--text-heading)]">{brand}</h2>
+            <p className="mt-1 text-[13px] tabular-nums text-[var(--text-secondary)]">
+              {t("bo_emails_archived")} {fmtInt(sum("emails_archived"))} · {t("bo_total_ads")} {fmtInt(sum("total_ads"))} · {t("bo_landing_pages_tracked")} {fmtInt(sum("landing_pages_tracked"))} · {brandRows.length} {t("boMarketsUnit")} · {t("boDataAsOf")} {displayDate(latestCaptured, locale)}
+            </p>
+          </div>
+          {sourceUrl && <a href={sourceUrl} target="_blank" rel="noreferrer" className="text-[13px] font-medium text-[var(--accent-ink)] underline underline-offset-2">Panoramata ↗</a>}
+        </header>
+        {brandRows.map((row) => {
+          const imagesPct = row.video_share_pct === null ? null : Math.round((100 - row.video_share_pct) * 10) / 10;
+          return <div key={row.market} className="mb-8 last:mb-0">
+            <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
+              <h3 className="text-[15px] font-bold text-[var(--text-heading)]">{row.market}</h3>
+              {row.company_name && row.company_name !== brand && <span className="text-[13px] text-[var(--text-secondary)]">{row.company_name}</span>}
+              {row.tracked_site_url && <a href={row.tracked_site_url} target="_blank" rel="noreferrer" className="text-[13px] text-[var(--accent-ink)] underline underline-offset-2">{row.tracked_site_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>}
+              <span className="text-xs tabular-nums text-[var(--text-secondary)]">{t("bo_emails_archived")} {fmtInt(row.emails_archived)} · {t("bo_total_ads")} {fmtInt(row.total_ads)} · {t("bo_landing_pages_tracked")} {fmtInt(row.landing_pages_tracked)}{row.latest_activity_date ? ` · ${t("boLatest")} ${row.latest_activity_date}` : ""}</span>
+            </div>
+            <div className="space-y-4">
+              <PanaCard title={t("boStats30Title")}>
+                <div className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
+                  <Stat30 label={t("bo_new_emails_sent_30d")} value={fmtInt(row.new_emails_sent_30d)} />
+                  <Stat30 label={t("bo_new_ads_30d")} value={fmtInt(row.new_ads_30d)} />
+                  <Stat30 label={t("boAvgScoringPlain")} value={row.avg_email_scoring_pct === null ? "—" : `${fmtDec(row.avg_email_scoring_pct)}%`} />
+                  <Stat30 label={t("bo_unique_copy_30d")} value={fmtInt(row.unique_copy_30d)} />
+                </div>
+              </PanaCard>
+              <PanaCard title={t("boEmails90Title")}>
+                <div className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <MetricRow label={t("boSubjectPlain")}><HealthValue dot={healthDot("subject", row.avg_subject_length)}>{row.avg_subject_length === null ? "—" : `${fmtDec(row.avg_subject_length)} ${t("boUnitChars")}`}</HealthValue></MetricRow>
+                    <MetricRow label={t("boSizePlain")}><HealthValue dot={healthDot("size", row.avg_email_size_kb)}>{row.avg_email_size_kb === null ? "—" : `${fmtDec(row.avg_email_size_kb)} Kb`}</HealthValue></MetricRow>
+                    <MetricRow label={t("boSpamPlain")}><HealthValue dot={healthDot("spam", row.avg_spam_score)}>{fmtDec(row.avg_spam_score)}</HealthValue></MetricRow>
+                    <MetricRow label={t("boProvider")}>{row.sending_provider || "—"}</MetricRow>
+                  </div>
+                  <div className="space-y-4">
+                    <MetricRow label={t("boEmailWords")}><KeywordChips words={row.email_top_keywords} /></MetricRow>
+                  </div>
+                </div>
+              </PanaCard>
+              <PanaCard title={t("boAds90Title")}>
+                <div className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <MetricRow label={t("boAvgLivePlain")}>{row.avg_ad_live_days === null ? "—" : `${fmtDec(row.avg_ad_live_days)} ${t("boUnitDays")}`}</MetricRow>
+                    <MetricRow label={t("boMediaSplit")}>{imagesPct === null ? "—" : `${fmtPct1(imagesPct)} ${t("boImagesWord")} | ${fmtPct1(row.video_share_pct)} ${t("boVideosWord")}`}</MetricRow>
+                    <MetricRow label={t("boNewVsCopy")}>{row.new_ads_90d === null || row.new_copy_90d === null ? "—" : `${fmtInt(row.new_ads_90d)} ${t("boNewAdsWord")} / ${fmtInt(row.new_copy_90d)} ${t("boNewCopyWord")}`}</MetricRow>
+                  </div>
+                  <div className="space-y-4">
+                    <MetricRow label={t("boAdWords")}><KeywordChips words={row.top_keywords} /></MetricRow>
+                    <MetricRow label={t("boEmojiPlain")}>{fmtPct1(row.emoji_use_pct)}</MetricRow>
+                  </div>
+                </div>
+              </PanaCard>
+            </div>
+          </div>;
+        })}
+      </div>;
+    })}
   </div>;
 }
