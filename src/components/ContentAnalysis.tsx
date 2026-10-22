@@ -2,7 +2,7 @@ import { Check, ChevronDown, RotateCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { LoadingBlock } from "./ui/loading-block";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   validateBannerAnalysis,
   validateSubjectAnalysis,
@@ -565,6 +565,8 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
   const [selectedBrands, setSelectedBrands] = useState<ReadonlySet<string>>(new Set());
   const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
   const [selectedTrend, setSelectedTrend] = useState<string | null>(null);
+  const tacticChipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const trendChipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   // 当前周期窗口：三周用调用方传入的 THREE_WEEK_WINDOW；三个月用数据窗口。
   const activeWindow =
     period === "threeWeeks"
@@ -1039,6 +1041,10 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       return (
                         <button
                           key={item.key}
+                          ref={(el) => {
+                            if (el) tacticChipRefs.current[item.key] = el;
+                            else delete tacticChipRefs.current[item.key];
+                          }}
                           type="button"
                           aria-expanded={isSelected}
                           aria-controls="ca-tactic-detail"
@@ -1075,7 +1081,11 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       </p>
                       <button
                         type="button"
-                        onClick={() => setSelectedTactic(null)}
+                        onClick={() => {
+                          setSelectedTactic(null);
+                          const k = effectiveTactic;
+                          if (k) tacticChipRefs.current[k]?.focus();
+                        }}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
                         {t("efCollapse")}
@@ -1195,8 +1205,13 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       return (
                         <button
                           key={key}
+                          ref={(el) => {
+                            if (el) trendChipRefs.current[key] = el;
+                            else delete trendChipRefs.current[key];
+                          }}
                           type="button"
                           aria-expanded={isSelected}
+                          aria-controls="ca-trend-detail"
                           onClick={() => setSelectedTrend(isSelected ? null : key)}
                           className={`relative before:absolute before:-inset-1 before:content-[""] inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-control)] ${
                             isSelected
@@ -1224,7 +1239,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                   </p>
                 )}
                 {trendDetail && effectiveTrend !== null ? (
-                  <div className="mt-3 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
+                  <div id="ca-trend-detail" className="mt-3 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-[var(--text-heading)]">
                         {subjectSummary.trendTerms.find((tt) => tt.term.toLowerCase() === effectiveTrend)?.term ??
@@ -1235,7 +1250,11 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
                       </p>
                       <button
                         type="button"
-                        onClick={() => setSelectedTrend(null)}
+                        onClick={() => {
+                          setSelectedTrend(null);
+                          const k = effectiveTrend;
+                          if (k) trendChipRefs.current[k]?.focus();
+                        }}
                         className="shrink-0 rounded-md px-2 py-0.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card)] hover:text-[var(--text-heading)]"
                       >
                         {t("efCollapse")}
