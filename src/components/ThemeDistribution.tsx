@@ -9,6 +9,7 @@ import {
   themeLabelColor,
   THREE_WEEK_WINDOW,
 } from "../three-week-aggregation";
+import { buildHash } from "../url-state";
 import { Card } from "./Card";
 import { THEME_LABEL_KEYS } from "./dashboard";
 import { EmptyState } from "./EmptyState";
@@ -25,6 +26,19 @@ interface ThemeSliceDatum {
   count: number;
   pct: number;
   span: number;
+}
+
+function themeEmailsHash(key: string): string {
+  return buildHash({
+    view: "emails",
+    market: null,
+    marketSpecified: false,
+    brand: "all",
+    theme: key,
+    query: "",
+    dateFrom: "",
+    dateTo: "",
+  });
 }
 
 export function ThemeDistribution() {
@@ -89,7 +103,7 @@ export function ThemeDistribution() {
       return (
         <a
           key={theme.key}
-          href={`#emails/${encodeURIComponent(theme.key)}`}
+          href={themeEmailsHash(theme.key)}
           tabIndex={0}
           aria-label={sliceAria(theme)}
           data-sector-key={theme.key}
@@ -106,7 +120,7 @@ export function ThemeDistribution() {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               event.stopPropagation();
-              window.location.hash = `#emails/${encodeURIComponent(theme.key)}`;
+              window.location.hash = themeEmailsHash(theme.key);
             }
           }}
           className="td-sector-link cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
@@ -250,7 +264,7 @@ export function ThemeDistribution() {
           {chartData.map((theme) => (
             <a
               key={theme.key}
-              href={`#emails/${encodeURIComponent(theme.key)}`}
+              href={themeEmailsHash(theme.key)}
               onMouseEnter={() => setHoveredKey(theme.key)}
               onMouseLeave={() => setHoveredKey(null)}
               onFocus={() => setHoveredKey(theme.key)}

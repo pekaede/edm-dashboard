@@ -333,7 +333,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     const tdStyle = styleText(tdMount.dom.container);
     assert.ok(tdStyle.includes('.td-chart[data-hovered="winback"] .td-sector-link[data-sector-key="winback"] .td-sector-path'), "环形图应为未知主题生成恢复规则");
     assert.ok(tdStyle.includes('.td-chart[data-hovered="price"] .td-sector-link[data-sector-key="price"] .td-sector-path'), "已知主题的恢复规则同样生成");
-    const winbackSlice = emailAnchors(tdMount.dom.container).find((a) => a.getAttribute("href") === "#emails/winback"
+    const winbackSlice = emailAnchors(tdMount.dom.container).find((a) => a.getAttribute("href") === "#emails//all/winback"
       && descendants(a, (n) => n.nodeName === "PATH").length > 0);
     assert.ok(winbackSlice, "未知主题应有切片链接");
     await callProp(winbackSlice, "onMouseEnter");
