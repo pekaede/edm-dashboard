@@ -382,7 +382,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 onClick={() => selectBrand(brand)}
                 className={`min-h-11 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)] focus-visible:ring-offset-2 ${
                   isSelected
-                    ? "border-[var(--text-calendar-heading)] bg-[var(--text-calendar-heading)] text-[var(--surface-calendar)]"
+                    ? "border-[var(--control-active-bg)] bg-[var(--control-active-bg)] text-[var(--control-active-text)]"
                     : "border-[var(--border-calendar-control)] bg-[var(--surface-calendar)] text-[var(--text-calendar-label)] hover:border-[var(--border-calendar-hover)] hover:bg-[var(--surface-calendar-hover)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
@@ -412,7 +412,7 @@ export function CalendarView({ className = "" }: CalendarViewProps) {
                 onKeyDown={(event) => handleMonthKeyDown(event, monthIndex)}
                 className={`min-h-11 flex-1 rounded-lg px-2 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-calendar-focus)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface-calendar-tabs)] ${
                   isSelected
-                    ? "bg-[var(--text-calendar-heading)] text-[var(--surface-calendar)] shadow-sm"
+                    ? "bg-[var(--control-active-bg)] text-[var(--control-active-text)] shadow-sm"
                     : "text-[var(--text-calendar-secondary)] hover:bg-[var(--surface-calendar)] hover:text-[var(--text-calendar-heading)]"
                 }`}
               >
