@@ -298,6 +298,31 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
 }
 
+/* 环形图/堆叠条的悬停与锁定视觉由 CSS 驱动：图表元素已 memoize，
+   状态变化不重建 SVG 节点，避免键盘焦点被卸载；数值与文案仍由 React 状态渲染。
+   通用淡化规则在此；「当前主题恢复原色」的规则由组件按数据中实际出现的主题键
+   动态生成（见 ThemeDistribution / BrandThemeBreakdown 内的 <style>），未知主题同样适用。 */
+.td-chart[data-hovered]:not([data-hovered=""]) .td-sector-path {
+  fill: color-mix(in srgb, var(--sector-color) 25%, var(--surface-card));
+}
+.td-chart[data-hovered]:not([data-hovered=""]) .td-sector-ring {
+  stroke: color-mix(in srgb, var(--sector-color) 25%, var(--surface-card));
+}
+.td-chart[data-hovered]:not([data-hovered=""]) .td-sector-label {
+  fill: var(--chart-dimmed-label);
+}
+.btb-scope[data-highlighted]:not([data-highlighted=""]) .btb-sector-path {
+  fill: color-mix(in srgb, var(--sector-color) 25%, var(--surface-card));
+}
+.btb-scope[data-highlighted]:not([data-highlighted=""]) .btb-sector-label {
+  fill: var(--chart-dimmed-label);
+}
+.btb-sector-path:hover,
+.btb-sector-path:focus-visible {
+  stroke: var(--control-focus);
+  stroke-width: 2;
+}
+
 .markdown-report {
   background: var(--surface-card);
   box-shadow: var(--card-report-shadow);

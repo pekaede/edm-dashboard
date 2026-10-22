@@ -21,10 +21,10 @@ describe("主题分布「仅营销主题」开关", () => {
 
   it("仅在 0 < other < total 时提供开关，避免分母为 0", () => {
     assert.ok(
-      source.includes("const canExcludeOther = otherCount > 0 && otherCount < data.total"),
+      source.includes("otherCount > 0 && otherCount < data.total"),
       "开关可用条件必须守住分母",
     );
-    assert.ok(source.includes("const activeTotal = excludeOther ? data.total - otherCount : data.total"));
+    assert.ok(source.includes("excludeOther ? data.total - otherCount : data.total"));
   });
 
   it("切片角度与占比都以 activeTotal 为分母，other 被剔出切片", () => {
