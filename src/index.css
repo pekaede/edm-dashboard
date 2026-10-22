@@ -385,14 +385,9 @@ summary,
 }
 
 @media (min-width: 80rem) {
-  .dashboard-overview-grid {
-    align-items: start;
-  }
-
-  .dashboard-overview-grid .dashboard-card {
-    height: auto;
-  }
-
+  /* 概览三卡等高：网格沿用 App.tsx 的 items-stretch、卡片沿用 Card 的 h-full
+     拉齐行高（同 d983f2d 词云/日历做法），此处不再覆盖为自然高度；
+     仅保留副标题最小高度，让三卡内容起点对齐。 */
   .dashboard-overview-grid .dashboard-card > :first-child > p {
     min-height: 2.5rem;
   }
