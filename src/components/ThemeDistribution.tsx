@@ -11,7 +11,7 @@ import {
 } from "../three-week-aggregation";
 import { buildHash } from "../url-state";
 import { Card } from "./Card";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
@@ -51,8 +51,10 @@ export function ThemeDistribution() {
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
   );
-  const themeName = (theme: { key: string; labelZh: string }) =>
-    THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh;
+  const themeName = (theme: { key: string; labelZh: string }) => {
+    const key = themeLabelKeyOf(theme.key);
+    return key ? t(key) : theme.labelZh;
+  };
   const hint = data
     ? `${meta.market} · ${t("tdHintRealtime")}${formatWindowRange(data.window)}${t("tdHintTotalPart")}${data.total}${t("tdHintDiffPart")}${meta.total}${t("tdHintDescPart")}`
     : `${meta.market} · ${t("tdHintRealtime")}${formatWindowRange(THREE_WEEK_WINDOW)}${t("tdHintFallback")}`;

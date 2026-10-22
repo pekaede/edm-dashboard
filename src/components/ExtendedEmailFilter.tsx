@@ -32,7 +32,7 @@ import {
 import { THREE_WEEK_WINDOW } from "../three-week-aggregation";
 import { useUrlSync } from "../use-url-sync";
 import { Card } from "./Card";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { getMarketLabel } from "./MarketFilter";
@@ -57,7 +57,7 @@ const FILTER_THEMES = [
 const FILTER_BRANDS = BRAND_ORDER;
 
 function themeLabelOf(theme: string): string {
-  const key = THEME_LABEL_KEYS[theme];
+  const key = themeLabelKeyOf(theme);
   return key ? translate(key) : theme;
 }
 

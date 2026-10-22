@@ -14,7 +14,7 @@ import {
   type ThreeWeekAggregatedTheme,
 } from "../three-week-aggregation";
 import { Card } from "./Card";
-import { THEME_LABEL_KEYS } from "./dashboard";
+import { themeLabelKeyOf } from "./dashboard";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
@@ -79,8 +79,10 @@ interface BrandBarProps {
 const BrandBar = memo(function BrandBar({ brandName, brandTotal, segs, chartConfig, marketLabel, windowRange }: BrandBarProps) {
   const { t } = useLocale();
   const [hotKey, setHotKey] = useState<string | null>(null);
-  const themeName = (theme: { key: string; labelZh: string }) =>
-    THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh;
+  const themeName = (theme: { key: string; labelZh: string }) => {
+    const key = themeLabelKeyOf(theme.key);
+    return key ? t(key) : theme.labelZh;
+  };
   const segLabel = (seg: BrandSeg) =>
     t("btbSegLabel", { brand: brandName, theme: themeName(seg), count: seg.themeCount, pct: seg.pct, total: brandTotal });
   const activeSeg = hotKey ? segs.find((seg) => seg.key === hotKey) : undefined;
@@ -209,8 +211,10 @@ interface BrandThemeBreakdownProps {
 
 export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps) {
   const { t, locale } = useLocale();
-  const themeName = (theme: { key: string; labelZh: string }) =>
-    THEME_LABEL_KEYS[theme.key] ? t(THEME_LABEL_KEYS[theme.key]) : theme.labelZh;
+  const themeName = (theme: { key: string; labelZh: string }) => {
+    const key = themeLabelKeyOf(theme.key);
+    return key ? t(key) : theme.labelZh;
+  };
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
   const [pinnedTheme, setPinnedTheme] = useState<string | null>(null);
   const highlightedTheme = previewTheme ?? pinnedTheme;

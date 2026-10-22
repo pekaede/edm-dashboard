@@ -1,0 +1,52 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { describe, it } from "node:test";
+import { themeLabelKeyOf } from "../src/components/dashboard.ts";
+
+describe("主题翻译查表守卫", () => {
+  it("已知主题返回原字典键，保持翻译结果不变", () => {
+    for (const [theme, expected] of [
+      ["price", "themePrice"],
+      ["behavior", "themeBehavior"],
+      ["new", "themeNew"],
+      ["lifestyle", "themeLifestyle"],
+      ["category", "themeCategory"],
+      ["other", "themeOther"],
+    ]) {
+      assert.equal(themeLabelKeyOf(theme), expected, theme);
+    }
+  });
+
+  it("原型属性名返回 undefined，不传入翻译函数", () => {
+    for (const theme of ["toString", "constructor", "__proto__", "hasOwnProperty", "valueOf"]) {
+      assert.equal(themeLabelKeyOf(theme), undefined, theme);
+    }
+  });
+
+  it("空字符串、普通未知主题与含特殊字符的主题返回 undefined", () => {
+    for (const theme of ["", "winback", "a\"b"]) {
+      assert.equal(themeLabelKeyOf(theme), undefined, theme);
+    }
+  });
+
+  // 运行时断言覆盖查表结果；源码契约保证所有组件 helper 用该结果选择翻译或原 fallback。
+  for (const [component, helperCount] of [["ThemeDistribution", 1], ["BrandThemeBreakdown", 2]]) {
+    it(`源码契约：${component} 的所有主题 helper 先守卫，未命中回落 labelZh`, () => {
+      const source = readFileSync(new URL(`../src/components/${component}.tsx`, import.meta.url), "utf8");
+      assert.match(source, /import \{ themeLabelKeyOf \} from "\.\/dashboard";/);
+      assert.equal(
+        [...source.matchAll(/const themeName = \(theme: \{ key: string; labelZh: string \}\) => \{\s*const key = themeLabelKeyOf\(theme\.key\);\s*return key \? t\(key\) : theme\.labelZh;\s*\};/g)].length,
+        helperCount,
+        "每个 themeName 都必须先守卫，再决定翻译或回落 labelZh",
+      );
+      assert.doesNotMatch(source, /THEME_LABEL_KEYS\s*\[/);
+    });
+  }
+
+  it("源码契约：ExtendedEmailFilter 先守卫，未命中回落原主题名", () => {
+    const source = readFileSync(new URL("../src/components/ExtendedEmailFilter.tsx", import.meta.url), "utf8");
+    assert.match(source, /import \{ themeLabelKeyOf \} from "\.\/dashboard";/);
+    assert.match(source, /function themeLabelOf\(theme: string\): string \{\s*const key = themeLabelKeyOf\(theme\);\s*return key \? translate\(key\) : theme;\s*\}/);
+    assert.doesNotMatch(source, /THEME_LABEL_KEYS\s*\[/);
+  });
+});
