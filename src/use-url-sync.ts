@@ -344,9 +344,12 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
   const restoreGenerationRef = useRef<number>(0);
   const [restoreTrigger, setRestoreTrigger] = useState<number>(0);
 
-  // Track window scroll position actively under current view
+  // Track window scroll position actively under current view.
+  // preserveScroll: false 的实例不做滚动恢复/持久化，滚动监听一并门控，
+  // 避免重复实例上多余的 scroll 监听与共享快照 Map 写入（监听本身不触发任何
+  // 状态更新，只写本实例 refs 与共享 Map，false 实例侧无任何消费者）。
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!preserveScroll || typeof window === "undefined") return;
 
     const handleWindowScroll = () => {
       const currentView = stateRef.current.view;
@@ -367,7 +370,7 @@ export function useUrlSync(options: UseUrlSyncOptions = {}): UseUrlSyncResult {
     return () => {
       window.removeEventListener("scroll", handleWindowScroll);
     };
-  }, []);
+  }, [preserveScroll]);
 
   // Proactively save reading position snapshot using lastScrollByViewRef with restore/interaction protection
   const saveScrollSnapshot = useCallback((targetView: string) => {
