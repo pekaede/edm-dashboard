@@ -61,7 +61,6 @@ interface ThemeDef {
 interface ComparisonData {
   /** 全部可用市场（固定 8 + 数据中出现的 extra），按固定顺序 + extra 字母序。 */
   markets: string[];
-  marketLabels: Map<string, string>;
   brands: string[];
   themes: ThemeDef[];
   weeks: WeekDef[];
@@ -129,17 +128,16 @@ function aggregateComparison(
     Math.floor((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${windowStart}T00:00:00Z`)) / 86_400_000 / 7);
 
   // 市场：固定 8 + 数据中出现的 extra（有封数时追加，字母序）。
-  const marketLabels = new Map<string, string>(COMPARISON_MARKETS.map((m) => [m.code, m.label]));
+  const knownMarketCodes = new Set<string>(COMPARISON_MARKETS.map((m) => m.code));
   const extraMarkets = new Set<string>();
   for (const email of emails) {
     const market = getEmailMarket(email);
-    if (!marketLabels.has(market)) extraMarkets.add(market);
+    if (!knownMarketCodes.has(market)) extraMarkets.add(market);
   }
   const markets = [
     ...COMPARISON_MARKETS.map((m) => m.code),
     ...[...extraMarkets].sort(),
   ];
-  for (const code of extraMarkets) marketLabels.set(code, code);
 
   // 品牌：BRAND_ORDER + 数据中出现的未知品牌（追加，字母序）。
   const extraBrands = new Set<string>();
@@ -188,7 +186,6 @@ function aggregateComparison(
 
   return {
     markets,
-    marketLabels,
     brands,
     themes,
     weeks,
