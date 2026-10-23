@@ -4,6 +4,12 @@ import "./index.css";
 import App, { ErrorBoundary } from "./App";
 import { useLocale } from "./i18n";
 
+declare global {
+  interface Window { __edmBooted?: boolean; }
+}
+
+window.__edmBooted = true;
+
 function PageErrorFallback() {
   // useLocale 可使用已初始化的全局 i18n 实例，App 的 Provider 失败时仍能翻译。
   const { t } = useLocale();

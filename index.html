@@ -43,6 +43,48 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <style>
+        #js-required-en { display: none; }
+        html:lang(en) #js-required-zh { display: none; }
+        html:lang(en) #js-required-en { display: block; }
+      </style>
+      <p id="js-required-zh" lang="zh">请启用 JavaScript 以使用本站</p>
+      <p id="js-required-en" lang="en">JavaScript is required to use this site</p>
+    </noscript>
+    <script id="boot-watchdog">
+      (function () {
+        var timer;
+        function showFailure() {
+          clearTimeout(timer);
+          window.removeEventListener("error", onError, true);
+          if (window.__edmBooted) return;
+          var root = document.getElementById("root");
+          if (!root || document.getElementById("boot-error")) return;
+          var english = /^en\b/i.test(document.documentElement.lang);
+          var panel = document.createElement("section");
+          panel.setAttribute("id", "boot-error");
+          panel.setAttribute("role", "alert");
+          panel.style.cssText = "margin:24px;padding:20px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#111827;font:16px/1.5 system-ui,sans-serif";
+          var message = document.createElement("p");
+          message.textContent = english ? "Page resources failed to load. Check your connection and reload." : "页面资源加载失败，请检查网络后重新加载。";
+          panel.appendChild(message);
+          var button = document.createElement("button");
+          button.setAttribute("type", "button");
+          button.textContent = english ? "Reload" : "重新加载";
+          button.style.cssText = "min-height:44px;padding:8px 16px;cursor:pointer";
+          button.addEventListener("click", function () { window.location.reload(); });
+          panel.appendChild(button);
+          root.appendChild(panel);
+        }
+        function onError(event) {
+          var target = event.target;
+          if (target && target.tagName === "SCRIPT" && target.getAttribute("type") === "module") showFailure();
+        }
+        window.addEventListener("error", onError, true);
+        timer = setTimeout(showFailure, 9000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
