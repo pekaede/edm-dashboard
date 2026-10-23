@@ -352,7 +352,7 @@ function FrequencyComparison({ data, selected, brand, onBrandChange, id }: { dat
               </section>
             );
           })}
-          <div className="grid gap-1 border-t border-[var(--divider)] pt-3" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }} aria-label={t("mcWeeksAria")}>{data.weeks.map((week) => <div key={week.label} className="text-center text-xs leading-5 text-[var(--text-secondary)]"><strong>{week.label}</strong><br />{formatDayMonth(week.start)}<br />–{formatDayMonth(week.end)}</div>)}</div>
+          <div className="grid gap-1 border-t border-[var(--divider)] pt-3" style={{ gridTemplateColumns: "repeat(" + data.weeks.length + ", minmax(0, 1fr))" }} role="group" aria-label={t("mcWeeksAria")}>{data.weeks.map((week) => <div key={week.label} className="text-center text-xs leading-5 text-[var(--text-secondary)]"><strong>{week.label}</strong><br />{formatDayMonth(week.start)}<br />–{formatDayMonth(week.end)}</div>)}</div>
         </div>
       </div>
       <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{t("mcFreqFooter")}</p>
