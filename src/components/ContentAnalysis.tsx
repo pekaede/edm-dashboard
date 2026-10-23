@@ -944,7 +944,7 @@ export function ContentAnalysis({ site, window: dateWindow }: ContentAnalysisPro
           {periodToggle}
           {brandSelect}
         </div>
-        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
           <span>
             {t("caCovCollected")}
             <strong className="text-[var(--text-heading)]">{coverage.collectionRate}%</strong>
