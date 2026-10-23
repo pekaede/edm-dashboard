@@ -1,9 +1,9 @@
 import { useLocale, type Locale } from "./index";
 import { Button } from "../components/ui/button";
 
-const OPTIONS: ReadonlyArray<{ code: Locale; label: string }> = [
-  { code: "zh", label: "中文" },
-  { code: "en", label: "EN" },
+const OPTIONS: ReadonlyArray<{ code: Locale; label: string; lang: string }> = [
+  { code: "zh", label: "中文", lang: "zh-CN" },
+  { code: "en", label: "EN", lang: "en" },
 ];
 
 export function LanguageToggle() {
@@ -23,6 +23,7 @@ export function LanguageToggle() {
             size="sm"
             key={option.code}
             type="button"
+            lang={option.lang}
             aria-pressed={isActive}
             onClick={() => setLocale(option.code)}
             className={`h-7 min-h-7 rounded-full px-2.5 text-xs font-bold focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--control-bg)] ${
