@@ -363,6 +363,7 @@ export function ExtendedEmailFilter() {
 
   const listId = useId();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const dateFromInputRef = useRef<HTMLInputElement | null>(null);
   const allLoadedRef = useRef<HTMLParagraphElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
@@ -884,6 +885,14 @@ export function ExtendedEmailFilter() {
     searchInputRef.current?.focus();
   };
 
+  // 清除日期按钮随日期置空而卸载：显式把焦点交还给起始日期输入框，
+  // 避免键盘/读屏用户焦点掉到 body（与 handleClearSearch 同模式）。
+  const handleClearDates = () => {
+    setDateRange("", "");
+    setVisibleCount(PAGE_SIZE);
+    dateFromInputRef.current?.focus();
+  };
+
   const handleToggleFavorite = (email: EmailRecord) => {
     const key = getEmailKey(email);
     if (!toggleFavorite(key)) {
@@ -1129,6 +1138,7 @@ export function ExtendedEmailFilter() {
                   {t("efDateFrom")}
                   <input
                     type="date"
+                    ref={dateFromInputRef}
                     value={dateFrom}
                     min={meta.windowStart}
                     max={dateTo || meta.windowEnd}
@@ -1153,10 +1163,7 @@ export function ExtendedEmailFilter() {
                 {dateFrom || dateTo ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setDateRange("", "");
-                      setVisibleCount(PAGE_SIZE);
-                    }}
+                    onClick={handleClearDates}
                     className="rounded-full border border-[var(--control-filter-border)] bg-[var(--control-filter-bg)] px-4 py-2 text-sm font-bold text-[var(--text-control)] transition hover:bg-[var(--control-filter-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-heading)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
                   >
                     {t("efClearDates")}
