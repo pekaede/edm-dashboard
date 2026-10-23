@@ -1142,7 +1142,12 @@ export function ExtendedEmailFilter() {
                   );
                 })}
               </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+              {/* 自定义日期输入区：与上方日期预设组（role="group"）保持一致的组语义，复用既有 efFilterByDate 键 */}
+              <div
+                className="flex flex-wrap items-center gap-x-3 gap-y-2.5"
+                role="group"
+                aria-label={t("efFilterByDate")}
+              >
                 <label className="flex items-center gap-2 text-base font-semibold text-[var(--text-description)]">
                   {t("efDateFrom")}
                   <input
