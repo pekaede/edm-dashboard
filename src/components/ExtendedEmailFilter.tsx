@@ -363,6 +363,7 @@ export function ExtendedEmailFilter() {
 
   const listId = useId();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const allLoadedRef = useRef<HTMLParagraphElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
   const lastWindowScrollRef = useRef<number>(0);
@@ -926,9 +927,13 @@ export function ExtendedEmailFilter() {
       : t("efRangeAll");
   const filterSummary = t("efFilterSummary", { market: selectedMarketLabel, brand: selectedBrandLabel, theme: selectedThemeLabel, date: dateFrom || dateTo ? t("efSummaryDate", { range: dateRangeLabel }) : "", fav: showOnlyFavorites ? t("efSummaryFav") : "", search: searchQuery.trim() ? t("efSummarySearch", { q: searchQuery.trim() }) : "" });
   const hasMore = visibleEmails.length < filteredEmails.length;
+  // 空依赖的加载回调通过 ref 读取本次渲染的完成判定。
+  const willLoadAllRef = useRef(false);
+  willLoadAllRef.current = hasMore && visibleEmails.length + PAGE_SIZE >= filteredEmails.length;
 
   // Load more without layout jump / scroll position loss
   const handleLoadMore = useCallback(() => {
+    const willLoadAll = willLoadAllRef.current;
     const container = listContainerRef.current;
     const prevContainerTop = container ? container.scrollTop : 0;
     const prevWindowY = lastWindowScrollRef.current;
@@ -940,6 +945,7 @@ export function ExtendedEmailFilter() {
         container.scrollTop = prevContainerTop;
       }
       window.scrollTo({ top: prevWindowY, behavior: "instant" });
+      if (willLoadAll) allLoadedRef.current?.focus({ preventScroll: true });
     });
   }, []);
 
@@ -1490,7 +1496,7 @@ export function ExtendedEmailFilter() {
                 {t("efLoadMore", { n: filteredEmails.length - visibleEmails.length })}
               </button>
             ) : (
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">
+              <p ref={allLoadedRef} tabIndex={-1} className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--text-notice)]">
                 {t("efLoadedAll")}
               </p>
             )}
