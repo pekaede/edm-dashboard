@@ -304,6 +304,8 @@ export function Tooltip({
         if (target && tooltipRef.current?.contains(target)) {
           return;
         }
+        // 只处理直接落在锚点容器自身的按键，内部交互子元素的键盘行为走原生。
+        if (event.target !== event.currentTarget) { return; }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           if (isOpen) {
