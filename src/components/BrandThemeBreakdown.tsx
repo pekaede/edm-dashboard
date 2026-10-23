@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, type CSSProperties } from "react";
+import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Bar, BarChart, LabelList, XAxis, YAxis, type BarShapeProps } from "recharts";
 import type { Brand } from "../data";
 import { useLocale } from "../i18n";
@@ -224,6 +224,16 @@ export function BrandThemeBreakdown({ onSelectBrand }: BrandThemeBreakdownProps)
     () => (status === "ready" ? aggregateThreeWeek(emails) : null),
     [status, emails],
   );
+  // 锁定/预览的主题在数据变化后若不再可见（count 为 0 时图例按钮卸载），其余分段会永久淡化
+  // 且无可见清除入口；数据就绪时自动清理不在可见主题集中的 pin/preview（与 Escape 清除语义一致）。
+  useEffect(() => {
+    if (status !== "ready" || !data) return;
+    const visibleKeys = new Set(
+      data.themes.filter((theme) => theme.count > 0).map((theme) => theme.key),
+    );
+    if (pinnedTheme !== null && !visibleKeys.has(pinnedTheme)) setPinnedTheme(null);
+    if (previewTheme !== null && !visibleKeys.has(previewTheme)) setPreviewTheme(null);
+  }, [status, data, pinnedTheme, previewTheme]);
   const chartConfig = useMemo<ChartConfig>(() => {
     if (!data) return {};
     return Object.fromEntries(
