@@ -115,7 +115,8 @@ body {
 .view-switcher {
   display: grid;
   width: min(100%, 24rem);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 四个视图链接按 2×2 对称排列（repeat(3) 会让第 4 项单独掉到第二行） */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25rem;
   border: 1px solid var(--control-border);
   border-radius: var(--card-radius);
