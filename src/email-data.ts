@@ -29,7 +29,11 @@ export function matchesMarket(email: EmailRecord, market: string | null): boolea
 
 /** 按市场统计封数（market 代码 → 封数），供三视图的市场下拉展示。 */
 export function countEmailsByMarket(emails: EmailRecord[]): Record<string, number> {
-  const counts: Record<string, number> = {};
+  // market 代码是动态键（含未来导入的未知市场代码）：普通 {} 对 "__proto__"
+  // 的写入会被原型 setter 静默吞掉（非对象值忽略赋值），而读取返回 Object.prototype，
+  // (Object.prototype ?? 0) + 1 又拼成 "[object Object]1" 字符串——计数错乱会传导到
+  // MarketFilter 的排序与 extra 市场展示。无原型对象消除整类键名碰撞。
+  const counts: Record<string, number> = Object.create(null);
   for (const email of emails) {
     const market = getEmailMarket(email);
     counts[market] = (counts[market] ?? 0) + 1;
