@@ -80,3 +80,4 @@ node scripts/verify-seo.mjs
 
 - 构建命令：`npm run build`
 - 构建输出目录：`dist`
+- 发布前校验：`npm run verify`（先跑全部回归测试，再跑类型检查 + 构建；SEO 产物校验已包含在回归测试内）
