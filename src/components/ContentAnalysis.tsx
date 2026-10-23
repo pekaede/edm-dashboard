@@ -212,7 +212,7 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
   }
 
   const tacticCountMap = new Map<string, number>();
-  const discountMap = new Map<string, number>();
+  const discountMap = new Map<string, { text: string; count: number }>();
   const trendMap = new Map<string, { term: string; category: string; count: number }>();
   let minLength = Infinity;
   let maxLength = -Infinity;
@@ -224,14 +224,24 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
 
   for (const s of results) {
     if (Array.isArray(s.tactics)) {
+      // 同一封邮件内归一化后重复的策略只计一次，避免单封 ["discount"," Discount "] 产出 200% 占比。
+      const seenTactics = new Set<string>();
       for (const t of s.tactics) {
         const cleanT = t.trim().toLowerCase();
-        if (cleanT) tacticCountMap.set(cleanT, (tacticCountMap.get(cleanT) ?? 0) + 1);
+        if (!cleanT || seenTactics.has(cleanT)) continue;
+        seenTactics.add(cleanT);
+        tacticCountMap.set(cleanT, (tacticCountMap.get(cleanT) ?? 0) + 1);
       }
     }
     if (s.discount_framing) {
       const framing = s.discount_framing.trim();
-      if (framing) discountMap.set(framing, (discountMap.get(framing) ?? 0) + 1);
+      if (framing) {
+        // 大小写变体合并计数，展示保留首次出现的原文写法。
+        const key = framing.toLowerCase();
+        const prev = discountMap.get(key);
+        if (prev) prev.count += 1;
+        else discountMap.set(key, { text: framing, count: 1 });
+      }
     }
     if (Array.isArray(s.trend_terms)) {
       for (const item of s.trend_terms as TrendTerm[]) {
@@ -251,9 +261,13 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
     totalEmojis += emojis;
     if (emojis > 0) withEmojiCount += 1;
     if (Array.isArray(s.cta_verbs)) {
+      // 同一封邮件内归一化后重复的动词只计一次（与策略同理）。
+      const seenVerbs = new Set<string>();
       for (const v of s.cta_verbs) {
         const cleanVerb = v.trim().toLowerCase();
-        if (cleanVerb) verbCountMap.set(cleanVerb, (verbCountMap.get(cleanVerb) ?? 0) + 1);
+        if (!cleanVerb || seenVerbs.has(cleanVerb)) continue;
+        seenVerbs.add(cleanVerb);
+        verbCountMap.set(cleanVerb, (verbCountMap.get(cleanVerb) ?? 0) + 1);
       }
     }
     if (s.personalization) personalizationCount += 1;
@@ -268,8 +282,8 @@ function aggregateSubjectAnalysis(results: SubjectAnalysis[]): SubjectSummary {
         percentage: Math.round((count / analyzedCount) * 100),
       }))
       .sort((a, b) => b.count - a.count),
-    discountFramings: Array.from(discountMap.entries())
-      .map(([text, count]) => ({ text, count }))
+    discountFramings: Array.from(discountMap.values())
+      .map(({ text, count }) => ({ text, count }))
       .sort((a, b) => b.count - a.count),
     trendTerms: Array.from(trendMap.values()).sort(
       (a, b) => b.count - a.count || a.term.localeCompare(b.term),
