@@ -180,7 +180,7 @@ export function CampaignOverview({ onSelectBrand }: CampaignOverviewProps) {
         </table>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[var(--divider)] pt-3 text-xs text-[var(--text-secondary)]" aria-label={t("campaignLegendAriaLabel")}>
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[var(--divider)] pt-3 text-xs text-[var(--text-secondary)]" role="group" aria-label={t("campaignLegendAriaLabel")}>
         <span>{t("campaignVolumeLabel")}</span>
         {HEATMAP_LEVELS.map((level) => (
           <span key={level.label} className="inline-flex items-center gap-1.5">
