@@ -936,7 +936,7 @@ export function ExtendedEmailFilter() {
       setExpandedRowKeys(new Set(visibleEmails.map((e) => getEmailKey(e))));
     }
   };
-  const selectedThemeLabel = selectedTheme ? themeLabelOf(selectedTheme) : t("calAllBrands");
+  const selectedThemeLabel = selectedTheme ? themeLabelOf(selectedTheme) : t("tdAllThemes");
   const selectedBrandLabel = selectedBrand ?? t("calAllBrands");
   const selectedMarketLabel = getMarketLabel(selectedMarket);
   const dateRangeLabel =
@@ -1091,7 +1091,7 @@ export function ExtendedEmailFilter() {
                   <SelectValue>{selectedThemeLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">{t("calAllBrands")}</SelectItem>
+                  <SelectItem value="__all__">{t("tdAllThemes")}</SelectItem>
                   {selectedTheme && !FILTER_THEMES.some((theme) => theme.key === selectedTheme) ? <SelectItem value={`theme:${selectedTheme}`}>{selectedThemeLabel}</SelectItem> : null}
                   {FILTER_THEMES.map((theme) => (
                     <SelectItem key={theme.key} value={`theme:${theme.key}`} textValue={t(theme.labelKey)}>
