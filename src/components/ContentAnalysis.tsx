@@ -373,11 +373,7 @@ function HorizontalProgressBar({
       </div>
       <div
         className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-subtle)]"
-        role="progressbar"
-        aria-valuenow={count}
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-label={t("caShareAria", { label: label })}
+        aria-hidden="true"
       >
         <div
           className="h-full rounded-full bg-[var(--control-active-bg)] transition-all duration-300"
