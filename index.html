@@ -17,6 +17,8 @@
           }
         }
         document.documentElement.setAttribute("data-theme", theme);
+        var meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#111318" : "#f7f8fa");
       })();
     </script>
     <link rel="preconnect" href="https://nwjyafirqckaznqkexyb.supabase.co" crossorigin />
