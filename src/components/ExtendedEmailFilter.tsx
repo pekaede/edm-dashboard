@@ -401,6 +401,15 @@ export function ExtendedEmailFilter() {
   const visibleRowsRef = useRef(visibleRows);
   visibleRowsRef.current = visibleRows;
   const visibleEmails = useMemo(() => visibleRows.map((row) => row.original), [visibleRows]);
+  // 结果计数播报节流（无障碍）：搜索框逐字输入时过滤结果每击一键就变化；
+  // 若把 aria-live 直接挂在计数段落上，读屏器会逐键播报打断阅读。
+  // 这里只在计数稳定 600ms 后把文本写入独立播报区；首屏 announced 与初始值一致，不产生播报。
+  const countAnnouncement = `${t("efShownPrefix")} ${visibleEmails.length} / ${filteredEmails.length} ${t("marketUnitEmails", { count: filteredEmails.length })}`;
+  const [announcedCount, setAnnouncedCount] = useState(countAnnouncement);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAnnouncedCount(countAnnouncement), 600);
+    return () => window.clearTimeout(timer);
+  }, [countAnnouncement]);
   const getVirtualRowKey = useCallback((index: number) => visibleRows[index].id, [visibleRows]);
   const cancelScrollRestoration = useCallback(() => {
     userInteractedRef.current = true;
@@ -1480,7 +1489,6 @@ export function ExtendedEmailFilter() {
           <div className="flex flex-col gap-4 bg-[var(--surface-page)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
             <p
               className="text-xs leading-5 text-[var(--text-caption)]"
-              aria-live="polite"
             >
               {t("efShownPrefix")}{" "}
               <strong className="text-[var(--text-control)]">
@@ -1509,6 +1517,10 @@ export function ExtendedEmailFilter() {
             )}
           </div>
         ) : null}
+        {/* 独立播报区：与可视计数分离，由上方防抖逻辑驱动；DOM 常驻，空态时仍可播报。 */}
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcedCount}
+        </span>
       </div>
     </Card>
   );
