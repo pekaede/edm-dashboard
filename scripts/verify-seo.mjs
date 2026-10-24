@@ -63,7 +63,13 @@ assert.doesNotMatch(staticRoot, /\d[\d,]*\s*封/);
 assert.equal(tags(staticRoot, "a").filter((tag) => attr(tag, "href").startsWith("/markets/")).length, 8);
 for (const brand of brands) assert.ok(staticRoot.includes(`<li><a href="/#brands/all/${encodeURIComponent(brand)}">${brand}</a></li>`));
 for (const view of ["emails", "dashboard", "report"]) assert.ok(staticRoot.includes(`href="/#${view}"`));
-assert.ok(tags(home, "script").some((tag) => attr(tag, "type") === "module"));
+const moduleScripts = tags(home, "script").filter((tag) => attr(tag, "type") === "module");
+assert.ok(moduleScripts.length > 0);
+for (const script of moduleScripts) {
+  const src = attr(script, "src");
+  assert.ok(src?.startsWith("/assets/"));
+  assert.ok(existsSync(new URL(`dist${src}`, root)), src);
+}
 console.log("PASS dist/index.html: root 内 H1 + 简介 + 8 市场入口 + 6 品牌 + 3 视图链接；WebSite/Organization JSON-LD");
 console.log("PASS 全站分享标签: og:image=https://edmwatch.com/og-image.jpg (2240×1120), summary_large_image, twitter:image, 3 图标 link, theme-color");
 
