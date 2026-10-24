@@ -80,7 +80,15 @@ export function KpiGrid() {
         <LoadingBlock card={false} titleWidth={false} lines={1} label={t("kpiLoadingStatus")} className="mt-[calc(var(--card-padding)/2)]" />
       ) : status !== "ready" ? (
         <p role="status" className="mt-[calc(var(--card-padding)/2)] text-[length:var(--type-helper-size)] leading-[var(--type-helper-leading)] text-[var(--text-secondary)]">
-          {t("kpiErrorStatus")}
+          {t("kpiErrorStatus")}{" "}
+          {/* S14：错误态此前仅被动提示，现复用已取到的 retry 给出恢复入口（文案复用既有 kpiRetry 键） */}
+          <button
+            type="button"
+            onClick={retry}
+            className="font-bold text-[var(--text-heading)] underline underline-offset-2 hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
+          >
+            {t("kpiRetry")}
+          </button>
         </p>
       ) : null}
     </section>
