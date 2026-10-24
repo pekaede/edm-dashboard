@@ -10,6 +10,21 @@ export function brandOverviewSlug(brand: string): string {
   return brand.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
+/** 按品牌顺序分配锚点：空 slug 用 brand，重名递增后缀并跳过已用值。 */
+export function brandOverviewSectionIds(brands: string[]): Map<string, string> {
+  const ids = new Map<string, string>();
+  const used = new Set<string>();
+  for (const brand of brands) {
+    const base = brandOverviewSlug(brand) || "brand";
+    let id = base;
+    let suffix = 2;
+    while (used.has(id)) id = `${base}-${suffix++}`;
+    used.add(id);
+    ids.set(brand, id);
+  }
+  return ids;
+}
+
 function displayDate(value: string | null, locale: string): string {
   if (!value) return "—";
   const date = new Date(value);
@@ -99,7 +114,8 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
     const wanted = focusBrand.trim().toLowerCase();
     const target = rows.find((row) => row.brand.toLowerCase() === wanted)?.brand;
     if (!target) return;
-    const slug = brandOverviewSlug(target);
+    const sectionIds = brandOverviewSectionIds([...new Set(rows.map((row) => row.brand))]);
+    const slug = sectionIds.get(target) ?? brandOverviewSlug(target);
     const scrollTimer = window.setTimeout(() => {
       document.getElementById(`brand-overview-${slug}`)?.scrollIntoView({ block: "start" });
       setHighlight(slug);
@@ -113,6 +129,7 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
   const groups = new Map<string, BrandOverviewRow[]>();
   for (const row of rows) groups.set(row.brand, [...(groups.get(row.brand) ?? []), row]);
   const brands = [...groups.keys()];
+  const sectionIds = brandOverviewSectionIds(brands);
   // 深链接带品牌段时进入单品牌视图：只展示该品牌，并提供返回全部品牌与其他品牌的入口。
   const focus = focusBrand ? brands.find((brand) => brand.toLowerCase() === focusBrand.trim().toLowerCase()) ?? null : null;
   const visibleBrands = focus ? [focus] : brands;
@@ -128,7 +145,7 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
     {focus ? <nav aria-label={focus} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
       <a href="#brands/all" className="font-semibold text-[var(--accent-ink)] underline underline-offset-2">← {t("boAllBrands")}</a>
       {brands.filter((brand) => brand !== focus).map((brand) => <a key={brand} href={`#brands/all/${encodeURIComponent(brand)}`} className="text-[var(--text-secondary)] underline-offset-2 hover:underline">{brand}</a>)}
-    </nav> : <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${brandOverviewSlug(brand)}`, label: brand }))} />}
+    </nav> : <PageNav sections={brands.map((brand) => ({ id: `brand-overview-${sectionIds.get(brand) ?? brandOverviewSlug(brand)}`, label: brand }))} />}
     {visibleBrands.map((brand) => {
       const brandRows = groups.get(brand)!;
       // 汇总只统计有值的行；整项无数据时不展示（避免把缺失显示成 0）。
@@ -145,7 +162,7 @@ export function BrandOverview({ focusBrand }: { focusBrand?: string | null }) {
         `${t("boDataAsOf")} ${displayDate(latestCaptured, locale)}`,
       ].filter(Boolean).join(" · ");
       const sourceUrl = brandRows.find((row) => row.source_page_url)?.source_page_url ?? null;
-      return <div key={brand} id={`brand-overview-${brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === brandOverviewSlug(brand) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
+      return <div key={brand} id={`brand-overview-${sectionIds.get(brand) ?? brandOverviewSlug(brand)}`} className={`scroll-mt-20 min-w-0 rounded-[var(--card-radius)] transition-shadow duration-500 ${highlight === (sectionIds.get(brand) ?? brandOverviewSlug(brand)) ? "ring-2 ring-[var(--accent-ink)] ring-offset-4 ring-offset-[var(--surface-page)]" : ""}`}>
         <header className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-1">
           <div>
             <h2 className="text-[22px] font-bold leading-7 text-[var(--text-heading)]">{brand}</h2>
