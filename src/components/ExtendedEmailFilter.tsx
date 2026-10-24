@@ -1197,6 +1197,7 @@ export function ExtendedEmailFilter() {
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--text-muted)]">
                 <Search className="size-4" aria-hidden="true" />
               </div>
+              {/* 防止 iOS Safari 聚焦自动放大 */}
               <input
                 id={`${listId}-search`}
                 ref={searchInputRef}
@@ -1204,7 +1205,7 @@ export function ExtendedEmailFilter() {
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder={t("efSearchPlaceholder")}
-                className="w-full rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] py-2 pr-9 pl-9 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
+                className="w-full rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] py-2 pr-9 pl-9 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-colors focus-visible:border-[var(--control-focus)] focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-card)]"
               />
               {searchQuery ? (
                 <button
