@@ -144,10 +144,15 @@ export function subscribeFavorites(callback: () => void): () => void {
     return () => {};
   }
   const handler = () => callback();
+  const storageHandler = (event: StorageEvent) => {
+    if (event.key === FAVORITES_STORAGE_KEY || event.key === null) {
+      callback();
+    }
+  };
   window.addEventListener(FAVORITES_EVENT, handler);
-  window.addEventListener("storage", handler);
+  window.addEventListener("storage", storageHandler);
   return () => {
     window.removeEventListener(FAVORITES_EVENT, handler);
-    window.removeEventListener("storage", handler);
+    window.removeEventListener("storage", storageHandler);
   };
 }
