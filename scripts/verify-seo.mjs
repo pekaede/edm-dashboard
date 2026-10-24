@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { extractStaticRoot } from "./extract-static-root.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -55,7 +56,7 @@ function verifyShared(html, canonical) {
 
 const home = read("dist/index.html");
 verifyShared(home, "https://edmwatch.com/");
-const staticRoot = home.match(/<div id="root">([\s\S]*)<\/div>\s*<\/body>/)?.[1];
+const staticRoot = extractStaticRoot(home);
 assert.ok(staticRoot?.includes("<h1"));
 assert.match(staticRoot, /覆盖 8 个市场、6 个品牌/);
 assert.doesNotMatch(staticRoot, /\d[\d,]*\s*封/);
