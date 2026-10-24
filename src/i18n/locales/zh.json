@@ -452,6 +452,7 @@
   "caTrendMarketing": "营销",
   "caShareAria": "{label} 占比",
   "caOutcomeLine": "成功 {s} 封 ({sp}) · 排队中 {q} 封 ({qp}) · 失败 {f} 封 ({fp}) · 未采集 {m} 封 ({mp}) · 已跳过 {sk} 封 ({skp})",
+  "caStaleLine": "过期/待更新 {e} 封 ({ep})",
   "caOutcomeExpired": "其中结果过期（成功但无分析时间）{n} 封",
   "caNoSubjects": "该分类下暂无可展示的标题",
   "caTimeout": "{label}请求超时（{s} 秒）。",

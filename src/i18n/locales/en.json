@@ -452,6 +452,7 @@
   "caTrendMarketing": "Marketing",
   "caShareAria": "{label} share",
   "caOutcomeLine": "Succeeded {s} ({sp}) · Queued {q} ({qp}) · Failed {f} ({fp}) · Not collected {m} ({mp}) · Skipped {sk} ({skp})",
+  "caStaleLine": "Stale / awaiting update {e} ({ep})",
   "caOutcomeExpired": "Of these, {n} results are stale (succeeded without an analysis time)",
   "caNoSubjects": "No subjects to show in this category yet",
   "caTimeout": "{label} request timed out ({s}s).",

@@ -418,7 +418,7 @@ function StatPill({
   );
 }
 
-function OutcomeBreakdown({
+export function OutcomeBreakdown({
   label,
   counts,
   sample,
@@ -429,7 +429,7 @@ function OutcomeBreakdown({
   sample: number;
   extra?: string;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const pct = (n: number) => (sample > 0 ? `${Math.round((n / sample) * 100)}%` : "—");
   return (
     <div className="space-y-1 text-xs">
@@ -438,9 +438,8 @@ function OutcomeBreakdown({
         {t("caOutcomeLine", { s: counts.success, sp: pct(counts.success), q: counts.queued, qp: pct(counts.queued), f: counts.failed, fp: pct(counts.failed), m: counts.missing, mp: pct(counts.missing), sk: counts.skipped, skp: pct(counts.skipped) })}
       </p>
       <p className="text-[var(--text-secondary)]">
-        {locale === "en"
-          ? `Stale / awaiting update ${counts.expired} (${pct(counts.expired)})`
-          : `过期/待更新 ${counts.expired} 封 (${pct(counts.expired)})`}
+        {/* 过期行文案通过字典键统一翻译。 */}
+        {t("caStaleLine", { e: counts.expired, ep: pct(counts.expired) })}
         {extra ? ` · ${extra}` : ""}
       </p>
     </div>
