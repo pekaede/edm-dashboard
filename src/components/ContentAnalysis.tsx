@@ -139,7 +139,7 @@ const CTA_POSITION_LABEL_MAP: Record<string, DictionaryKey> = {
 };
 
 function labelText(map: Record<string, DictionaryKey>, key: string): string {
-  const dictKey = map[key];
+  const dictKey = Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
   return dictKey ? translate(dictKey) : key;
 }
 
