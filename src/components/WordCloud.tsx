@@ -113,10 +113,22 @@ export function buildThreeMonthGroups(emails: EmailRecord[]): GroupedCategory[] 
   );
 }
 
-function getWordSize(count: number, words: Word[]): string {
-  const counts = words.map((word) => word.count);
-  const maxCount = Math.max(...counts);
-  const minCount = Math.min(...counts);
+// 词集变化时一次性计算 min/max，避免原每词重扫造成 O(n²)。
+function getScaleParams(words: Word[]): { minCount: number; maxCount: number } {
+  if (words.length === 0) return { minCount: 0, maxCount: 1 };
+
+  let minCount = words[0].count;
+  let maxCount = words[0].count;
+  for (let index = 1; index < words.length; index += 1) {
+    const count = words[index].count;
+    minCount = Math.min(minCount, count);
+    maxCount = Math.max(maxCount, count);
+  }
+
+  return { minCount, maxCount };
+}
+
+function getWordSize(count: number, minCount: number, maxCount: number): string {
   const range = Math.max(maxCount - minCount, 1);
   const scale = (count - minCount) / range;
   return `${0.95 + scale * 1.05}rem`;
@@ -155,6 +167,7 @@ export function WordCloud() {
   );
   const groupedWords = isThreeWeeks ? threeWeekGroups : threeMonthGroups;
   const displayedWords = groupedWords.flatMap((category) => category.words);
+  const { minCount, maxCount } = useMemo(() => getScaleParams(displayedWords), [displayedWords]);
   const sampleTotal = isThreeWeeks ? threeWeekEmails.length : marketFilteredEmails.length;
   const catName = (key: string, fallback: string) => (WC_CATEGORY_KEYS[key] ? t(WC_CATEGORY_KEYS[key]) : fallback);
   const fillTokens = (key: DictionaryKey, count: number) => t(key, { market: marketLabel, count });
@@ -272,7 +285,7 @@ export function WordCloud() {
                           className="inline-block max-w-full break-words rounded px-1 py-1 font-semibold tracking-tight hover:bg-[var(--surface-wordcloud-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--control-focus)]"
                           style={{
                             color: "var(--text-calendar-heading)",
-                            fontSize: getWordSize(word.count, displayedWords),
+                            fontSize: getWordSize(word.count, minCount, maxCount),
                             lineHeight: 1.1,
                           }}
                         >
