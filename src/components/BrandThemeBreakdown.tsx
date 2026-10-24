@@ -15,13 +15,11 @@ import {
 } from "../three-week-aggregation";
 import { Card } from "./Card";
 import { themeLabelKeyOf } from "./dashboard";
+import { EMPTY_STATE_CLASS_NAME } from "./empty-state-class";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
 import { Tooltip } from "./Tooltip";
 import { ChartContainer, type ChartConfig } from "./ui/chart";
-
-const EMPTY_STATE_CLASS_NAME =
-  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--control-active-bg)] [&_button]:text-[var(--control-active-text)] [&_button:hover]:bg-[var(--control-active-hover-bg)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 // 堆叠分段的圆角矩形路径：只有整条的首/尾段带外侧圆角（与原手写分段的 rounded-l/r-lg 一致）。
 function segmentPath(x: number, y: number, width: number, height: number, roundLeft: boolean, roundRight: boolean) {

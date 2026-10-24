@@ -16,6 +16,7 @@ function loadWordCloud() {
       },
       "../three-week-aggregation": { formatWindowRange: () => "", THREE_WEEK_WINDOW: {} },
       "./Card": {},
+      "./empty-state-class": loadSourceModule("components/empty-state-class.ts"),
       "./EmptyState": {},
       "./ExtendedEmailsState": {},
       "./MarketFilter": { getMarketLabel: () => "" },

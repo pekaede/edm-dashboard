@@ -2,11 +2,9 @@ import { useMemo, type ReactNode } from "react";
 import { useLocale } from "../i18n";
 import { buildLiveOnePage, buildOnePageSummary } from "../onepage-report";
 import { useSiteEmails, useSiteSelection } from "../site-data";
+import { EMPTY_STATE_CLASS_NAME } from "./empty-state-class";
 import { EmptyState } from "./EmptyState";
 import { ExtendedEmailsState } from "./ExtendedEmailsState";
-
-const EMPTY_STATE_CLASS_NAME =
-  "[&>div]:border-[var(--border-default)] [&>div]:bg-[var(--surface-card)] [&_[aria-hidden]]:border-[var(--border-default)] [&_[aria-hidden]]:bg-[var(--surface-subtle)] [&_[aria-hidden]]:text-[var(--text-secondary)] [&_h3]:text-[var(--text-heading)] [&_p]:text-[var(--text-secondary)] [&_button]:bg-[var(--control-active-bg)] [&_button]:text-[var(--control-active-text)] [&_button:hover]:bg-[var(--control-active-hover-bg)] [&_button:focus-visible]:ring-[var(--accent-ink)] [&_button:focus-visible]:ring-offset-[var(--surface-card)]";
 
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
