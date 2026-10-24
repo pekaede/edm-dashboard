@@ -409,7 +409,21 @@ export function MarketComparison({
     ? t("mcHint", { start: data.windowStart, end: data.windowEnd, total: data.grandTotal })
     : t("mcHintFallback");
 
-  if (status === "ready" && !data) return <Card title={t("mcTitle")} hint={hint}><p className="py-6 text-center text-sm text-[var(--text-secondary)]" role="status">{t("mcEmpty")}</p></Card>;
+  if (status === "ready" && !data) return (
+    <Card title={t("mcTitle")} hint={hint}>
+      <p className="py-6 text-center text-sm text-[var(--text-secondary)]" role="status">{t("mcEmpty")}</p>
+      {/* 重试按钮仅在 ready 但邮件数据为空的分支出现。 */}
+      <div className="text-center text-sm">
+        <button
+          type="button"
+          onClick={retry}
+          className="font-bold text-[var(--text-heading)] underline underline-offset-2 hover:text-[var(--accent-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--control-focus)]"
+        >
+          {t("kpiRetry")}
+        </button>
+      </div>
+    </Card>
+  );
   if (status === "loading" || status === "error" || !data) return <Card title={t("mcTitle")} hint={hint}><ExtendedEmailsState status={status} total={emailTotal} error={error} retry={retry} meta={meta} /></Card>;
 
   const effectiveSelected = data.markets.filter((market) => selected.includes(market));
