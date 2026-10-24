@@ -120,6 +120,10 @@ export function renderMarketDocument(homeHtml: string, page: MarketPage): string
   // 复用 Vite 产出的 CSS 与分享/图标标签，去掉应用入口，静态市场页不启动 SPA。
   let marketHead = head
     .replace(/<script\b(?=[^>]*\btype="module")[^>]*>[\s\S]*?<\/script>\s*/g, "")
+    // 市场页正文恒中文、无 React 纠正，返回模板 lang 硬编码 zh-CN。
+    // 移除语言初始化，避免 edm-lang=en 将 /markets/<code>/ 的 lang 改为 en，与 JSON-LD inLanguage zh-CN 矛盾。
+    // id 前必须是空白，避免误删 data-id="locale-init" 脚本。
+    .replace(/<script\b(?=[^>]*\sid="locale-init")[^>]*>[\s\S]*?<\/script>\s*/g, "")
     .replace(/<link\b(?=[^>]*\brel="(?:modulepreload|preconnect)")[^>]*>\s*/g, "");
   marketHead = replaceOnce(marketHead, /<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(page.title)}</title>`);
   marketHead = replaceOnce(marketHead, /<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${escapeHtml(page.canonical)}" />`);

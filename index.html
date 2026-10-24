@@ -21,6 +21,16 @@
         if (meta) meta.setAttribute("content", theme === "dark" ? "#111318" : "#f7f8fa");
       })();
     </script>
+    <script id="locale-init">
+      (function () {
+        // 首屏按英文前缀同步用户语言；存储不可读或非英文时保留静态 zh-CN。
+        var lang;
+        try {
+          lang = window.localStorage.getItem("edm-lang");
+        } catch (_) {}
+        if (lang && lang.startsWith("en")) document.documentElement.lang = "en";
+      })();
+    </script>
     <link rel="preconnect" href="https://nwjyafirqckaznqkexyb.supabase.co" crossorigin />
     <meta name="description" content="品牌营销触达趋势看板：覆盖美国、英国、澳大利亚、法国、德国、意大利、西班牙、荷兰 8 个市场，分析 Halara、ALO Yoga、SHEIN、Temu、lululemon、Zara 的邮件收录趋势、主题分布与营销节奏，提供实时 OnePage 报告。" />
     <meta name="google-site-verification" content="olcZLOZJ55huBjbQcU7p1CrfSk7cJvwJZhdfKGNw8a8" />
