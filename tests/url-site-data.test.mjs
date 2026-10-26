@@ -21,7 +21,7 @@ describe("URL 与站点缓存的纯逻辑契约", () => {
 
   it("按前进/后退顺序读取完整 URL 快照，站点、全部市场及筛选能独立恢复", () => {
     const read = loadSiteData().createSiteDataCache();
-    const emails = [email(), email("2026-10-02", "UK"), email("2026-10-03", "UK")];
+    const emails = [email("2026-10-06"), email("2026-10-07", "UK"), email("2026-10-08", "UK")];
     const history = ["#emails/US/Zara/new?q=coat", "#calendar/UK/SHEIN/price?q=sale", "#dashboard/all"];
     const expected = [
       { market: "US", total: 1, brand: "Zara", theme: "new", query: "coat" },

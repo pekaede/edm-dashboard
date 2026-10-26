@@ -13,7 +13,7 @@ describe("Provider 的站点三周共享缓存", () => {
       return aggregateThreeWeek(emails);
     } });
     const read = createSiteDataCache();
-    const emails = [email(), email("2026-10-02", "UK")];
+    const emails = [email("2026-10-06"), email("2026-10-07", "UK")];
     const us = read(emails, "ready", "US");
     const uk = read(emails, "ready", "UK");
     assert.strictEqual(read(emails, "ready", "US"), us);
@@ -29,10 +29,10 @@ describe("Provider 的站点三周共享缓存", () => {
   it("邮件引用变化使所有站点缓存失效，包括尚未再次访问的站点", () => {
     const { createSiteDataCache } = loadSiteData();
     const read = createSiteDataCache();
-    const emails = [email(), email("2026-10-02", "UK")];
+    const emails = [email("2026-10-06"), email("2026-10-07", "UK")];
     const oldUS = read(emails, "ready", "US");
     const oldUK = read(emails, "ready", "UK");
-    const refreshed = [...emails, email("2026-10-03", "UK")];
+    const refreshed = [...emails, email("2026-10-08", "UK")];
     assert.notStrictEqual(read(refreshed, "ready", "US").threeWeekData, oldUS.threeWeekData);
     const uk = read(refreshed, "ready", "UK");
     assert.notStrictEqual(uk.threeWeekData, oldUK.threeWeekData);
@@ -43,7 +43,7 @@ describe("Provider 的站点三周共享缓存", () => {
   it("loading/error/incomplete 不聚合、不缓存，恢复 ready 后即使同引用也重新计算", () => {
     for (const status of ["loading", "error", "incomplete"]) {
       const read = loadSiteData().createSiteDataCache();
-      const emails = [email()];
+      const emails = [email("2026-10-06")];
       const ready = read(emails, "ready", "US");
       const pending = read(emails, status, "US");
       assert.equal(pending.threeWeekData, null, status);
@@ -70,7 +70,7 @@ describe("Provider 的站点三周共享缓存", () => {
   it("真实 React Provider 下多个 hook 消费者只聚合一次，并保留公开返回结构", () => {
     let calculations = 0;
     const snapshot = {
-      status: "ready", emails: [email(), email("2026-10-02", "UK")], total: 2,
+      status: "ready", emails: [email("2026-10-06"), email("2026-10-07", "UK")], total: 2,
       error: null, retry: () => {},
       meta: { windowStart: "2026-07-20", windowEnd: "2026-10-20", range: "三个月", market: "原标签",
         source: "Milled", brandCount: 6, weekCount: 3, total: 2, dataSource: "supabase", provenance: "live" },
