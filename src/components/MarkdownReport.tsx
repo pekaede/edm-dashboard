@@ -242,7 +242,7 @@ export function MarkdownReport() {
             return (
               <h4
                 key={blockIndex}
-                className="mb-4 mt-10 scroll-mt-6 border-l-4 border-[var(--accent)] pl-4 text-xl font-extrabold leading-snug tracking-tight text-[var(--text-heading)] sm:mt-12 sm:text-2xl"
+                className="mb-4 mt-10 scroll-mt-6 text-xl font-extrabold leading-snug tracking-tight text-[var(--text-heading)] sm:mt-12 sm:text-2xl"
               >
                 {renderInline(block.content)}
               </h4>
@@ -253,7 +253,7 @@ export function MarkdownReport() {
             return (
               <blockquote
                 key={blockIndex}
-                className="my-6 space-y-2 rounded-xl border-l-4 border-[var(--theme-behavior)] bg-[var(--surface-subtle)] px-4 py-4 text-sm leading-7 text-[var(--text-body)] sm:px-5"
+                className="my-6 space-y-2 rounded-xl bg-[var(--surface-subtle)] px-4 py-4 text-sm leading-7 text-[var(--text-body)] sm:px-5"
               >
                 {block.lines.map((line, lineIndex) => (
                   <p key={lineIndex}>{renderInline(line)}</p>
