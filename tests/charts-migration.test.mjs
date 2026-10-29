@@ -17,7 +17,7 @@ const cssSource = readFileSync(new URL("../src/index.css", import.meta.url), "ut
 // 「仅营销主题」开：分母 20-2=18 → price 61%、behavior 22%、new 17%（Math.round 口径）。
 function fixtureEmails() {
   const mk = (brand, theme, i) => ({
-    date: "2026-10-05", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
+    date: "2026-10-08", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
   });
   const emails = [];
   let i = 0;
@@ -198,7 +198,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
     let selection;
     const emails = ["US", "UK", "AU", "JP"].flatMap((market) =>
       ["price", "winback"].map((theme, source_index) => ({
-        date: "2026-10-05", brand: "Zara", theme, keywords: [], market, day_seq: 1, source_index,
+        date: "2026-10-08", brand: "Zara", theme, keywords: [], market, day_seq: 1, source_index,
       })));
     const { dom } = await mountWithFixture(t, "en", (graph) => {
       const { ThemeDistribution } = graph.load("components/ThemeDistribution.tsx");
@@ -357,7 +357,7 @@ describe("图表迁移到 shadcn Chart（Recharts）", () => {
 
   const winbackEmails = () => {
     const mk = (brand, theme, i) => ({
-      date: "2026-10-05", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
+      date: "2026-10-08", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
     });
     return [
       ...Array.from({ length: 5 }, (_, i) => mk("Zara", "price", i)),

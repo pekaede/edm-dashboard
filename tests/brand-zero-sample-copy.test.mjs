@@ -10,7 +10,7 @@ const trZh = (key, values) => translateIn("zh", key, values);
 
 describe("品牌 0 收录文案（免责口径）", () => {
   const emails = [
-    { date: "2026-10-06", brand: "Zara", theme: "new", keywords: [], market: "US", day_seq: 1, source_index: 0 },
+    { date: "2026-10-09", brand: "Zara", theme: "new", keywords: [], market: "US", day_seq: 1, source_index: 0 },
   ];
   const data = aggregateThreeWeek(emails);
 

@@ -101,7 +101,7 @@ it("J1-status：同一邮件引用的非 ready→ready 切换会清空并重建�
   // Provider/useMemo/缓存/聚合/多个消费者仍全部真实执行，避免 emails 依赖掩盖 status 缺失。
   const { useSyncExternalStore } = await import("react");
   const dom = await mountDOM(t);
-  const emails = [{ brand: "Zara", date: "2026-10-06", theme: "new", keywords: [], market: "US", day_seq: 0, source_index: 0 }];
+  const emails = [{ brand: "Zara", date: "2026-10-09", theme: "new", keywords: [], market: "US", day_seq: 0, source_index: 0 }];
   let snapshot = { emails, status: "ready", total: 1, error: null, retry() {}, meta: { dataSource: "supabase", total: 1 } };
   const listeners = new Set();
   const subscribe = (listener) => { listeners.add(listener); return () => listeners.delete(listener); };

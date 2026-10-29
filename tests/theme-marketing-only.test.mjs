@@ -37,7 +37,7 @@ describe("主题分布「仅营销主题」开关", () => {
   });
 
   it("按聚合数据验证剔除规则的数学：分母减 other、各主题占比重算", () => {
-    const mk = (theme, i) => ({ date: "2026-10-06", brand: "Zara", theme, keywords: [], market: "US", day_seq: 1, source_index: i });
+    const mk = (theme, i) => ({ date: "2026-10-09", brand: "Zara", theme, keywords: [], market: "US", day_seq: 1, source_index: i });
     const emails = [
       ...Array.from({ length: 5 }, (_, i) => mk("price", i)),
       ...Array.from({ length: 3 }, (_, i) => mk("new", 10 + i)),
