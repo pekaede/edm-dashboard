@@ -32,8 +32,8 @@ export interface ThreeWeekWindow {
 }
 
 export const THREE_WEEK_WINDOW: ThreeWeekWindow = {
-  start: "2026-10-11",
-  end: "2026-11-01",
+  start: "2026-10-12",
+  end: "2026-11-02",
 };
 
 export interface ThreeWeekWeekDef {
