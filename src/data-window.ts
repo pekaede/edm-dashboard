@@ -6,8 +6,8 @@
 
 /** live Supabase 窗口（93 天，随每日任务滑动）。 */
 export const LIVE_WINDOW = {
-  start: "2026-08-03",
-  end: "2026-11-03",
+  start: "2026-08-04",
+  end: "2026-11-04",
 } as const;
 
 /** JSON 回滚快照窗口（历史 US 样本，固定不滑动）。 */
