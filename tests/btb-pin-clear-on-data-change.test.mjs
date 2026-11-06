@@ -11,7 +11,7 @@ import { flushPromises } from "./source-module.mjs";
 
 function mk(brand, theme, i) {
   return {
-    date: "2026-10-15", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
+    date: "2026-10-16", brand, theme, keywords: [], market: "US", day_seq: 1, source_index: i,
   };
 }
 
