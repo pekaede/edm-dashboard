@@ -9,7 +9,7 @@ export const liveEnv = {
 
 export function emailRow(source_index, market = "US") {
   return {
-    brand: market === "US" ? "Zara" : "SHEIN", sent_date: "2026-10-17", market,
+    brand: market === "US" ? "Zara" : "SHEIN", sent_date: "2026-10-18", market,
     theme: "new", keywords: [], original_url: null, day_seq: source_index, source_index,
   };
 }
