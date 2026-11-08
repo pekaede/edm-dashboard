@@ -56,7 +56,7 @@ export function DashboardFooter() {
           </p>
         </div>
 
-        {/* 第二列：固定截止日与时间更新口径 */}
+        {/* 第二列：已发布截止日与时间更新口径；live 仅在每日更新成功后滑动 */}
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-[var(--text-heading)]">
             {t("footerCutoffTimeTitle")}
