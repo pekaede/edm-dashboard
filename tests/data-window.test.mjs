@@ -11,12 +11,12 @@ import {
 
 describe("数据窗口边界", () => {
   it("live 窗口固定当前起止，含首尾共 93 天", () => {
-    assert.deepEqual(LIVE_WINDOW, { start: "2026-08-07", end: "2026-11-07" });
+    assert.deepEqual(LIVE_WINDOW, { start: "2026-08-08", end: "2026-11-08" });
     assert.equal(windowDays(LIVE_WINDOW), 93);
   });
 
   it("三周窗口含首尾共 22 天，完全落在 live 窗口内", () => {
-    assert.deepEqual(THREE_WEEK_WINDOW, { start: "2026-10-17", end: "2026-11-07" });
+    assert.deepEqual(THREE_WEEK_WINDOW, { start: "2026-10-18", end: "2026-11-08" });
     assert.equal(windowDays(THREE_WEEK_WINDOW), 22);
     assert.ok(THREE_WEEK_WINDOW.start >= LIVE_WINDOW.start);
     assert.equal(THREE_WEEK_WINDOW.end, LIVE_WINDOW.end);
@@ -25,17 +25,17 @@ describe("数据窗口边界", () => {
   it("按窗口起点派生连续的 7、7、8 天分桶及标签", () => {
     const weeks = deriveThreeWeekWeeks(THREE_WEEK_WINDOW);
     assert.deepEqual(weeks, [
-      { id: "W1", label: "Week 1", range: "10/17–10/23", start: "2026-10-17", end: "2026-10-23" },
-      { id: "W2", label: "Week 2", range: "10/24–10/30", start: "2026-10-24", end: "2026-10-30" },
-      { id: "W3", label: "Week 3", range: "10/31–11/7", start: "2026-10-31", end: "2026-11-07" },
+      { id: "W1", label: "Week 1", range: "10/18–10/24", start: "2026-10-18", end: "2026-10-24" },
+      { id: "W2", label: "Week 2", range: "10/25–10/31", start: "2026-10-25", end: "2026-10-31" },
+      { id: "W3", label: "Week 3", range: "11/1–11/8", start: "2026-11-01", end: "2026-11-08" },
     ]);
     assert.deepEqual(weeks.map(windowDays), [7, 7, 8]);
   });
 
   it("聚合包含窗口和各周首尾，排除前一天和后一天", () => {
     const dates = [
-      "2026-10-16", "2026-10-17", "2026-10-23", "2026-10-24",
-      "2026-10-30", "2026-10-31", "2026-11-07", "2026-11-08",
+      "2026-10-17", "2026-10-18", "2026-10-24", "2026-10-25",
+      "2026-10-31", "2026-11-01", "2026-11-08", "2026-11-09",
     ];
     const emails = dates.map((date, index) => ({
       date, brand: "Zara", theme: "new", keywords: [], market: "US",

@@ -34,7 +34,7 @@ export interface ThreeWeekWindow {
 // 与 email-data.ts 使用同一构建时数据源：JSON 回滚保留历史三周窗口，所有调用方共用。
 export const THREE_WEEK_WINDOW: ThreeWeekWindow = import.meta.env?.VITE_EDM_DATA_SOURCE === "json"
   ? { start: "2026-09-24", end: "2026-10-15" }
-  : { start: "2026-10-17", end: "2026-11-07" };
+  : { start: "2026-10-18", end: "2026-11-08" };
 
 export interface ThreeWeekWeekDef {
   id: string;
